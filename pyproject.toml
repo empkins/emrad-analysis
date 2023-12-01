@@ -1,0 +1,67 @@
+[tool.poetry]
+name = "emrad_analysis"
+version = "0.1.0"
+description = ""
+authors = ["Luca Abel <luca.abel@fau.de>"]
+license = "MIT"
+readme = "README.md"
+
+[tool.poetry.dependencies]
+python = ">=3.8,<4.0"
+
+[tool.poetry.group.dev.dependencies]
+black = "^23.11.0"
+poethepoet = "^0.24.4"
+pytest = "^7.4.3"
+pytest-cov = "^4.1.0"
+ipykernel = "^6.27.1"
+ruff = "^0.1.6"
+ipympl = "^0.9.3"
+
+
+[build-system]
+requires = ["poetry-core>=1.0.0"]
+build-backend = "poetry.core.masonry.api"
+
+[tool.black]
+line-length = 120
+exclude = '''
+(
+  /(
+      \.eggs         # exclude a few common directories in the
+    | \.git          # root of the project
+    | \.hg
+    | \.mypy_cache
+    | \.tox
+    | \.venv
+    | _build
+    | docs
+    | build
+    | dist
+    | \.virtual_documents
+  )/
+)
+'''
+
+[tool.isort]
+profile = "black"
+multi_line_output = 3
+line_length = 120
+skip_gitignore = true
+
+
+
+[tool.poe.tasks]
+_format_black = "black ."
+_format_ruff = "ruff . --fix-only --exit-zero"
+format = ["_format_black", "_format_ruff", "_format_black"]
+lint = { cmd = "ruff emrad_analysis --fix", help = "Lint all files with ruff." }
+_lint_ci = "ruff emrad_analysis --format=github"
+_check_black = "black . --check"
+ci_check = { sequence = ["_check_black", "_lint_ci"], help = "Check all potential format and linting issues." }
+test = { cmd = "pytest --cov=emrad_analysis --cov-report=term-missing --cov-report=xml", help = "Run Pytest with coverage." }
+version = { script = "_tasks:task_update_version()" }
+conf_jupyter = { cmd = "python -m ipykernel install --user --name emrad_analysis", help = "Add a new jupyter kernel for the project." }
+
+remove_jupyter = { cmd = "jupyter kernelspec uninstall emrad_analysis", help = "Remove the project specific jupyter kernel."}
+experiment = { script = "_tasks:task_new_experiment()", help = "Create the boilerplate for a new experiment in the experiment subfolder."}
