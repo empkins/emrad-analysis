@@ -1,9 +1,11 @@
-from empkins_micro.emrad.validation.PairwiseHeartRate import PairwiseHeartRate
-from empkins_micro.emrad.validation.RPeakF1Score import RPeakF1Score
 from empkins_io.datasets.d03.micro_gapvii._dataset import MicroBaseDataset
-from empkins_micro.emrad.pipelines.biLSTMPipelineNo1 import BiLstmPipeline
 
 import numpy as np
+
+from emrad_analysis.pipelines.biLSTMPipelineNo1 import BiLstmPipeline
+from emrad_analysis.validation.PairwiseHeartRate import PairwiseHeartRate
+from emrad_analysis.validation.RPeakF1Score import RPeakF1Score
+
 
 # Use cases are:
 # 1. Good heart rate extimation over the long run

@@ -16,16 +16,25 @@
 #   -> 5 features => input vector of shape (num_samples, TIMESTEPS, 5)
 # 4. Label Generation: Find R-Peaks in reference ECG (100Hz) and convolve resulting spike train with Gaussians of fixed length
 
+import pandas as pd
+import numpy as np
 
 from typing import Dict, Sequence
-from sklearn.model_selection import GroupKFold, ParameterGrid
-from tpcp import Dataset, Algorithm, OptimizableParameter, OptimizablePipeline, cf
-from tpcp.optimize import GridSearch, GridSearchCV
 
-from empkins_micro.emrad.models.biLSTM import *
-from empkins_micro.emrad.preprocessing.pre_processing_algorithms import *
-from empkins_micro.emrad.feature_extraction.feature_generation_algorithms import *
-from empkins_micro.emrad.label_generation.label_generation_algorithms import *
+from empkins_io.datasets.d03.micro_gapvii import MicroBaseDataset
+from tpcp import Dataset, Algorithm, OptimizableParameter, OptimizablePipeline, cf, make_action_safe
+
+# from empkins_micro.emrad.models.biLSTM import *
+# from empkins_micro.emrad.preprocessing.pre_processing_algorithms import *
+# from empkins_micro.emrad.feature_extraction.feature_generation_algorithms import *
+# from empkins_micro.emrad.label_generation.label_generation_algorithms import *
+
+from emrad_analysis.feature_extraction.feature_generation_algorithms import ComputeEnvelopeSignal
+from emrad_analysis.label_generation.label_generation_algorithms import ComputeEcgPeakGaussians
+from emrad_analysis.models.biLSTM import BiLSTM
+from emrad_analysis.preprocessing.pre_processing_algorithms import ButterHighpassFilter, ComputeDecimateSignal, \
+    ButterBandpassFilter
+
 
 class PreProcessor(Algorithm):
     """Class preprocessing the radar to arrive at the heart sound envelope

@@ -1,6 +1,5 @@
 from tpcp import Algorithm, make_action_safe
 import numpy as np
-from scipy import interpolate
 from scipy.signal import find_peaks
 
 class RPeakF1Score(Algorithm):

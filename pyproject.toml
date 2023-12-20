@@ -7,7 +7,14 @@ license = "MIT"
 readme = "README.md"
 
 [tool.poetry.dependencies]
-python = ">=3.8,<4.0"
+python = ">=3.9,<3.11"
+pandas = "^1.2.0"
+numpy = ">=1.19,<1.25"
+keras = ">=2.15.0,<2.16"
+scipy = "^1.7.0"
+tpcp = "^0.13.0"
+tensorflow = "^2.15.0"
+empkins-io = {git = "https://github.com/empkins/empkins-io.git"}
 
 [tool.poetry.group.dev.dependencies]
 black = "^23.11.0"

@@ -3,7 +3,7 @@ from tpcp import Algorithm, Parameter, make_action_safe
 import pandas as pd
 import numpy as np
 from neurokit2 import ecg_process
-from scipy.signal import gaussian
+from scipy.signal.windows import gaussian
 
 class ComputeEcgPeakGaussians(Algorithm):
     _action_methods = "compute"

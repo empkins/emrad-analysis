@@ -16,14 +16,24 @@
 #   -> 5 features => input vector of shape (num_samples, TIMESTEPS, 5)
 # 4. Label Generation: Find R-Peaks in reference ECG (100Hz) and convolve resulting spike train with Gaussians of fixed length
 
-
+import pandas as pd
+import numpy as np
 from typing import Sequence
-from tpcp import Dataset, Algorithm, OptimizableParameter, OptimizablePipeline, cf
+from tpcp import Algorithm, OptimizableParameter, OptimizablePipeline, cf, make_action_safe
 
-from empkins_micro.emrad.models.biLSTM import *
-from empkins_micro.emrad.preprocessing.pre_processing_algorithms import *
-from empkins_micro.emrad.feature_extraction.feature_generation_algorithms import *
-from empkins_micro.emrad.label_generation.label_generation_algorithms import *
+# from empkins_micro.emrad.models.biLSTM import *
+# from empkins_micro.emrad.preprocessing.pre_processing_algorithms import *
+# from empkins_micro.emrad.feature_extraction.feature_generation_algorithms import *
+# from empkins_micro.emrad.label_generation.label_generation_algorithms import *
+
+from empkins_io.datasets.d03.micro_gapvii._dataset import MicroBaseDataset
+
+from emrad_analysis.feature_extraction.feature_generation_algorithms import ComputeEnvelopeSignal
+from emrad_analysis.label_generation.label_generation_algorithms import ComputeEcgPeakGaussians
+from emrad_analysis.models.biLSTM import BiLSTM
+from emrad_analysis.preprocessing.pre_processing_algorithms import ButterHighpassFilter, ButterBandpassFilter, \
+    ComputeDecimateSignal
+
 
 class PreProcessor(Algorithm):
     """Class preprocessing the radar to arrive at the heart sound envelope
@@ -101,8 +111,8 @@ class PreProcessor(Algorithm):
         # self.radar_envelope_ = (heart_sound_radar_envelope - mean) / std
 
         return self
-    
-    
+
+
 class InputAndLabelGenerator(Algorithm):
     """Class generating the Input and Label matrices for the BiLSTM model.
 
