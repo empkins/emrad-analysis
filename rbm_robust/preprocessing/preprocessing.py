@@ -19,8 +19,8 @@ class ButterBandpassFilter(Algorithm):
     def __init__(
             self,
             high_pass_filter_cutoff_hz: float = 80,
-            low_pass_filter_cutoff_hz: float = 15,
-            band_pass_filter_order: int = 5
+            low_pass_filter_cutoff_hz: float = 18,
+            band_pass_filter_order: int = 4
     ):
         self.low_pass_filter_cutoff_hz = low_pass_filter_cutoff_hz
         self.high_pass_filter_cutoff_hz = high_pass_filter_cutoff_hz
