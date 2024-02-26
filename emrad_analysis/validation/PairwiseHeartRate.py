@@ -32,7 +32,7 @@ class PairwiseHeartRate(Algorithm):
         
     @make_action_safe
     def compute(self, input_data: np.ndarray):
-        """Accepts a R peak prediciton signal and computes the instantaneous heart rates sampled with 1 Hz.
+        """Accepts a R peak prediction signal and computes the instantaneous heart rates sampled with 1 Hz.
 
         Args:
             input_data (np.ndarray): R Peak prediction signal
@@ -43,7 +43,7 @@ class PairwiseHeartRate(Algorithm):
 
         input_data = np.squeeze(input_data)
 
-        minimal_distance_between_peaks =  int(1 / (self.max_heart_rate / 60) * self.sampling_rate)
+        minimal_distance_between_peaks = int(1 / (self.max_heart_rate / 60) * self.sampling_rate)
         
         peaks, _ = find_peaks(input_data, distance=minimal_distance_between_peaks, prominence=0.15)
 
