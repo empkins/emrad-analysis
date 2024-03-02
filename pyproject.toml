@@ -14,9 +14,9 @@ keras = ">=2.15.0,<2.16"
 scipy = "^1.7.0"
 tensorflow = "^2.15.0"
 biopsykit = "^0.10.0"
-tpcp = "^0.31.2"
 emd-signal = "^1.5.2"
 pywavelets = "^1.5.0"
+empkins-io = {git = "https://github.com/empkins/empkins-io.git"}
 
 [tool.poetry.group.dev.dependencies]
 black = "^23.11.0"
