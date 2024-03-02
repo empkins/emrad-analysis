@@ -1,3 +1,4 @@
+import os
 from pathlib import Path
 from typing import Optional, Union
 from biopsykit.io.biopac import BiopacDataset
@@ -30,6 +31,8 @@ class D02Dataset(Dataset):
         :param groupby_cols: Columns to group by when creating the index. Default is None.
         :param subset_index: Subset of the index to use. Default is None.
         """
+        if not isinstance(data_path, Path):
+            data_path = Path(data_path)
         self.data_path = data_path
         self.radar_dataset = None
         self.ecg_dataset = None
@@ -84,7 +87,7 @@ class D02Dataset(Dataset):
 
         :return: DataFrame containing the ECG data.
         """
-        subject_id = self.group_label.participant
+        subject_id = self.subjects[0]
         return self._load_ecg(subject_id)
 
     def _load_ecg(self, subject_id: str) -> pd.DataFrame:
@@ -94,9 +97,8 @@ class D02Dataset(Dataset):
         :param subject_id: ID of the subject.
         :return: DataFrame containing the ECG data.
         """
-        subject_path = self.data_path / subject_id / "raw"
-        acq_file = self._get_only_matching_file(subject_path, "acq")
-        acq_path = subject_path / acq_file
+        subject_path = self.data_path.joinpath(subject_id, "raw")
+        acq_path = self._get_only_matching_file_path(subject_path, "acq")
         # Load the ECG data
         return BiopacDataset.from_acq_file(acq_path).data_as_df(index="local_datetime")
 
@@ -107,7 +109,7 @@ class D02Dataset(Dataset):
 
         :return: DataFrame containing the radar data.
         """
-        subject_id = self.group_label.participant
+        subject_id = self.subjects[0]
         return self._load_radar(subject_id)
 
     def _load_radar(self, subject_id: str, add_sync_in: bool = False, add_sync_out: bool = False) -> pd.DataFrame:
@@ -119,14 +121,14 @@ class D02Dataset(Dataset):
         :param add_sync_out: Whether to add the Sync_Out channel to the data. Default is False.
         :return: DataFrame containing the radar data.
         """
-        subject_path = self.data_path / subject_id / "raw"
-        h5_path = self._get_only_matching_file(subject_path, "h5")
+        subject_path = self.data_path.joinpath(subject_id, "raw")
+        h5_path = self._get_only_matching_file_path(subject_path, "h5")
         dataset = EmradDataset.from_hd5_file(h5_path)
         df = dataset.data_as_df(index="local_datetime", add_sync_in=add_sync_in, add_sync_out=add_sync_out)
         return df
 
     @staticmethod
-    def _get_only_matching_file(path, file_type: str) -> str:
+    def _get_only_matching_file_path(path, file_type: str) -> str:
         """
         Get the only file of a specific type in a directory.
 
@@ -136,14 +138,12 @@ class D02Dataset(Dataset):
         """
         matching_files = list(path.glob(f"*.{file_type}"))
         if len(matching_files) == 0:
-            raise ValueError(
-                f"No {file_type} files found in {path}. Are you sure you selected the correct folder?"
-            )
+            raise ValueError(f"No {file_type} files found in {path}. Are you sure you selected the correct folder?")
         if len(matching_files) > 1:
             raise ValueError(
                 f"Multiple {file_type} files found in {path}. Are you sure you selected the correct folder?"
             )
-        return matching_files[0].name
+        return matching_files[0]
 
     @property
     def synced_data(self) -> pd.DataFrame:
@@ -152,7 +152,7 @@ class D02Dataset(Dataset):
 
         :return: DataFrame containing the synchronized data.
         """
-        subject_id = self.group_label.participant
+        subject_id = self.subjects[0]
         return self._load_synced_data(subject_id)
 
     def _load_synced_data(self, subject_id: str) -> pd.DataFrame:
@@ -173,14 +173,14 @@ class D02Dataset(Dataset):
         synced_dataset = SyncedDataset(sync_type="m-sequence")
         radars = [x for x in radar_df.columns if "rad" in x]
         for radar in radars:
-            synced_dataset.add_dataset(radar, radar_df[radar],
-                                       sync_channel_name="Sync_In",
-                                       sampling_rate=int(self.SAMPLING_RATE_RADAR))
-        synced_dataset.add_dataset("acq", ecg_df, sync_channel_name="AUX", sampling_rate=self.SAMPLING_RATE_ACQ)
+            synced_dataset.add_dataset(
+                radar, radar_df[radar], sync_channel_name="Sync_In", sampling_rate=int(self.SAMPLING_RATE_RADAR)
+            )
+        synced_dataset.add_dataset("acq", ecg_df, sync_channel_name="rsp", sampling_rate=self.SAMPLING_RATE_ACQ)
         synced_dataset.resample_datasets(fs_out=self.SAMPLING_RATE_ACQ, method="static")
-        synced_dataset.align_and_cut_m_sequence(primary="acq", reset_time_axis=False,
-                                                cut_to_shortest=True,
-                                                sync_params={"sync_region_samples": (0, 1000)})
+        synced_dataset.align_and_cut_m_sequence(
+            primary="acq", reset_time_axis=False, cut_to_shortest=True, sync_params={"sync_region_samples": (0, 1000)}
+        )
         df_dict = synced_dataset.datasets_aligned
         result_df = pd.concat(df_dict.values(), axis=1, keys=df_dict.keys())
         multiindex = result_df.columns
