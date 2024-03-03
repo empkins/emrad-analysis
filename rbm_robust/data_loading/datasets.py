@@ -14,8 +14,12 @@ class D02Dataset(Dataset):
     It provides methods for loading ECG and radar data, synchronizing the data, and creating an index of participants.
     """
 
-    SAMPLING_RATE_ACQ = 256
+    SAMPLING_RATE_ACQ = 2000
     SAMPLING_RATE_RADAR = 1953.125
+    _CHANNEL_MAPPING = {
+        "ECG": "ecg",
+        "SyncSignal": "sync",
+    }
 
     def __init__(
         self,
@@ -100,7 +104,9 @@ class D02Dataset(Dataset):
         subject_path = self.data_path.joinpath(subject_id, "raw")
         acq_path = self._get_only_matching_file_path(subject_path, "acq")
         # Load the ECG data
-        return BiopacDataset.from_acq_file(acq_path).data_as_df(index="local_datetime")
+        return BiopacDataset.from_acq_file(acq_path, channel_mapping=self._CHANNEL_MAPPING).data_as_df(
+            index="local_datetime"
+        )
 
     @property
     def radar(self) -> pd.DataFrame:
@@ -176,7 +182,7 @@ class D02Dataset(Dataset):
             synced_dataset.add_dataset(
                 radar, radar_df[radar], sync_channel_name="Sync_In", sampling_rate=int(self.SAMPLING_RATE_RADAR)
             )
-        synced_dataset.add_dataset("acq", ecg_df, sync_channel_name="rsp", sampling_rate=self.SAMPLING_RATE_ACQ)
+        synced_dataset.add_dataset("acq", ecg_df, sync_channel_name="sync", sampling_rate=self.SAMPLING_RATE_ACQ)
         synced_dataset.resample_datasets(fs_out=self.SAMPLING_RATE_ACQ, method="static")
         synced_dataset.align_and_cut_m_sequence(
             primary="acq", reset_time_axis=False, cut_to_shortest=True, sync_params={"sync_region_samples": (0, 1000)}
@@ -184,6 +190,6 @@ class D02Dataset(Dataset):
         df_dict = synced_dataset.datasets_aligned
         result_df = pd.concat(df_dict.values(), axis=1, keys=df_dict.keys())
         multiindex = result_df.columns
-        keep_columns = ~multiindex.get_level_values(1).str.contains("asd;lkfja;s")
+        keep_columns = [x for x in multiindex if "sync" not in x]
         result_df = result_df.loc[:, keep_columns]
         return result_df
