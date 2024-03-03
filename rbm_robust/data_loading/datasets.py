@@ -1,4 +1,3 @@
-import os
 from pathlib import Path
 from typing import Optional, Union
 from biopsykit.io.biopac import BiopacDataset
@@ -6,6 +5,7 @@ import pandas as pd
 from empkins_io.sensors.emrad import EmradDataset
 from empkins_io.sync import SyncedDataset
 from tpcp import Dataset
+import neurokit2 as nk
 
 
 class D02Dataset(Dataset):
@@ -92,7 +92,21 @@ class D02Dataset(Dataset):
         :return: DataFrame containing the ECG data.
         """
         subject_id = self.subjects[0]
-        return self._load_ecg(subject_id)
+        return self._load_ecg(subject_id)["ecg"]
+
+    @property
+    def ecg_clean(self) -> pd.DataFrame:
+        """
+        Load the ECG data for the first subject in the D02 dataset.
+
+        :return: DataFrame containing the ECG data.
+        """
+        subject_id = self.subjects[0]
+        ecg_signal = self._load_ecg(subject_id)
+        ecg_clean = nk.ecg_clean(
+            ecg_signal=ecg_signal["ecg"], sampling_rate=int(self.SAMPLING_RATE_ACQ), method="neurokit"
+        )
+        return pd.DataFrame(ecg_clean, columns=["ecg_clean"], index=ecg_signal.index)
 
     def _load_ecg(self, subject_id: str) -> pd.DataFrame:
         """
@@ -103,10 +117,8 @@ class D02Dataset(Dataset):
         """
         subject_path = self.data_path.joinpath(subject_id, "raw")
         acq_path = self._get_only_matching_file_path(subject_path, "acq")
-        # Load the ECG data
-        return BiopacDataset.from_acq_file(acq_path, channel_mapping=self._CHANNEL_MAPPING).data_as_df(
-            index="local_datetime"
-        )
+        # Load the ECG data  , channel_mapping=self._CHANNEL_MAPPING
+        return BiopacDataset.from_acq_file(acq_path).data_as_df(index="local_datetime")
 
     @property
     def radar(self) -> pd.DataFrame:
