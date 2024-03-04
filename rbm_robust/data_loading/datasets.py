@@ -6,6 +6,7 @@ from empkins_io.sensors.emrad import EmradDataset
 from empkins_io.sync import SyncedDataset
 from tpcp import Dataset
 import neurokit2 as nk
+from functools import lru_cache
 
 
 class D02Dataset(Dataset):
@@ -91,6 +92,9 @@ class D02Dataset(Dataset):
 
         :return: DataFrame containing the ECG data.
         """
+        if not (self.is_single(None) or (self.is_single(["participant"]))):
+            raise ValueError("Data can only be accessed, when there is just a single participant in the dataset.")
+
         subject_id = self.subjects[0]
         return self._load_ecg(subject_id)["ecg"]
 
@@ -101,6 +105,8 @@ class D02Dataset(Dataset):
 
         :return: DataFrame containing the ECG data.
         """
+        if not (self.is_single(None) or (self.is_single(["participant"]))):
+            raise ValueError("Data can only be accessed, when there is just a single participant in the dataset.")
         subject_id = self.subjects[0]
         ecg_signal = self._load_ecg(subject_id)
         ecg_clean = nk.ecg_clean(
@@ -108,6 +114,7 @@ class D02Dataset(Dataset):
         )
         return pd.DataFrame(ecg_clean, columns=["ecg_clean"], index=ecg_signal.index)
 
+    @lru_cache(maxsize=1)
     def _load_ecg(self, subject_id: str) -> pd.DataFrame:
         """
         Load the ECG data for a specific subject.
@@ -117,8 +124,10 @@ class D02Dataset(Dataset):
         """
         subject_path = self.data_path.joinpath(subject_id, "raw")
         acq_path = self._get_only_matching_file_path(subject_path, "acq")
-        # Load the ECG data  , channel_mapping=self._CHANNEL_MAPPING
-        return BiopacDataset.from_acq_file(acq_path).data_as_df(index="local_datetime")
+        # Load the ECG data
+        return BiopacDataset.from_acq_file(acq_path, channel_mapping=self._CHANNEL_MAPPING).data_as_df(
+            index="local_datetime"
+        )
 
     @property
     def radar(self) -> pd.DataFrame:
@@ -127,9 +136,13 @@ class D02Dataset(Dataset):
 
         :return: DataFrame containing the radar data.
         """
+        if not (self.is_single(None) or (self.is_single(["participant"]))):
+            raise ValueError("Data can only be accessed, when there is just a single participant in the dataset.")
+
         subject_id = self.subjects[0]
         return self._load_radar(subject_id)
 
+    @lru_cache(maxsize=1)
     def _load_radar(self, subject_id: str, add_sync_in: bool = False, add_sync_out: bool = False) -> pd.DataFrame:
         """
         Load the radar data for a specific subject.
@@ -170,9 +183,13 @@ class D02Dataset(Dataset):
 
         :return: DataFrame containing the synchronized data.
         """
+        if not (self.is_single(None) or (self.is_single(["participant"]))):
+            raise ValueError("Data can only be accessed, when there is just a single participant in the dataset.")
+
         subject_id = self.subjects[0]
         return self._load_synced_data(subject_id)
 
+    @lru_cache(maxsize=1)
     def _load_synced_data(self, subject_id: str) -> pd.DataFrame:
         """
         Load the synchronized ECG and radar data for a specific subject.
@@ -185,23 +202,18 @@ class D02Dataset(Dataset):
         ecg_df = self._load_ecg(subject_id)
 
         # Load the radar data
-        radar_df = self._load_radar(subject_id, add_sync_in=True, add_sync_out=True)
-
+        radar_df = self._load_radar(subject_id, add_sync_in=False, add_sync_out=True)
+        radar_df = radar_df.droplevel(0, axis=1)
         # Synchronize the data
         synced_dataset = SyncedDataset(sync_type="m-sequence")
-        radars = [x for x in radar_df.columns if "rad" in x]
-        for radar in radars:
-            synced_dataset.add_dataset(
-                radar, radar_df[radar], sync_channel_name="Sync_In", sampling_rate=int(self.SAMPLING_RATE_RADAR)
-            )
-        synced_dataset.add_dataset("acq", ecg_df, sync_channel_name="sync", sampling_rate=self.SAMPLING_RATE_ACQ)
-        synced_dataset.resample_datasets(fs_out=self.SAMPLING_RATE_ACQ, method="static")
+        synced_dataset.add_dataset(
+            "radar", data=radar_df, sync_channel_name="Sync_Out", sampling_rate=self.SAMPLING_RATE_RADAR
+        )
+        synced_dataset.add_dataset("acq", data=ecg_df, sync_channel_name="sync", sampling_rate=self.SAMPLING_RATE_ACQ)
+        synced_dataset.resample_datasets(fs_out=1000, method="dynamic", wave_frequency=10)
         synced_dataset.align_and_cut_m_sequence(
-            primary="acq", reset_time_axis=False, cut_to_shortest=True, sync_params={"sync_region_samples": (0, 1000)}
+            primary="acq", reset_time_axis=False, cut_to_shortest=True, sync_params={"sync_region_samples": (0, 10000)}
         )
         df_dict = synced_dataset.datasets_aligned
         result_df = pd.concat(df_dict.values(), axis=1, keys=df_dict.keys())
-        multiindex = result_df.columns
-        keep_columns = [x for x in multiindex if "sync" not in x]
-        result_df = result_df.loc[:, keep_columns]
         return result_df

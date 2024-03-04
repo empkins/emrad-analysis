@@ -18,6 +18,7 @@ emd-signal = "^1.5.2"
 pywavelets = "^1.5.0"
 empkins-io = {git = "https://github.com/empkins/empkins-io.git"}
 jupyter = "^1.0.0"
+ipympl = "^0.9.3"
 
 [tool.poetry.group.dev.dependencies]
 black = "^23.11.0"
