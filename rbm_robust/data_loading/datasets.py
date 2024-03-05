@@ -17,6 +17,7 @@ class D02Dataset(Dataset):
 
     SAMPLING_RATE_ACQ = 2000
     SAMPLING_RATE_RADAR = 1953.125
+    SAMPLING_RATE_DOWNSAMPLED = 1000
     _CHANNEL_MAPPING = {
         "ECG": "ecg",
         "SyncSignal": "sync",
@@ -96,7 +97,7 @@ class D02Dataset(Dataset):
             raise ValueError("Data can only be accessed, when there is just a single participant in the dataset.")
 
         subject_id = self.subjects[0]
-        return self._load_ecg(subject_id)["ecg"]
+        return self._load_ecg(subject_id)
 
     @property
     def ecg_clean(self) -> pd.DataFrame:
@@ -140,7 +141,7 @@ class D02Dataset(Dataset):
             raise ValueError("Data can only be accessed, when there is just a single participant in the dataset.")
 
         subject_id = self.subjects[0]
-        return self._load_radar(subject_id)
+        return self._load_radar(subject_id, add_sync_out=True, add_sync_in=True)
 
     @lru_cache(maxsize=1)
     def _load_radar(self, subject_id: str, add_sync_in: bool = False, add_sync_out: bool = False) -> pd.DataFrame:
@@ -154,9 +155,8 @@ class D02Dataset(Dataset):
         """
         subject_path = self.data_path.joinpath(subject_id, "raw")
         h5_path = self._get_only_matching_file_path(subject_path, "h5")
-        dataset = EmradDataset.from_hd5_file(h5_path)
-        df = dataset.data_as_df(index="local_datetime", add_sync_in=add_sync_in, add_sync_out=add_sync_out)
-        return df
+        dataset = EmradDataset.from_hd5_file(h5_path, sampling_rate_hz=self.SAMPLING_RATE_RADAR)
+        return dataset.data_as_df(index="local_datetime", add_sync_in=add_sync_in, add_sync_out=add_sync_out)
 
     @staticmethod
     def _get_only_matching_file_path(path, file_type: str) -> str:
@@ -202,18 +202,26 @@ class D02Dataset(Dataset):
         ecg_df = self._load_ecg(subject_id)
 
         # Load the radar data
-        radar_df = self._load_radar(subject_id, add_sync_in=False, add_sync_out=True)
+        radar_df = self._load_radar(subject_id, add_sync_in=True, add_sync_out=False)
         radar_df = radar_df.droplevel(0, axis=1)
         # Synchronize the data
         synced_dataset = SyncedDataset(sync_type="m-sequence")
         synced_dataset.add_dataset(
-            "radar", data=radar_df, sync_channel_name="Sync_Out", sampling_rate=self.SAMPLING_RATE_RADAR
+            "radar", data=radar_df, sync_channel_name="Sync_In", sampling_rate=self.SAMPLING_RATE_RADAR
         )
-        synced_dataset.add_dataset("acq", data=ecg_df, sync_channel_name="sync", sampling_rate=self.SAMPLING_RATE_ACQ)
-        synced_dataset.resample_datasets(fs_out=1000, method="dynamic", wave_frequency=10)
+        synced_dataset.add_dataset("ecg", data=ecg_df, sync_channel_name="sync", sampling_rate=self.SAMPLING_RATE_ACQ)
+        synced_dataset.resample_datasets(fs_out=self.SAMPLING_RATE_DOWNSAMPLED, method="dynamic", wave_frequency=0.2)
         synced_dataset.align_and_cut_m_sequence(
-            primary="acq", reset_time_axis=False, cut_to_shortest=True, sync_params={"sync_region_samples": (0, 10000)}
+            primary="radar",
+            reset_time_axis=True,
+            cut_to_shortest=True,
+            sync_params={"sync_region_samples": (0, 100000), "sampling_rate": self.SAMPLING_RATE_DOWNSAMPLED},
         )
         df_dict = synced_dataset.datasets_aligned
         result_df = pd.concat(df_dict.values(), axis=1, keys=df_dict.keys())
+        result_df.columns = [
+            "".join(col).replace("aligned_", "") if col[1] != "ecg" else "ecg" for col in result_df.columns.values
+        ]
+        cols_to_drop = result_df.columns[result_df.columns.str.contains("sync", case=False)]
+        result_df = result_df.drop(columns=cols_to_drop)
         return result_df
