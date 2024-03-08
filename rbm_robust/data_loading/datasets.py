@@ -7,6 +7,7 @@ from empkins_io.sync import SyncedDataset
 from tpcp import Dataset
 import neurokit2 as nk
 from functools import lru_cache
+from emrad_toolbox.radar_preprocessing.radar import RadarPreprocessor
 
 
 class D02Dataset(Dataset):
@@ -115,6 +116,37 @@ class D02Dataset(Dataset):
         )
         return pd.DataFrame(ecg_clean, columns=["ecg_clean"], index=ecg_signal.index)
 
+    @property
+    def filtered_radar(self) -> pd.DataFrame:
+        if not (self.is_single(None) or (self.is_single(["participant"]))):
+            raise ValueError("Data can only be accessed, when there is just a single participant in the dataset.")
+        subject_id = self.subjects[0]
+        radar_df = self._load_radar(subject_id)
+        filtered_dict = RadarPreprocessor.butterworth_band_pass_filter(
+            radar_df["I"], radar_df["Q"], filter_cutoff=(18, 80)
+        )
+        for key, value in filtered_dict.items():
+            radar_df = pd.concat([radar_df, value], axis=1, keys=[key])
+        return radar_df
+
+    @property
+    def filtered_synced_radar(self) -> pd.DataFrame:
+        if not (self.is_single(None) or (self.is_single(["participant"]))):
+            raise ValueError("Data can only be accessed, when there is just a single participant in the dataset.")
+        radar_df = self.synced_data[["radar_I", "radar_Q"]]
+        filtered_dict = RadarPreprocessor.butterworth_band_pass_filter(
+            radar_df["radar_I"], radar_df["radar_Q"], filter_cutoff=(18, 80)
+        )
+        for key, value in filtered_dict.items():
+            radar_df = pd.concat([radar_df, value], axis=1, keys=[key])
+        return radar_df
+
+    @property
+    def synced_ecg(self) -> pd.DataFrame:
+        if not (self.is_single(None) or (self.is_single(["participant"]))):
+            raise ValueError("Data can only be accessed, when there is just a single participant in the dataset.")
+        return self.synced_data[["ecg"]]
+
     @lru_cache(maxsize=1)
     def _load_ecg(self, subject_id: str) -> pd.DataFrame:
         """
@@ -175,6 +207,17 @@ class D02Dataset(Dataset):
                 f"Multiple {file_type} files found in {path}. Are you sure you selected the correct folder?"
             )
         return matching_files[0]
+
+    @property
+    def synced_filtered_data(self) -> pd.DataFrame:
+        if not (self.is_single(None) or (self.is_single(["participant"]))):
+            raise ValueError("Data can only be accessed, when there is just a single participant in the dataset.")
+        synced_data = self.synced_data
+        filtered_dict = RadarPreprocessor.butterworth_band_pass_filter(
+            synced_data["radar_I"], synced_data["radar_Q"], filter_cutoff=(18, 80)
+        )
+        synced_data["Magnitude_band_pass"] = filtered_dict["Magnitude_band_pass"]
+        return synced_data
 
     @property
     def synced_data(self) -> pd.DataFrame:
