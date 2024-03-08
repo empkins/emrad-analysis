@@ -217,6 +217,8 @@ class D02Dataset(Dataset):
             synced_data["radar_I"], synced_data["radar_Q"], filter_cutoff=(18, 80)
         )
         synced_data["Magnitude_band_pass"] = filtered_dict["Magnitude_band_pass"]
+        synced_data["radar_I"] = filtered_dict["I_band_pass"]
+        synced_data["radar_Q"] = filtered_dict["Q_band_pass"]
         return synced_data
 
     @property
