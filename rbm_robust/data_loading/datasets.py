@@ -220,11 +220,14 @@ class D02Dataset(Dataset):
             raise ValueError("Data can only be accessed, when there is just a single participant in the dataset.")
         synced_data = self.synced_data
         filtered_dict = RadarPreprocessor.butterworth_band_pass_filter(
-            synced_data["radar_I"], synced_data["radar_Q"], filter_cutoff=(18, 80)
+            synced_data["radar_I"], synced_data["radar_Q"], filter_cutoff=(18, 80), fs=self.SAMPLING_RATE_DOWNSAMPLED
         )
         synced_data["Magnitude_band_pass"] = filtered_dict["Magnitude_band_pass"]
         synced_data["radar_I"] = filtered_dict["I_band_pass"]
         synced_data["radar_Q"] = filtered_dict["Q_band_pass"]
+        synced_data["Magnitude_Filtered_Envelope"] = RadarPreprocessor.envelope(
+            average_length=200, magnitude=synced_data["Magnitude_band_pass"]
+        )
         return synced_data
 
     @property
@@ -266,7 +269,7 @@ class D02Dataset(Dataset):
             primary="radar",
             reset_time_axis=True,
             cut_to_shortest=True,
-            sync_params={"sync_region_samples": (0, 100000), "sampling_rate": self.SAMPLING_RATE_DOWNSAMPLED},
+            sync_params={"sync_region_samples": (0, 1000000), "sampling_rate": self.SAMPLING_RATE_DOWNSAMPLED},
         )
         df_dict = synced_dataset.datasets_aligned
         result_df = pd.concat(df_dict.values(), axis=1, keys=df_dict.keys())
@@ -377,112 +380,78 @@ class RadarDatasetRaw(Dataset):
     @property
     def ecg(self) -> pd.DataFrame:
         """Returns a dataframe with the ECG data of a single phase or for one subject."""
-        subject_id = self.subjects[0]
-        if self.is_single(["Phase"]):
-            phase = self.index["Phase"][0]
-            return self._load_ecg(subject_id, phase)
-        elif self.is_single(["Subject"]) and self.groupby("Phase").shape[0] == len(self.PHASES):
-            return self._load_ecg(subject_id=subject_id, phase=None)
-
-        raise ValueError(
-            "Data can only be accessed for a single participant or a single phase "
-            "of one single participant in the subset"
-        )
-
-    def _load_ecg(self, subject_id: str, phase: Optional[str]) -> pd.DataFrame:
-        """Loads the ECG data of a single phase or for one subject."""
-        subject_str = "Subject_{}".format(subject_id)
-        edf_file = subject_str + ".edf"
-        edf_path = self.data_path / subject_str / edf_file
-        # Create PSG
-        channels = ["ECG II"]
-        df = PSGDataset.from_edf_file(edf_path, datastreams=channels).data_as_df(index="local_datetime")
-        return self.__cut_df(df=df, phase=phase, subject_id=subject_id)
+        ecg = self.synced_data
+        ecg = ecg[[("psg_aligned_", "ECG II")]]
+        ecg.columns = [col[1] for col in ecg.columns.values]
+        ecg.columns = ["ecg"]
+        return ecg
 
     @property
     def respiration(self) -> pd.DataFrame:
         """Returns a dataframe with the respiration data of a single phase or for one subject."""
-        subject_id = self.index["Subject"][0]
-        if self.is_single(["Phase"]):
-            phase = self.index["Phase"][0]
-            return self._load_respiration(subject_id, phase)
-        elif self.is_single(["Subject"]) and self.groupby("Phase").shape[0] == len(self.PHASES):
-            return self._load_respiration(subject_id=subject_id, phase=None)
+        # load all data
+        resp = self.synced_data
 
-        raise ValueError(
-            "Data can only be accessed for a single participant or a single phase "
-            "of one single participant in the subset"
-        )
+        # select only the respiration data
+        thorax = resp[("psg_aligned_", "RIP Thora")]
+        abdomen = resp[("psg_aligned_", "RIP Abdom")]
+        thorax = thorax.rename("thorax respiration")
+        abdomen = abdomen.rename("abdomen respiration")
+        # concat thorax and abdomen to one dataframe
+        resp = pd.concat([thorax, abdomen], axis=1)
 
-    def _load_respiration(self, subject_id: str, phase: Optional[str]) -> pd.DataFrame:
-        """Loads the ECG data of a single phase or for one subject."""
-        subject_str = "Subject_{}".format(subject_id)
-        edf_file = subject_str + ".edf"
-        edf_path = self.data_path / subject_str / edf_file
-        # Create PSG
-        channels = ["RIP Thora", "RIP Abdom"]
-        if not self.psg_dataset:
-            self.psg_dataset = PSGDataset.from_edf_file(edf_path, datastreams=channels)
-        df = self.psg_dataset.data_as_df(index="local_datetime")
-        return self.__cut_df(df=df, phase=phase, subject_id=subject_id)
+        return resp
 
     @property
     def radar_top(self) -> pd.DataFrame:
         """Returns a dataframe with the radar data of a single phase or for one subject."""
-        subject_id = self.index["Subject"][0]
-        if self.is_single(["Phase"]):
-            phase = self.index["Phase"][0]
-            return self._load_radar_top(subject_id, phase)
-        elif self.is_single(["Subject"]) and self.groupby("Phase").shape[0] == len(self.PHASES):
-            return self._load_radar_top(subject_id=subject_id, phase=None)
 
-        raise ValueError(
-            "Data can only be accessed for a single participant or a single phase "
-            "of one single participant in the subset"
+        # load all data
+        rad = self.synced_data
+
+        # select only the top radar data
+        first_level = ["radar_5_aligned_", "radar_6_aligned_", "radar_7_aligned_"]
+        second_level = ["I", "Q"]
+        multiindex = pd.MultiIndex.from_product([first_level, second_level])
+        rad = rad[multiindex]
+
+        # rename the columns
+        rad = rad.rename(
+            columns={"radar_5_aligned_": "rad5", "radar_6_aligned_": "rad6", "radar_7_aligned_": "rad7"}, level=0
         )
-
-    def _load_radar_top(self, subject_id: str, phase: Optional[str]) -> pd.DataFrame:
-        """Loads the radardata of a single phase or for one subject."""
-        # Create the dataframe for the whole recording
-        subject_str = "Subject_{}".format(subject_id)
-        radar_file = "data_{}.h5".format(subject_id)
-        h5_path = self.data_path / subject_str / radar_file
-        dataset = EmradDataset.from_hd5_file(h5_path)
-        df = dataset.data_as_df(index="local_datetime", add_sync_in=False, add_sync_out=False)
-        # Cut df to phase and return
-        return self.__cut_df(df=df, phase=phase, subject_id=subject_id)
+        rad.columns = ["_".join(col) for col in rad.columns.values]
+        return rad
 
     @property
     def radar_bottom(self) -> pd.DataFrame:
         """Returns a dataframe with the radar data of the four bottom sensors of a single phase or for one subject."""
-        subject_id = self.index["Subject"][0]
-        if self.is_single(["Phase"]):
-            phase = self.index["Phase"][0]
-            return self._load_radar_bottom(subject_id, phase)
-        elif self.is_single(["Subject"]) and self.groupby("Phase").shape[0] == len(self.PHASES):
-            return self._load_radar_bottom(subject_id=subject_id, phase=None)
 
-        raise ValueError(
-            "Data can only be accessed for a single participant or a single phase "
-            "of one single participant in the subset"
+        # load all data
+        rad = self.synced_data
+
+        # select only the radar data
+        first_level = ["radar_1_aligned_", "radar_2_aligned_", "radar_3_aligned_", "radar_4_aligned_"]
+        second_level = ["I", "Q"]
+        multiindex = pd.MultiIndex.from_product([first_level, second_level])
+        rad = rad[multiindex]
+
+        # rename the columns
+        rad = rad.rename(
+            columns={
+                "radar_1_aligned_": "rad1",
+                "radar_2_aligned_": "rad2",
+                "radar_3_aligned_": "rad3",
+                "radar_4_aligned_": "rad4",
+            },
+            level=0,
         )
 
-    def _load_radar_bottom(self, subject_id: str, phase: Optional[str]) -> pd.DataFrame:
-        """Loads the radardata of the four bottom sensors for a single phase or for one subject."""
-        # Create the dataframe for the whole recording
-        subject_str = "Subject_{}".format(subject_id)
-        radar_file = "data_{}-bett.h5".format(subject_id)
-        h5_path = self.data_path / subject_str / radar_file
-        dataset = EmradDataset.from_hd5_file(h5_path)
-        df = dataset.data_as_df(index="local_datetime", add_sync_in=False, add_sync_out=False)
-        # Cut df to phase and return
-        return self.__cut_df(df=df, phase=phase, subject_id=subject_id)
+        return rad
 
     @property
-    def synced_data(self, channels=None) -> pd.DataFrame:
+    def synced_data(self) -> pd.DataFrame:
         """Returns a dataframe with all datastreams of a single phase or for one subject."""
         subject_id = self.subjects[0]
-        result_df = None
         if self.is_single(["Phase"]):
             phase = self.index["Phase"][0]
             result_df = self._load_sync(subject_id, phase)
@@ -494,16 +463,9 @@ class RadarDatasetRaw(Dataset):
                 "Data can only be accessed for a single participant or a single phase "
                 "of one single participant in the subset"
             )
+        return result_df
 
-        if channels is None:
-            return result_df
-        elif isinstance(channels, str):
-            return result_df[channels]
-        elif isinstance(channels, list):
-            return result_df[channels]
-        else:
-            raise ValueError("channels must be either None, a string or a list of strings")
-
+    @lru_cache(maxsize=1)
     def _load_sync(self, subject_id: str, phase: Optional[str]) -> pd.DataFrame:
         """Loads the sync data of a single phase or for one subject."""
         subject_str = "Subject_{}".format(subject_id)
@@ -566,7 +528,7 @@ class RadarDatasetRaw(Dataset):
         # Resample and align datasets
         synced_dataset.resample_datasets(fs_out=self.SAMPLING_RATE_PSG, method="static")
         synced_dataset.align_and_cut_m_sequence(
-            primary="psg", reset_time_axis=False, cut_to_shortest=False, sync_params={"sync_region_samples": (0, 1000)}
+            primary="psg", reset_time_axis=True, cut_to_shortest=True, sync_params={"sync_region_samples": (0, 10000)}
         )
         df_dict = synced_dataset.datasets_aligned
 
@@ -579,30 +541,6 @@ class RadarDatasetRaw(Dataset):
 
         # Cut df to phase and return
         return self.__cut_df(df=result_df, phase=phase, subject_id=subject_id)
-
-    @property
-    def psg_channels(self) -> pd.DataFrame:
-        """Returns a dataframe with the channels of the PSG recording."""
-        subject_id = self.subjects[0]
-        if self.is_single(["Phase"]):
-            phase = self.index["Phase"][0]
-            return self._load_psg_channels(subject_id, phase)
-        elif self.is_single(["Subject"]) and self.groupby("Phase").shape[0] == len(self.PHASES):
-            return self._load_psg_channels(subject_id=subject_id, phase=None)
-
-        raise ValueError(
-            "Data can only be accessed for a single participant or a single phase "
-            "of one single participant in the subset"
-        )
-
-    def _load_psg_channels(self, subject_id: str, phase: Optional[str]) -> pd.DataFrame:
-        """Loads the channels of the PSG recording."""
-        subject_str = "Subject_{}".format(subject_id)
-        edf_file = subject_str + ".edf"
-        edf_path = self.data_path / subject_str / edf_file
-        # Create PSG
-        df = PSGDataset.from_edf_file(edf_path, datastreams=self.channels).data_as_df(index="local_datetime")
-        return self.__cut_df(df=df, phase=phase, subject_id=subject_id)
 
     def __get_csv_file(self, path: Path) -> Path:
         """

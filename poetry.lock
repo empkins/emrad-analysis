@@ -254,7 +254,7 @@ mne = ["mne (>=1.2.1,<2.0.0)"]
 type = "git"
 url = "https://github.com/mad-lab-fau/BioPsyKit.git"
 reference = "main"
-resolved_reference = "d5cf4035cb74e66fbde71b925ae05a8066f17e5a"
+resolved_reference = "8e2bdf55ba572661469515ccaf1d4904c4cb8083"
 
 [[package]]
 name = "bioread"
@@ -2199,6 +2199,31 @@ numpy = [
 dev = ["absl-py", "pyink", "pylint (>=2.6.0)", "pytest", "pytest-xdist"]
 
 [[package]]
+name = "mne"
+version = "1.4.0"
+description = "MNE-Python project for MEG and EEG data analysis."
+optional = false
+python-versions = ">=3.8"
+files = [
+    {file = "mne-1.4.0-py3-none-any.whl", hash = "sha256:34643c9d54b3ebc39085757067b5affb228027ef3253f23d1f5a3653017ec41c"},
+    {file = "mne-1.4.0.tar.gz", hash = "sha256:7834f5b79c2c9885ca601bbddd8db3c2b2f37c34443fc0caf0447751f6c37a2a"},
+]
+
+[package.dependencies]
+decorator = "*"
+jinja2 = "*"
+matplotlib = "*"
+numpy = ">=1.15.4"
+packaging = "*"
+pooch = ">=1.5"
+scipy = ">=1.6.3"
+tqdm = "*"
+
+[package.extras]
+hdf5 = ["h5io", "pymatreader"]
+test = ["EDFlib-Python", "black", "check-manifest", "codespell", "eeglabio", "imageio (>=2.6.1)", "imageio-ffmpeg (>=0.4.1)", "nbclient", "nitime", "numpydoc", "pre-commit", "pybv", "pytest", "pytest-cov", "pytest-harvest", "pytest-timeout", "ruff", "sphinx-gallery", "tomli", "twine", "wheel"]
+
+[[package]]
 name = "multiprocess"
 version = "0.70.16"
 description = "better multiprocessing and multithreading in Python"
@@ -2937,6 +2962,27 @@ tomli = ">=1.2.2"
 
 [package.extras]
 poetry-plugin = ["poetry (>=1.0,<2.0)"]
+
+[[package]]
+name = "pooch"
+version = "1.8.1"
+description = "\"Pooch manages your Python library's sample data files: it automatically downloads and stores them in a local directory, with support for versioning and corruption checks.\""
+optional = false
+python-versions = ">=3.7"
+files = [
+    {file = "pooch-1.8.1-py3-none-any.whl", hash = "sha256:6b56611ac320c239faece1ac51a60b25796792599ce5c0b1bb87bf01df55e0a9"},
+    {file = "pooch-1.8.1.tar.gz", hash = "sha256:27ef63097dd9a6e4f9d2694f5cfbf2f0a5defa44fccafec08d601e731d746270"},
+]
+
+[package.dependencies]
+packaging = ">=20.0"
+platformdirs = ">=2.5.0"
+requests = ">=2.19.0"
+
+[package.extras]
+progress = ["tqdm (>=4.41.0,<5.0.0)"]
+sftp = ["paramiko (>=2.7.0)"]
+xxhash = ["xxhash (>=1.4.3)"]
 
 [[package]]
 name = "pox"
@@ -4628,4 +4674,4 @@ testing = ["big-O", "jaraco.functools", "jaraco.itertools", "more-itertools", "p
 [metadata]
 lock-version = "2.0"
 python-versions = ">=3.9,<3.11"
-content-hash = "b5dd568b70be0dfa1275d7d4eaf8e4302e7d402defde921d4a24b3956538d353"
+content-hash = "d4b27de12aa074340acf9b4f53dcbfcad9575e46ec1819f2abf027406a8c7728"
