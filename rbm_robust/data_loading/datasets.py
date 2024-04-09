@@ -1,9 +1,13 @@
 from pathlib import Path
-from typing import Optional, Union, List
+from typing import Optional, Union, List, Tuple, Any, Dict
+
+import numpy as np
 from biopsykit.io.biopac import BiopacDataset
 import pandas as pd
 from empkins_io.sensors.emrad import EmradDataset
 from empkins_io.sync import SyncedDataset
+from rbm_robust.special_sync._sync import SyncedDatasetAltered
+from scipy.signal import periodogram, find_peaks
 from tpcp import Dataset
 import neurokit2 as nk
 from functools import lru_cache
@@ -243,57 +247,76 @@ class D02Dataset(Dataset):
         subject_id = self.subjects[0]
         return self._load_synced_data(subject_id)
 
-    def load_synced_window(self, start: str, stop: str):
+    @property
+    @lru_cache(maxsize=1)
+    def load_synced_window(self) -> pd.DataFrame:
         if not (self.is_single(None) or (self.is_single(["participant"]))):
             raise ValueError("Data can only be accessed, when there is just a single participant in the dataset.")
 
         subject_id = self.subjects[0]
+        return self._load_synced_data_windowed(subject_id)
 
-        ecg_df = self._load_ecg(subject_id).between_time(start, stop)
+    @lru_cache(maxsize=1)
+    def _load_synced_data_windowed(self, subject_id) -> pd.DataFrame:
+        ecg_df = self._load_ecg(subject_id)
 
         # Load the radar data
-        radar_df = self._load_radar(subject_id, add_sync_in=True, add_sync_out=False)  # .between_time(start, stop)
+        radar_df = self._load_radar(subject_id, add_sync_in=True, add_sync_out=False)
         radar_df = radar_df.droplevel(0, axis=1)
+
+        # Resample the data
+        synced = SyncedDataset(sync_type="m-sequence")
         # Synchronize the data
-        synced_dataset = SyncedDataset(sync_type="m-sequence")
-        synced_dataset.add_dataset(
-            "radar", data=radar_df, sync_channel_name="Sync_In", sampling_rate=self.SAMPLING_RATE_RADAR
-        )
-        synced_dataset.add_dataset(
-            "ecg", data=ecg_df, sync_channel_name="Sync_Out", sampling_rate=self.SAMPLING_RATE_ACQ
-        )
-        synced_dataset.resample_datasets(fs_out=self.SAMPLING_RATE_DOWNSAMPLED, method="dynamic", wave_frequency=0.2)
+        synced.add_dataset("radar", data=radar_df, sync_channel_name="Sync_In", sampling_rate=self.SAMPLING_RATE_RADAR)
+        synced.add_dataset("ecg", data=ecg_df, sync_channel_name="Sync_Out", sampling_rate=self.SAMPLING_RATE_ACQ)
+        synced.resample_datasets(fs_out=self.SAMPLING_RATE_DOWNSAMPLED, method="dynamic", wave_frequency=0.2)
 
-        # a = synced_dataset.datasets["ecg"]["data"].index.get_loc(start, method="nearest")
-        # sub_one = (
-        #     synced_dataset.datasets["ecg"]
-        #     .get("data_resampled", synced_dataset.datasets["ecg"].get("data"))
-        #     .between_time(start, stop)
-        # )
-        # start_index_one = sub_one.index[0]
-        # stop_index_one = sub_one.index[-1]
-        # start_index = synced_dataset.datasets["ecg"]["data"].index.get_loc(start_index_one, method="nearest")
-        # stop_index = synced_dataset.datasets["ecg"]["data"].index.get_loc(stop_index_one, method="nearest")
+        ecg_df = synced.datasets_resampled["ecg_resampled_"].copy()
+        radar_df = synced.datasets_resampled["radar_resampled_"].copy()
 
-        synced_dataset.align_datasets(
-            primary="ecg",
-            reset_time_axis=True,
-            cut_to_shortest=True,
-        )
-        # sync_params={"sync_region_samples": (0, len(ecg_df))},
-        #
-        #
-        # dict_shift = synced_dataset._find_shift(
-        #     primary="ecg_aligned_", sync_params={"sync_region_samples": (-100000, -1)}
-        # )
-        # synced_dataset.resample_sample_wise(primary="ecg_aligned_", dict_sample_shift=dict_shift)
-        df_dict = synced_dataset.datasets_aligned
-        result_df = pd.concat(df_dict.values(), axis=1, keys=df_dict.keys())
-        result_df.columns = [
-            "".join(col).replace("aligned_", "") if col[1] != "ecg" else "ecg" for col in result_df.columns.values
-        ]
-        # cols_to_drop = result_df.columns[result_df.columns.str.contains("sync", case=False)]
-        # result_df = result_df.drop(columns=cols_to_drop)
+        result_df = pd.DataFrame()
+
+        start_time = ecg_df.index[0]
+        end_time = ecg_df.index[-1]
+        window = timedelta(minutes=7)
+        while start_time < end_time:
+            start = start_time
+            stop = start_time + window
+            if stop > end_time:
+                stop = end_time
+            a = start.strftime("%H:%M:%S")
+            b = stop.strftime("%H:%M:%S")
+            ecg_df_window = ecg_df.between_time(a, b).copy()
+            radar_df_window = radar_df.between_time(a, b).copy()
+            synced_window = SyncedDataset(sync_type="m-sequence")
+            # Synchronize the data
+            synced_window.add_dataset(
+                "radar", data=radar_df_window, sync_channel_name="Sync_In", sampling_rate=self.SAMPLING_RATE_DOWNSAMPLED
+            )
+            synced_window.add_dataset(
+                "ecg", data=ecg_df_window, sync_channel_name="Sync_Out", sampling_rate=self.SAMPLING_RATE_DOWNSAMPLED
+            )
+            # synced_window.resample_datasets(fs_out=self.SAMPLING_RATE_DOWNSAMPLED, method="dynamic", wave_frequency=0.2)
+            synced_window.align_and_cut_m_sequence(
+                primary="ecg",
+                reset_time_axis=True,
+                cut_to_shortest=True,
+                sync_params={"sync_region_samples": (0, len(ecg_df_window))},
+            )
+            dict_shift = synced_window._find_shift(
+                primary="ecg_aligned_", sync_params={"sync_region_samples": (-len(ecg_df_window), -1)}
+            )
+            synced_window.resample_sample_wise(primary="ecg_aligned_", dict_sample_shift=dict_shift)
+            df_dict = synced_window.datasets_aligned
+            result_df_window = pd.concat(df_dict.values(), axis=1, keys=df_dict.keys())
+            result_df_window.columns = [
+                "".join(col).replace("aligned_", "") if col[1] != "ecg" else "ecg"
+                for col in result_df_window.columns.values
+            ]
+            result_df = pd.concat([result_df, result_df_window])
+            diff = RadarPreprocessor.check_sync(result_df["ecg_Sync_Out"], result_df["radar_Sync_In"])
+            print(f"Diff in Sync Signals: {diff}")
+            start_time = stop
         return result_df
 
     @lru_cache(maxsize=1)
@@ -324,14 +347,15 @@ class D02Dataset(Dataset):
             primary="ecg",
             reset_time_axis=True,
             cut_to_shortest=True,
-            sync_params={"sync_region_samples": (0, len(ecg_df))},
+            sync_params={"sync_region_samples": (0, 1000000)},
         )
         dict_shift = synced_dataset._find_shift(
-            primary="ecg_aligned_", sync_params={"sync_region_samples": (-len(ecg_df), -1)}
+            primary="ecg_aligned_", sync_params={"sync_region_samples": (-1000000, -1)}
         )
         synced_dataset.resample_sample_wise(primary="ecg_aligned_", dict_sample_shift=dict_shift)
         df_dict = synced_dataset.datasets_aligned
         result_df = pd.concat(df_dict.values(), axis=1, keys=df_dict.keys())
+        print(result_df.columns)
         result_df.columns = [
             "".join(col).replace("aligned_", "") if col[1] != "ecg" else "ecg" for col in result_df.columns.values
         ]
@@ -346,6 +370,24 @@ class RadarDatasetRaw(Dataset):
     POSITIONS = ["L", "0", "R"]
     POSTURES = ["1", "2", "3", "4", "5", "6"]
     MISSING = []
+    EXCLUDE_SUBJECTS = ("02", "03", "16", "17")
+    SYNCHRONIZABLE = {"19": 14, "20": 34, "21": 34}
+    START_TIMES = {
+        "04": "12:27:14",
+        "06": "13:19:26",
+        # "07": "11:23:53",
+        "08": "14:35:07",
+        "09": "10:43:05",
+        "10": "10:14:21",
+        "11": "11:39:40",
+        "12": "14:57:30",
+        "13": "14:15:50",
+        "14": "16:02:00",
+        "15": "10:21:35",
+        "19": "17:15:28",
+        "20": "12:42:39",
+        "21": "15:50:38",
+    }
 
     def __init__(
         self,
@@ -356,7 +398,7 @@ class RadarDatasetRaw(Dataset):
         subset_index: Optional[pd.DataFrame] = None,
     ):
         self.data_path = data_path
-        self.channels = ["AUX", "ECG II", "RIP Thora", "RIP Abdom"]
+        self.channels = ["AUX", "ECG II"]
         self.exclude_missing = exclude_missing
         self.PHASES = [
             f"{position} + {posture}" for position, posture in itertools.product(self.POSITIONS, self.POSTURES)
@@ -373,6 +415,7 @@ class RadarDatasetRaw(Dataset):
             print("Incomplete Subjects included, watch out for missing datastreams")
 
         index = list(itertools.product(participant_ids, self.PHASES))
+        index = [x for x in index if x[0] not in self.EXCLUDE_SUBJECTS]
         # set locale to german to get correct date format
         # locale.setlocale(locale.LC_ALL, "de_DE")
         df = pd.DataFrame(
@@ -509,6 +552,8 @@ class RadarDatasetRaw(Dataset):
     def synced_data(self) -> pd.DataFrame:
         """Returns a dataframe with all datastreams of a single phase or for one subject."""
         subject_id = self.subjects[0]
+        if subject_id == "20" or subject_id == "21" or subject_id == "19":
+            return self._load_special_sync(subject_id, phase=None)
         if self.is_single(["Phase"]):
             phase = self.index["Phase"][0]
             result_df = self._load_sync(subject_id, phase)
@@ -522,10 +567,105 @@ class RadarDatasetRaw(Dataset):
             )
         return result_df
 
-    lru_cache(maxsize=1)
+    @property
+    def ecg_unsynced_uncut(self) -> pd.DataFrame:
+        """Returns a dataframe with the ECG data of a single phase or for one subject."""
+        subject_id = self.subjects[0]
+        subject_str = "Subject_{}".format(subject_id)
+        edf_file = subject_str + ".edf"
+        edf_path = self.data_path / subject_str / edf_file
 
-    def _load_sync(self, subject_id: str, phase: Optional[str]) -> pd.DataFrame:
-        """Loads the sync data of a single phase or for one subject."""
+        # Create PSG Dataframe
+        df = PSGDataset.from_edf_file(edf_path, datastreams=self.channels).data_as_df(index="local_datetime")
+        df.rename(columns={"AUX": "Sync_Out"}, inplace=True)
+        return df
+
+    @property
+    def freq_cut(self):
+        df = self.ecg_raw
+        sync_abs = np.abs(np.ediff1d(df["Sync_Out"]))
+        fs = 256
+        fft_sync, psd_sync = periodogram(sync_abs, fs=fs, window="hamming")
+        psd_sync = SyncedDataset()._normalize_signal(psd_sync)
+
+        idx_peak = find_peaks(psd_sync, height=0.5)[0][0]
+        freq_sync = fft_sync[idx_peak]
+        return freq_sync
+
+    @property
+    def freq_uncut(self):
+        df = self.ecg_unsynced_uncut
+        sync_abs = np.abs(np.ediff1d(df["Sync_Out"]))
+        fs = 256
+        fft_sync, psd_sync = periodogram(sync_abs, fs=fs, window="hamming")
+        psd_sync = SyncedDataset()._normalize_signal(psd_sync)
+
+        idx_peak = find_peaks(psd_sync, height=0.5)[0][0]
+        freq_sync = fft_sync[idx_peak]
+        return freq_sync
+
+    @property
+    def radar_1_bottom(self):
+        """Returns a dataframe with the radar data of the first bottom sensor downsampled to 1000 Hz."""
+        subject_id = self.subjects[0]
+        subject_str = "Subject_{}".format(subject_id)
+        radar_bottom_file = "data_{}-bett.h5".format(subject_id)
+
+        # construct paths to data files
+        radar_bottom_path = self.data_path / subject_str / radar_bottom_file
+
+        # Create Radar Datasets
+        radar_bottom_dataset = EmradDataset.from_hd5_file(radar_bottom_path)
+
+        # Create Radar Dataframes
+        radar_bottom_df = radar_bottom_dataset.data_as_df(index="local_datetime", add_sync_in=True, add_sync_out=True)
+        # convert all NAN to zeroes
+        radar_bottom_df = radar_bottom_df.fillna(0)
+
+        # convert multicoloum from radar Sync_In and Sync_out to integer instead of float because some channels use float and some use integer
+        for i in range(1, 4):
+            if ("rad" + str(i), "Sync_In") not in radar_bottom_df.columns:
+                continue
+            radar_bottom_df[("rad" + str(i), "Sync_In")] = radar_bottom_df[("rad" + str(i), "Sync_In")].astype(int)
+            radar_bottom_df[("rad" + str(i), "Sync_Out")] = radar_bottom_df[("rad" + str(i), "Sync_Out")].astype(int)
+
+        radar_df = radar_bottom_df["rad1"]
+        return radar_df
+
+    @property
+    def radar_1_downsampled(self) -> pd.DataFrame:
+        """Returns a dataframe with the radar data of the first bottom sensor downsampled to 1000 Hz."""
+        subject_id = self.subjects[0]
+        subject_str = "Subject_{}".format(subject_id)
+        radar_top_file = "data_{}.h5".format(subject_id)
+        radar_bottom_file = "data_{}-bett.h5".format(subject_id)
+
+        # construct paths to data files
+        radar_top_path = self.data_path / subject_str / radar_top_file
+
+        # Create Radar Datasets
+        radar_top_dataset = EmradDataset.from_hd5_file(radar_top_path)
+
+        # Create Radar Dataframes
+        radar_top_df = radar_top_dataset.data_as_df(index="local_datetime", add_sync_in=True, add_sync_out=True)
+        # convert all NAN to zeroes
+        radar_top_df = radar_top_df.fillna(0)
+
+        # convert multicoloum from radar Sync_In and Sync_out to integer instead of float because some channels use float and some use integer
+        for i in range(1, 4):
+            radar_top_df[("rad" + str(i), "Sync_In")] = radar_top_df[("rad" + str(i), "Sync_In")].astype(int)
+            radar_top_df[("rad" + str(i), "Sync_Out")] = radar_top_df[("rad" + str(i), "Sync_Out")].astype(int)
+
+        radar_df = radar_top_df["rad1"]
+        synced_dataset = SyncedDataset(sync_type="m-sequence")
+        synced_dataset.add_dataset(
+            "radar_1", data=radar_df, sync_channel_name="Sync_In", sampling_rate=self.SAMPLING_RATE_RADAR
+        )
+        synced_dataset.resample_datasets(fs_out=256, method="dynamic", wave_frequency=250)
+        return synced_dataset.datasets_resampled["radar_1_resampled_"]
+
+    @lru_cache(maxsize=1)
+    def _load_special_sync(self, subject_id: str, phase: Optional[str]) -> pd.DataFrame:
         subject_str = "Subject_{}".format(subject_id)
         edf_file = subject_str + ".edf"
         radar_top_file = "data_{}.h5".format(subject_id)
@@ -547,22 +687,37 @@ class RadarDatasetRaw(Dataset):
         radar_bottom_df = radar_bottom_df.fillna(0)
         radar_top_df = radar_top_df.fillna(0)
 
-        # convert multicoloum from radar Sync_In and Sync_out to integer instead of float because some channels use float and some use integer
+        # Create PSG Dataframe
+        df = PSGDataset.from_edf_file(edf_path, datastreams=self.channels).data_as_df(index="local_datetime")
+        df.rename(columns={"AUX": "Sync_Out"}, inplace=True)
+        change_start_time = subject_id in self.START_TIMES.keys()
+        if change_start_time:
+            print(f"Before cutting {len(df.index)}")
+            df = df.between_time(self.START_TIMES[subject_id], df.index[-1].strftime("%H:%M:%S")).copy()
+            print(f"After cutting {len(df.index)}")
+        # # convert multicoloum from radar Sync_In and Sync_out to integer instead of float because some channels use float and some use integer
         for i in range(1, 5):
             radar_bottom_df[("rad" + str(i), "Sync_In")] = radar_bottom_df[("rad" + str(i), "Sync_In")].astype(int)
             radar_bottom_df[("rad" + str(i), "Sync_Out")] = radar_bottom_df[("rad" + str(i), "Sync_Out")].astype(int)
+            if change_start_time:
+                radar_bottom_df = radar_bottom_df.between_time(
+                    self.START_TIMES[subject_id], radar_bottom_df.index[-1].strftime("%H:%M:%S")
+                ).copy()
         for i in range(1, 4):
             radar_top_df[("rad" + str(i), "Sync_In")] = radar_top_df[("rad" + str(i), "Sync_In")].astype(int)
             radar_top_df[("rad" + str(i), "Sync_Out")] = radar_top_df[("rad" + str(i), "Sync_Out")].astype(int)
+            if change_start_time:
+                radar_top_df = radar_top_df.between_time(
+                    self.START_TIMES[subject_id], radar_top_df.index[-1].strftime("%H:%M:%S")
+                ).copy()
 
-        # Create PSG Dataframe
-        df = PSGDataset.from_edf_file(edf_path, datastreams=self.channels).data_as_df(index="local_datetime")
-        df = RadarDatasetRaw._reduce_df(df, "AUX")
-        df.rename(columns={"AUX": "Sync_Out"}, inplace=True)
         # Create and fill Synced Dataset
         synced_dataset = SyncedDataset(sync_type="m-sequence")
         synced_dataset.add_dataset(
-            "radar_1", data=radar_bottom_df["rad1"], sync_channel_name="Sync_In", sampling_rate=self.SAMPLING_RATE_RADAR
+            "radar_1",
+            data=radar_bottom_df["rad1"],
+            sync_channel_name="Sync_In",
+            sampling_rate=self.SAMPLING_RATE_RADAR,
         )
         synced_dataset.add_dataset(
             "radar_2", data=radar_bottom_df["rad2"], sync_channel_name="Sync_In", sampling_rate=self.SAMPLING_RATE_RADAR
@@ -583,8 +738,12 @@ class RadarDatasetRaw(Dataset):
             "radar_7", data=radar_top_df["rad3"], sync_channel_name="Sync_In", sampling_rate=self.SAMPLING_RATE_RADAR
         )
         synced_dataset.add_dataset("psg", data=df, sync_channel_name="Sync_Out", sampling_rate=self.SAMPLING_RATE_PSG)
+
         # Resample and align datasets
-        synced_dataset.resample_datasets(fs_out=self.SAMPLING_RATE_PSG, method="static")
+
+        wave_freq = 14 if subject_id == "19" else 34
+
+        synced_dataset.resample_datasets(fs_out=256, method="dynamic", wave_frequency=wave_freq)
         synced_dataset.align_and_cut_m_sequence(
             primary="psg",
             reset_time_axis=True,
@@ -606,6 +765,445 @@ class RadarDatasetRaw(Dataset):
 
         # Cut df to phase and return
         return self.__cut_df(df=result_df, phase=phase, subject_id=subject_id)
+
+    def _normalize_signal(cls, data: Union[pd.DataFrame, np.ndarray]) -> pd.DataFrame:
+        return (data - np.min(data)) / (np.max(data) - np.min(data))
+
+    def _determine_actual_sampling_rate_hack(self, dataset: Dict[str, Any], **kwargs):
+        wave_frequency = kwargs.get("wave_frequency", None)
+        data = dataset["data"]
+        sync_channel = dataset["sync_channel"]
+        fs = dataset["sampling_rate"]
+        # sync_abs = np.abs(np.ediff1d(data[sync_channel]))
+        sync_abs = data[sync_channel]
+        print(fs)
+        print(len(np.where(sync_abs == 1)[0]))
+        fft_sync, psd_sync = periodogram(sync_abs, fs=fs, window="hamming")
+        psd_sync = self._normalize_signal(psd_sync)
+
+        # TODO: change to peak with highest amplitude instead of first peak (argmax)
+        # idx_peak = find_peaks(psd_sync, height=0.5)[0][0]
+        idx_peak = np.argmax(find_peaks(psd_sync, height=0.5)[0])
+
+        print(f"Max Peak at {idx_peak}")
+        print(fft_sync[find_peaks(psd_sync, height=0.5)[0]])
+        freq_sync = fft_sync[idx_peak]
+
+        print(wave_frequency)
+        print(freq_sync)
+        fs_measured = (wave_frequency / freq_sync) * fs
+        print(f"Measured sampling rate: {fs_measured}")
+        print(f"Sync frequency: {freq_sync}")
+
+        return fft_sync, psd_sync
+
+    @lru_cache(maxsize=1)
+    def _load_sync(self, subject_id: str, phase: Optional[str]) -> pd.DataFrame:
+        """Loads the sync data of a single phase or for one subject."""
+        subject_str = "Subject_{}".format(subject_id)
+        edf_file = subject_str + ".edf"
+        radar_top_file = "data_{}.h5".format(subject_id)
+        radar_bottom_file = "data_{}-bett.h5".format(subject_id)
+
+        # construct paths to data files
+        edf_path = self.data_path / subject_str / edf_file
+        radar_top_path = self.data_path / subject_str / radar_top_file
+        radar_bottom_path = self.data_path / subject_str / radar_bottom_file
+
+        # Create Radar Datasets
+        radar_bottom_dataset = EmradDataset.from_hd5_file(radar_bottom_path)
+        radar_top_dataset = EmradDataset.from_hd5_file(radar_top_path)
+
+        # Create Radar Dataframes
+        radar_bottom_df = radar_bottom_dataset.data_as_df(index="local_datetime", add_sync_in=True)
+        radar_top_df = radar_top_dataset.data_as_df(index="local_datetime", add_sync_in=True)
+        # convert all NAN to zeroes
+        radar_bottom_df = radar_bottom_df.fillna(0)
+        radar_top_df = radar_top_df.fillna(0)
+
+        # Create PSG Dataframe
+        df = PSGDataset.from_edf_file(edf_path, datastreams=self.channels).data_as_df(index="local_datetime")
+        df.rename(columns={"AUX": "Sync_Out"}, inplace=True)
+        change_start_time = subject_id in self.START_TIMES.keys()
+        if change_start_time:
+            # df = df.between_time("11:24", "12:06")
+            df = df.between_time(self.START_TIMES[subject_id], df.index[-1].strftime("%H:%M:%S")).copy()
+
+        # convert multicoloum from radar Sync_In and Sync_out to integer instead of float because some channels use float and some use integer
+        for i in range(1, 5):
+            radar_bottom_df[("rad" + str(i), "Sync_In")] = radar_bottom_df[("rad" + str(i), "Sync_In")].astype(int)
+            # radar_bottom_df[("rad" + str(i), "Sync_Out")] = radar_bottom_df[("rad" + str(i), "Sync_Out")].astype(int)
+            if change_start_time:
+                radar_bottom_df = radar_bottom_df.between_time(
+                    self.START_TIMES[subject_id], radar_bottom_df.index[-1].strftime("%H:%M:%S")
+                ).copy()
+
+        for i in range(1, 4):
+            radar_top_df[("rad" + str(i), "Sync_In")] = radar_top_df[("rad" + str(i), "Sync_In")].astype(int)
+            # radar_top_df[("rad" + str(i), "Sync_Out")] = radar_top_df[("rad" + str(i), "Sync_Out")].astype(int)
+            if change_start_time:
+                radar_top_df = radar_top_df.between_time(
+                    self.START_TIMES[subject_id], radar_top_df.index[-1].strftime("%H:%M:%S")
+                ).copy()
+
+        df = self._cut_to_first_switch(df, "Sync_Out")
+
+        # TODO: Take the first radar data of the bottom sensor and use it as a seperate dataset
+        radar_bottom_first = radar_bottom_df["rad1"]
+
+        radar_bottom_first = self._cut_to_first_switch(radar_bottom_first, "Sync_In")
+        # Reset Time Axis
+        radar_bottom_first.index = radar_bottom_first.index - radar_bottom_first.index[0] + df.index[0]
+
+        # radar_bottom_first.index = pd.to_timedelta(radar_bottom_first.index - radar_bottom_first.index[0])
+        # radar_bottom_first.index = df.index[0] + radar_bottom_first.index
+
+        # radar_bottom_df = self._cut_to_first_switch(radar_bottom_df, "Sync_In")
+        # radar_bottom_df.index = pd.to_timedelta(radar_bottom_df.index - radar_bottom_df.index[0])
+        # radar_bottom_df.index = df.index[0] + radar_bottom_df.index
+        # radar_top_df = self._cut_to_first_switch(radar_top_df, "Sync_In")
+
+        # TODO: Erst die Daten cutten auf das Erscheinen der ersten Null und dann bei einem Datensatz den Timeindex
+        #   von einem Datensatz zu einem Timedelta Index ändern und dann die Daten zusammenfügen und wieder auf die
+        #   gemeinsame Zeitachse resamplen
+
+        # TODO: Hier erst mal Plotten und prüfen ob beide zur selben Zeit anfangen
+
+        # Create and fill Synced Dataset
+        synced = SyncedDatasetAltered(sync_type="m-sequence")
+        synced.add_dataset("psg", data=df, sync_channel_name="Sync_Out", sampling_rate=self.SAMPLING_RATE_PSG)
+        synced.add_dataset(
+            "radar_1",
+            data=radar_bottom_first,
+            sync_channel_name="Sync_In",
+            sampling_rate=self.SAMPLING_RATE_RADAR,
+        )
+
+        # synced.add_dataset(
+        #     "radar_2", data=radar_bottom_df["rad2"], sync_channel_name="Sync_In", sampling_rate=self.SAMPLING_RATE_RADAR
+        # )
+        # synced.add_dataset(
+        #     "radar_3", data=radar_bottom_df["rad3"], sync_channel_name="Sync_In", sampling_rate=self.SAMPLING_RATE_RADAR
+        # )
+        # synced.add_dataset(
+        #     "radar_4", data=radar_bottom_df["rad4"], sync_channel_name="Sync_In", sampling_rate=self.SAMPLING_RATE_RADAR
+        # )
+        # synced.add_dataset(
+        #     "radar_5", data=radar_top_df["rad1"], sync_channel_name="Sync_In", sampling_rate=self.SAMPLING_RATE_RADAR
+        # )
+        # synced.add_dataset(
+        #     "radar_6", data=radar_top_df["rad2"], sync_channel_name="Sync_In", sampling_rate=self.SAMPLING_RATE_RADAR
+        # )
+        # synced.add_dataset(
+        #     "radar_7", data=radar_top_df["rad3"], sync_channel_name="Sync_In", sampling_rate=self.SAMPLING_RATE_RADAR
+        # )
+        # Resample and align datasets
+        synced.resample_datasets(fs_out=256, method="dynamic", wave_frequency=250)
+        synced.align_and_cut_m_sequence(
+            primary="radar_1",
+            reset_time_axis=True,
+            cut_to_shortest=True,
+            sync_params={"sync_region_samples": (0, 100000)},
+        )
+        dict_shift = synced._find_shift(primary="psg_aligned_", sync_params={"sync_region_samples": (-100000, -1)})
+        synced.resample_sample_wise(primary="psg_aligned_", dict_sample_shift=dict_shift)
+        df_dict = synced.datasets_aligned
+
+        # concat all dataframes to one
+        result_df = pd.concat(df_dict.values(), axis=1, keys=df_dict.keys())
+        # delete sync coloums
+        multiindex = result_df.columns
+        keep_columns = ~multiindex.get_level_values(1).str.contains("asd;lkfja;s")
+        result_df = result_df.loc[:, keep_columns]
+
+        # Cut df to phase and return
+        return self.__cut_df(df=result_df, phase=phase, subject_id=subject_id)
+
+    def _cut_to_first_switch(self, df: pd.DataFrame, sync_column: str) -> pd.DataFrame:
+        """Cuts the dataframe to the first switch of the sync signal."""
+        if isinstance(df.columns, pd.MultiIndex):
+            # Do the same as in the else branch but for all Multiindex columns that contain the sync_column
+            sync_columns = [col for col in df.columns if sync_column in col]
+            first_switch = max([(df[sync] == 1).idxmax() for sync in sync_columns])
+            # first_switch = max([[df[sync][df[sync]].diff() != 0][0].index[0] for sync in sync_columns])
+            return df.loc[first_switch:]
+        else:
+            sync_signal = df[sync_column]
+            if sync_column != "Sync_In":
+                sync_signal = 0.5 * (np.sign(sync_signal - np.mean(sync_signal)) + 1)
+            first_switch = sync_signal[sync_signal != 0].index[0]
+            index_pos = df.index.get_loc(first_switch)
+            first_switch = df.index[index_pos - 1]
+            return df.loc[first_switch:]
+
+    @property
+    def radar_1_cut_and_reset(self):
+        df = self.radar_1_bottom
+        subject_id = self.subjects[0]
+        if subject_id in self.START_TIMES.keys():
+            df = df.between_time(self.START_TIMES[subject_id], df.index[-1].strftime("%H:%M:%S"))
+        if subject_id == "04":
+            df = df.between_time(self.START_TIMES[subject_id], "13:10:50")
+        df = self._cut_to_first_switch(df, "Sync_In")
+        df.index = df.index - df.index[0] + self.psg_cut.index[0]
+        return df
+
+    @property
+    @lru_cache(maxsize=1)
+    def psg_cut(self):
+        subject_id = self.subjects[0]
+        df = self.ecg_raw
+        if subject_id in self.START_TIMES.keys():
+            df = df.between_time(self.START_TIMES[subject_id], df.index[-1].strftime("%H:%M:%S"))
+        if subject_id == "04":
+            df = df.between_time(self.START_TIMES[subject_id], "13:10:50")
+        if subject_id == "10":
+            df = df.between_time(self.START_TIMES[subject_id], "11:01:53")
+        df = self._cut_to_first_switch(df, "Sync_Out")
+        return df
+
+    @property
+    def psg_cut_binarized(self):
+        df = self.psg_cut.copy()
+        df["Sync_Out_Bin"] = 0.5 * (np.sign(df["Sync_Out"] - np.mean(df["Sync_Out"])) + 1)
+        return df
+
+    @property
+    def psg_cut_resampled(self):
+        df = self.psg_cut
+
+        sync = SyncedDataset(sync_type="m-sequence")
+        sync.add_dataset(name="psg", data=df, sync_channel_name="Sync_Out", sampling_rate=self.SAMPLING_RATE_PSG)
+        sync.resample_datasets(fs_out=100, method="dynamic", wave_frequency=2)
+
+        return sync.datasets_resampled["psg_resampled_"]
+
+    @property
+    def radar_cut_reset_resampled(self):
+        df = self.radar_1_cut_and_reset
+        sync = SyncedDatasetAltered(sync_type="m-sequence")
+        sync.add_dataset(name="radar_1", data=df, sync_channel_name="Sync_In", sampling_rate=self.SAMPLING_RATE_RADAR)
+        sync.resample_datasets(fs_out=100, method="dynamic", wave_frequency=250)
+        return sync.datasets_resampled["radar_1_resampled_"]
+
+    @property
+    def wave_freq_psg_uncut(self):
+        # wave_frequency = kwargs.get("wave_frequency", None)
+        data = self.ecg_raw
+        sync_channel = "Sync_Out"
+        fs = 256
+        if "ECG II" in data.columns:
+            binarized = 0.5 * (np.sign(data[sync_channel] - np.mean(data[sync_channel])) + 1)
+            sync_abs = np.abs(np.ediff1d(binarized))
+        else:
+            sync_abs = np.abs(np.ediff1d(data[sync_channel]))
+        fft_sync, psd_sync = periodogram(sync_abs, fs=fs, window="hamming")
+        psd_sync = self._normalize_signal(psd_sync)
+
+        idx_peak = np.argmax(psd_sync)
+        freq_sync = fft_sync[idx_peak]
+        return freq_sync
+
+    @property
+    def wave_freq_psg_cut(self):
+        # wave_frequency = kwargs.get("wave_frequency", None)
+        data = self.psg_cut
+        sync_channel = "Sync_Out"
+        fs = 256
+        if "ECG II" in data.columns:
+            binarized = 0.5 * (np.sign(data[sync_channel] - np.mean(data[sync_channel])) + 1)
+            sync_abs = np.abs(np.ediff1d(binarized))
+        else:
+            sync_abs = np.abs(np.ediff1d(data[sync_channel]))
+        fft_sync, psd_sync = periodogram(sync_abs, fs=fs, window="hamming")
+        psd_sync = self._normalize_signal(psd_sync)
+
+        idx_peak = np.argmax(psd_sync)
+        freq_sync = fft_sync[idx_peak]
+        return freq_sync
+
+    @property
+    def test_sync(self):
+        psg = self.psg_cut
+        radar = self.radar_1_cut_and_reset
+
+        # Create and fill Synced Dataset
+        synced = SyncedDatasetAltered(sync_type="m-sequence")
+        synced.add_dataset(name="psg", data=psg, sync_channel_name="Sync_Out", sampling_rate=self.SAMPLING_RATE_PSG)
+        synced.add_dataset(
+            name="radar_1", data=radar, sync_channel_name="Sync_In", sampling_rate=self.SAMPLING_RATE_RADAR
+        )
+        # Resample
+        synced.resample_datasets(fs_out=256, method="dynamic", wave_frequency=250)
+        # Align
+        synced.align_and_cut_m_sequence(
+            primary="psg",
+            reset_time_axis=True,
+            cut_to_shortest=True,
+        )
+        dict_shift = synced._find_shift(primary="psg_aligned_", sync_params={"sync_region_samples": (-100000, -1)})
+        synced.resample_sample_wise(primary="psg_aligned_", dict_sample_shift=dict_shift)
+        df_dict = synced.datasets_aligned
+        result_df = pd.concat(df_dict.values(), axis=1, keys=df_dict.keys())
+        multiindex = result_df.columns
+        keep_columns = ~multiindex.get_level_values(1).str.contains("asd;lkfja;s")
+        result_df = result_df.loc[:, keep_columns]
+        return result_df
+
+    @property
+    @lru_cache(maxsize=1)
+    def radar_raw(self):
+        subject_id = self.subjects[0]
+        subject_str = "Subject_{}".format(subject_id)
+        radar_bottom_file = "data_{}-bett.h5".format(subject_id)
+        radar_bottom_path = self.data_path / subject_str / radar_bottom_file
+        radar_bottom_dataset = EmradDataset.from_hd5_file(radar_bottom_path)
+        df = radar_bottom_dataset.data_as_df(index="local_datetime", add_sync_in=True, add_sync_out=True)
+        return df
+
+    @property
+    def ecg_sampling_rate(self) -> float:
+        """Returns the sampling rate of the ECG data."""
+        subject_id = self.subjects[0]
+        subject_str = "Subject_{}".format(subject_id)
+        edf_file = subject_str + ".edf"
+        edf_path = self.data_path / subject_str / edf_file
+
+        # Create PSG Dataframe
+        psg = PSGDataset.from_edf_file(edf_path, datastreams=self.channels)
+        return psg.sampling_rate
+
+    @property
+    def radar_sampling_rate(self) -> tuple[float | Any, float | Any, Any, Any]:
+        """Returns the sampling rate of the radar data."""
+        subject_id = self.subjects[0]
+        subject_str = "Subject_{}".format(subject_id)
+        radar_bottom_file = "data_{}-bett.h5".format(subject_id)
+        radar_top_file = "data_{}.h5".format(subject_id)
+        radar_top_path = self.data_path / subject_str / radar_top_file
+
+        radar_bottom_path = self.data_path / subject_str / radar_bottom_file
+        radar_bottom_dataset = EmradDataset.from_hd5_file(radar_bottom_path)
+        radar_top_dataset = EmradDataset.from_hd5_file(radar_top_path)
+
+        df_bottom = radar_bottom_dataset.data_as_df(index="local_datetime", add_sync_in=True, add_sync_out=True)
+        df_top = radar_top_dataset.data_as_df(index="local_datetime", add_sync_in=True, add_sync_out=True)
+
+        total_seconds_bottom = (df_bottom.index[-1] - df_bottom.index[0]).total_seconds()
+        freq_bottom = len(df_bottom) / total_seconds_bottom
+
+        total_seconds_top = (df_top.index[-1] - df_top.index[0]).total_seconds()
+        freq_top = len(df_top) / total_seconds_top
+
+        nan_count_bottom = df_bottom.isna().sum().sum()
+        nan_count_top = df_top.isna().sum().sum()
+        return freq_bottom, freq_top, nan_count_bottom, nan_count_top
+
+    @property
+    @lru_cache(maxsize=1)
+    def radar_cut(self) -> pd.DataFrame:
+        """Like radar raw but it has been cut"""
+        subject_id = self.subjects[0]
+        df = self.radar_raw
+        if subject_id in self.START_TIMES.keys():
+            df = df.between_time(self.START_TIMES[subject_id], df.index[-1].strftime("%H:%M:%S"))
+        return df
+
+    @property
+    @lru_cache(maxsize=1)
+    def ecg_cut(self):
+        """Like ecg_raw but it has been cut"""
+        subject_id = self.subjects[0]
+        df = self.ecg_raw
+        if subject_id in self.START_TIMES.keys():
+            df = df.between_time(self.START_TIMES[subject_id], df.index[-1].strftime("%H:%M:%S"))
+        return df
+
+    @property
+    @lru_cache(maxsize=1)
+    def ecg_raw(self):
+        subject_id = self.subjects[0]
+        subject_str = "Subject_{}".format(subject_id)
+        edf_file = subject_str + ".edf"
+        edf_path = self.data_path / subject_str / edf_file
+
+        # Create PSG Dataframe
+        df = PSGDataset.from_edf_file(edf_path, datastreams=self.channels).data_as_df(index="local_datetime")
+        df.rename(columns={"AUX": "Sync_Out"}, inplace=True)
+
+        return df
+
+    @property
+    def ecg_available_channels(self) -> List[str]:
+        subject_id = self.subjects[0]
+        subject_str = "Subject_{}".format(subject_id)
+        edf_file = subject_str + ".edf"
+        edf_path = self.data_path / subject_str / edf_file
+
+        # Create PSG Dataframe
+        psg = PSGDataset.from_edf_file(edf_path)
+        return psg.channels
+
+    @property
+    def ecg_raw_wave_freq(self):
+        df = self.ecg_raw
+        sync_abs = np.abs(np.ediff1d(df["Sync_Out"]))
+        fs = 256
+        fft_sync, psd_sync = periodogram(sync_abs, fs=fs, window="hamming")
+        psd_sync = SyncedDataset()._normalize_signal(psd_sync)
+
+        idx_peak = find_peaks(psd_sync, height=0.5)[0][0]
+        freq_sync = fft_sync[idx_peak]
+        return freq_sync
+
+    @property
+    def ecg_wave_freq_middle_part(self):
+        df = self.ecg_cut
+        start = df.index[0] + timedelta(minutes=20)
+        end = start + timedelta(minutes=10)
+
+        start_time_str = start.strftime("%H:%M:%S")
+        end_time_str = end.strftime("%H:%M:%S")
+
+        df = df.between_time(start_time_str, end_time_str).copy()
+
+        return self._get_wave_freq("Sync_Out", 256, df)
+
+    @property
+    def radar_raw_wave_freq(self):
+        df = self.radar_raw
+        df = df.fillna(0)
+        radar_wave_freq = {}
+        fs = 1953.125
+        for name, sub_df in df.groupby(level=0, axis=1):
+            single_df = sub_df.droplevel(0, axis=1)
+            radar_wave_freq[name] = self._get_wave_freq("Sync_In", fs, single_df)
+        return radar_wave_freq
+
+    @property
+    def radar_cut_wave_freq(self):
+        df = self.radar_cut
+        df = df.fillna(0)
+        radar_wave_freq = {}
+        fs = 1953.125
+        for name, sub_df in df.groupby(level=0, axis=1):
+            single_df = sub_df.droplevel(0, axis=1)
+            single_df["Sync_In"] = SyncedDataset()._binarize_signal(single_df["Sync_In"])
+            radar_wave_freq[name] = self._get_wave_freq("Sync_In", fs, single_df)
+        return radar_wave_freq
+
+    @property
+    def ecg_cut_wave_freq(self):
+        df = self.ecg_cut
+        return self._get_wave_freq("Sync_Out", 256, df)
+
+    def _get_wave_freq(self, sync_column: str, fs: float, df: pd.DataFrame):
+        sync_abs = np.abs(np.ediff1d(df[sync_column]))
+        fft_sync, psd_sync = periodogram(sync_abs, fs=fs, window="hamming")
+        psd_sync = SyncedDataset()._normalize_signal(psd_sync)
+        idx_peak = find_peaks(psd_sync, height=0.5)[0][0]
+        freq_sync = fft_sync[idx_peak]
+        return freq_sync
 
     @staticmethod
     def _reduce_df(df: pd.DataFrame, sync_column: str) -> pd.DataFrame:

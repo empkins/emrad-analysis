@@ -131,7 +131,6 @@ class ComputeTriangularWavesSPeaks(Algorithm):
             t = np.linspace(0, np.pi, length)
             triangular_wave = signal.sawtooth(t + np.pi / 2, 0.5)
             triangular_waves[start:end] = triangular_wave
-
         self.triangular_waves_ = pd.Series(triangular_waves)
 
         return self
