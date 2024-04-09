@@ -127,6 +127,23 @@ class D02Dataset(Dataset):
         return pd.DataFrame(ecg_clean, columns=["ecg_clean"], index=ecg_signal.index)
 
     @property
+    def synced_ecg(self) -> pd.DataFrame:
+        """
+        Load the synchronized ECG data for the first subject in the D02 dataset.
+
+        :return: DataFrame containing the synchronized ECG data.
+        """
+        if not (self.is_single(None) or (self.is_single(["participant"]))):
+            raise ValueError("Data can only be accessed, when there is just a single participant in the dataset.")
+
+        subject_id = self.subjects[0]
+        ecg_signal = self._load_synced_ecg(subject_id)
+        ecg_signal["ecg"] = nk.ecg_clean(
+            ecg_signal=ecg_signal["ecg"], sampling_rate=int(self.SAMPLING_RATE_ACQ), method="neurokit"
+        )
+        return ecg_signal
+
+    @property
     def filtered_radar(self) -> pd.DataFrame:
         if not (self.is_single(None) or (self.is_single(["participant"]))):
             raise ValueError("Data can only be accessed, when there is just a single participant in the dataset.")
@@ -173,6 +190,13 @@ class D02Dataset(Dataset):
         )
 
     @property
+    def synced_radar(self) -> pd.DataFrame:
+        if not (self.is_single(None) or (self.is_single(["participant"]))):
+            raise ValueError("Data can only be accessed, when there is just a single participant in the dataset.")
+        subject_id = self.subjects[0]
+        return self._load_synced_radar(subject_id)
+
+    @property
     def radar(self) -> pd.DataFrame:
         """
         Load the radar data for the first subject in the D02 dataset.
@@ -198,7 +222,9 @@ class D02Dataset(Dataset):
         subject_path = self.data_path.joinpath(subject_id, "raw")
         h5_path = self._get_only_matching_file_path(subject_path, "h5")
         dataset = EmradDataset.from_hd5_file(h5_path, sampling_rate_hz=self.SAMPLING_RATE_RADAR)
-        return dataset.data_as_df(index="local_datetime", add_sync_in=add_sync_in, add_sync_out=add_sync_out)
+        df = dataset.data_as_df(index="local_datetime", add_sync_in=add_sync_in, add_sync_out=add_sync_out)
+        df.columns = [val[1] for val in df.columns]
+        return df
 
     @staticmethod
     def _get_only_matching_file_path(path, file_type: str) -> str:
@@ -262,7 +288,7 @@ class D02Dataset(Dataset):
 
         # Load the radar data
         radar_df = self._load_radar(subject_id, add_sync_in=True, add_sync_out=False)
-        radar_df = radar_df.droplevel(0, axis=1)
+        # radar_df = radar_df.droplevel(0, axis=1)
 
         # Resample the data
         synced = SyncedDataset(sync_type="m-sequence")
@@ -314,8 +340,6 @@ class D02Dataset(Dataset):
                 for col in result_df_window.columns.values
             ]
             result_df = pd.concat([result_df, result_df_window])
-            diff = RadarPreprocessor.check_sync(result_df["ecg_Sync_Out"], result_df["radar_Sync_In"])
-            print(f"Diff in Sync Signals: {diff}")
             start_time = stop
         return result_df
 
@@ -333,7 +357,8 @@ class D02Dataset(Dataset):
 
         # Load the radar data
         radar_df = self._load_radar(subject_id, add_sync_in=True, add_sync_out=False)
-        radar_df = radar_df.droplevel(0, axis=1)
+        # radar_df = radar_df.droplevel(0, axis=1)
+
         # Synchronize the data
         synced_dataset = SyncedDataset(sync_type="m-sequence")
         synced_dataset.add_dataset(
@@ -362,6 +387,21 @@ class D02Dataset(Dataset):
         # cols_to_drop = result_df.columns[result_df.columns.str.contains("sync", case=False)]
         # result_df = result_df.drop(columns=cols_to_drop)
         return result_df
+
+    @lru_cache(maxsize=1)
+    def _load_synced_radar(self, subject_id):
+        synced_data = self._load_synced_data_windowed(subject_id).copy()
+        df = synced_data.filter(regex="^radar")
+        df.columns = [col.replace("radar_", "") for col in df.columns]
+        df.drop(columns=["Sync_In"], inplace=True)
+        return df
+
+    def _load_synced_ecg(self, subject_id):
+        synced_data = self._load_synced_data(subject_id).copy()
+        df = synced_data.filter(regex="^ecg")
+        df.drop(columns=["ecg_Sync_Out"], inplace=True)
+
+        return df
 
 
 class RadarDatasetRaw(Dataset):
