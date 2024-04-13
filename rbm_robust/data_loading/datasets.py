@@ -30,6 +30,7 @@ class D02Dataset(Dataset):
     SAMPLING_RATE_ACQ = 2000
     SAMPLING_RATE_RADAR = 1953.125
     SAMPLING_RATE_DOWNSAMPLED = 1000
+    SAMPLING_RATE_DOWNSAMPLED_ML = 200
     _CHANNEL_MAPPING = {
         "ECG": "ecg",
         "SyncSignal": "Sync_Out",
