@@ -1,3 +1,4 @@
+import os
 from pathlib import Path
 from typing import Optional, Union, List, Tuple, Any, Dict
 
@@ -33,6 +34,16 @@ class D02Dataset(Dataset):
         "ECG": "ecg",
         "SyncSignal": "Sync_Out",
     }
+    _PHASE_MAPPING = {
+        "lat": {"start": "lat_rating_n", "end": "lat_end"},
+        "ei": {"start": "ei_01", "end": "ei_end"},
+        "coping": {"start": "coping_trial_1", "end": "coping_end"},
+        "training": {
+            "start": "training_base-rating_start",
+            "end": "training_end",
+        },  # hier kann es auch training_trial_end sein
+    }
+    EXCLUDE_SUBJECTS = ("005", "044", "074", "093", "131", "597", "115")
 
     def __init__(
         self,
@@ -62,6 +73,8 @@ class D02Dataset(Dataset):
         :return: DataFrame containing the index.
         """
         participant_ids = [item.name for item in Path(self.data_path).iterdir() if item.is_dir()]
+        participant_ids = [pid for pid in participant_ids if pid not in self.EXCLUDE_SUBJECTS]
+
         df = pd.DataFrame({"participant": participant_ids})
         if df.empty:
             raise ValueError(
@@ -188,6 +201,48 @@ class D02Dataset(Dataset):
         return BiopacDataset.from_acq_file(acq_path, channel_mapping=self._CHANNEL_MAPPING).data_as_df(
             index="local_datetime"
         )
+
+    @property
+    @lru_cache(maxsize=1)
+    def clean_phase_df(self):
+        if not (self.is_single(None) or (self.is_single(["participant"]))):
+            raise ValueError("Data can only be accessed, when there is just a single participant in the dataset.")
+        subject_id = self.subjects[0]
+        df = self._log_df(subject_id)
+        df = self._clean_phase_df(df)
+        return df
+
+    @property
+    def phases(self):
+        if not (self.is_single(None) or (self.is_single(["participant"]))):
+            raise ValueError("Data can only be accessed, when there is just a single participant in the dataset.")
+        subject_id = self.subjects[0]
+        return self._clean_phase_df(self._log_df(subject_id))
+
+    @property
+    @lru_cache(maxsize=1)
+    def log(self):
+        if not (self.is_single(None) or (self.is_single(["participant"]))):
+            raise ValueError("Data can only be accessed, when there is just a single participant in the dataset.")
+        subject_id = self.subjects[0]
+        return self._log_df(subject_id)
+
+        # try:
+        #     subject_id = self.subjects[0]
+        #     subject_path = self.data_path.joinpath(subject_id, "logs")
+        #
+        #     csv_files = glob.glob(os.path.join(subject_path, "*.csv"))
+        #
+        #     df = pd.DataFrame()
+        #     for file in csv_files:
+        #         log_df = pd.read_csv(file)
+        #         log_df["timestamp"] = log_df["timestamp"].str.replace("\n", "")
+        #         log_df["timestamp"] = pd.to_datetime(log_df["timestamp"])
+        #         df = pd.concat([df, log_df], axis=1)
+        #     return df
+        # except Exception as e:
+        #     warnings.warn(f"Could not load log data: {e}")
+        #     return pd.DataFrame()
 
     @property
     def synced_radar(self) -> pd.DataFrame:
@@ -400,8 +455,98 @@ class D02Dataset(Dataset):
         synced_data = self._load_synced_data(subject_id).copy()
         df = synced_data.filter(regex="^ecg")
         df.drop(columns=["ecg_Sync_Out"], inplace=True)
-
         return df
+
+    def _log_df(self, subject_id: str) -> pd.DataFrame:
+        subject_path = self.data_path.joinpath(subject_id, "logs")
+        subject_path_cleaned = subject_path.joinpath("cleaned_logs")
+        subject_path_cleaned_file = subject_path_cleaned.joinpath("cleaned_logs.csv")
+        # if os.path.exists(subject_path_cleaned) and os.path.isfile(subject_path_cleaned_file):
+        #     try:
+        #         df = pd.read_csv(subject_path_cleaned_file, index_col="index")
+        #         df.index = pd.to_datetime(df.index)
+        #         return df
+        #     except:
+        #         return pd.DataFrame()
+
+        csv_files = glob.glob(os.path.join(subject_path, "*.csv"))
+        df = pd.DataFrame()
+        for file in csv_files:
+            log_df = pd.read_csv(file)
+            log_df["timestamp"] = log_df["timestamp"].str.replace("\n", "")
+            log_df = log_df[log_df["timestamp"].str.contains("\d", regex=True)]
+            log_df["timestamp"] = pd.to_datetime(log_df["timestamp"])
+            log_df.set_index(log_df["timestamp"], drop=True, inplace=True)
+            log_df.drop(["timestamp", "content"], axis=1, inplace=True)
+            log_df.index.names = ["index"]
+            log_df.rename(index={0: "label"})
+            df = pd.concat([df, log_df])
+        df = df.sort_index()
+        df = df.reset_index()
+        df = df.drop_duplicates()
+        # If you want to set the index back to its original column
+        df.set_index("index", inplace=True)
+
+        if not os.path.exists(subject_path_cleaned):
+            os.mkdir(subject_path_cleaned)
+        df.to_csv(subject_path_cleaned_file)
+        return df
+
+    def _clean_phase_df(self, df) -> Dict:
+        # Check if already saved
+        subject_id = self.subjects[0]
+        subject_phase_path = self.data_path.joinpath(subject_id, "phases")
+        subject_phase_path_file = subject_phase_path.joinpath("phases.csv")
+        # if os.path.exists(subject_phase_path) and os.path.isfile(subject_phase_path_file):
+        #     df = pd.read_csv(subject_phase_path_file, index_col=0)
+        #     phases = df.to_dict(orient="index")
+        #     return phases
+        phases = {}
+        alternative_ends = ["ei", "training", "coping", "lat"]
+        start_codes = ["ei_01", "training_base-rating_start", "coping_trial_1", "lat_rating_n"]
+        for phase in self._PHASE_MAPPING.keys():
+            start_time = self._PHASE_MAPPING[phase]["start"]
+            end_time = self._PHASE_MAPPING[phase]["end"]
+            matching_rows_start = df[df["label"] == start_time].index.tolist()
+            matching_rows_end = df[df["label"] == end_time].index.tolist()
+            if len(matching_rows_start) > len(matching_rows_end):
+                for start in matching_rows_start:
+                    if len(matching_rows_start) == len(matching_rows_end):
+                        break
+                    fitting_alternative_ends = [end for end in alternative_ends if end != phase]
+                    filtered_df = df[df.index > start]
+                    mask = filtered_df["label"].apply(
+                        lambda x: any(str(x).startswith(value) for value in fitting_alternative_ends)
+                    )
+                    mask_start = filtered_df["label"].apply(lambda x: any(str(x) == value for value in start_codes))
+                    mask = mask | mask_start
+                    filtered_df = filtered_df[mask]
+                    end_to_add = (
+                        df.index[df.index.get_loc(filtered_df.index[0]) - 1] if len(filtered_df) > 0 else df.index[-1]
+                    )
+                    matching_rows_end.append(end_to_add)
+            elif len(matching_rows_start) < len(matching_rows_end):
+                raise ValueError(f"Phase {phase} has more end times than start times.")
+
+            if len(matching_rows_start) != len(matching_rows_end):
+                raise ValueError(f"Phase {phase} has more end times than start times.")
+            matching_rows_start.sort()
+            matching_rows_end.sort()
+            pairs = list(zip(matching_rows_start, matching_rows_end))
+            index = 1
+            for pair in pairs:
+                if len(pairs) > 1:
+                    phase_name = f"{phase}_{index}"
+                    index += 1
+                else:
+                    phase_name = phase
+                phases[phase_name] = {"start": pair[0], "end": pair[1]}
+        # Save Phase dict as df
+        phase_df = pd.DataFrame.from_dict(phases, orient="index")
+        if not os.path.exists(subject_phase_path):
+            os.mkdir(subject_phase_path)
+        phase_df.to_csv(subject_phase_path_file)
+        return phases
 
 
 class RadarDatasetRaw(Dataset):
