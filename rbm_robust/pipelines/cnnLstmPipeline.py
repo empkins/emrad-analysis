@@ -2,7 +2,6 @@ from typing_extensions import Self
 
 import numpy as np
 from tpcp import Algorithm, make_action_safe, cf, OptimizablePipeline, OptimizableParameter
-import pandas as pd
 from rbm_robust.data_loading.datasets import D02Dataset
 from rbm_robust.label_generation.label_generation_algorithm import ComputeEcgBlips
 from rbm_robust.models.cnn import CNN
@@ -156,8 +155,7 @@ class InputAndLabelGenerator(Algorithm):
                     pre_processed_segment = pre_processor_clone.preprocess(
                         segment, dataset[i].SAMPLING_RATE_DOWNSAMPLED
                     ).preprocessed_signal_
-                    input_data_segment = [imf["coefficients"] for imf in pre_processed_segment]
-                    phase_res.append(input_data_segment)
+                    phase_res.append(pre_processed_segment)
                 res.append(phase_res)
         self.input_data_ = res
         return self

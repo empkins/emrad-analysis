@@ -20,6 +20,7 @@ class CNN(Algorithm):
     bias_initializer: OptimizableParameter[str]
     learning_rate: OptimizableParameter[float]
     batch_size: OptimizableParameter[int]
+    filters: OptimizableParameter[int]
 
     # Model
     _model = Optional[keras.Sequential]
@@ -29,7 +30,8 @@ class CNN(Algorithm):
 
     def __init__(
         self,
-        kernel_size: int = 3,
+        filters: int = 64,
+        kernel_size: Tuple[int] = (5, 5),
         strides: Tuple[int] = (1, 1),
         padding: str = "valid",
         dilation_rate: Tuple[int] = (1, 1),
@@ -44,6 +46,7 @@ class CNN(Algorithm):
         _model=None,
     ):
         self.groups = groups
+        self.filters = filters
         self.kernel_size = kernel_size
         self.strides = strides
         self.padding = padding
@@ -57,22 +60,25 @@ class CNN(Algorithm):
         self.batch_size = batch_size
         self._model = _model
 
-    def self_optimize(self, training_data: np.ndarray, labels: np.ndarray):
+    def self_optimize(self, training_data: list, labels: np.ndarray):
         """Use the training data and the corresponding labels to train the model with the hyperparameters passed in the init
 
         Args:
-            training_data (np.ndarray): training data, multiple inputs
+            training_data (list): training data, multiple inputs
             labels (np.ndarray): corresponding labels
         """
-        if self._model is None:
-            self._create_model(training_data.shape[1], training_data.shape[2])
+        # TODO: Ask which input_shape should be selected
+        input_shape = training_data[0][0].shape
 
-        assert (
-            self._model.layers[0].input_shape[1] == training_data.shape[1]
-        ), f"Your training data has dimension {training_data.shape} while the model has input shape {self._model.layers[0].input_shape}!"
-        assert (
-            self._model.layers[0].input_shape[2] == training_data.shape[2]
-        ), f"Your training data has dimension {training_data.shape} while the model has input shape {self._model.layers[0].input_shape}!"
+        if self._model is None:
+            self._create_model(input_shape)
+
+        # assert (
+        #     self._model.layers[0].input_shape[1] == training_data.shape[1]
+        # ), f"Your training data has dimension {training_data.shape} while the model has input shape {self._model.layers[0].input_shape}!"
+        # assert (
+        #     self._model.layers[0].input_shape[2] == training_data.shape[2]
+        # ), f"Your training data has dimension {training_data.shape} while the model has input shape {self._model.layers[0].input_shape}!"
 
         self._model.fit(
             training_data,
@@ -84,24 +90,21 @@ class CNN(Algorithm):
         )
         return self
 
-    def _create_model(self, input_shape: int, output_shape: int):
+    def _create_model(self, input_shape: Tuple[int]):
         self._model = keras.Sequential()
         self._model.add(
             keras.layers.Conv2D(
-                filters=output_shape,
+                filters=self.filters,
                 kernel_size=self.kernel_size,
                 strides=self.strides,
-                padding=self.padding,
-                dilation_rate=self.dilation_rate,
-                groups=self.groups,
-                activation=self.activation,
-                use_bias=self.use_bias,
-                kernel_initializer=self.kernel_initializer,
-                bias_initializer=self.bias_initializer,
-                input_shape=(input_shape, input_shape, 3),
+                activation="relu",
+                input_shape=input_shape,
             )
         )
-        self._model.add(keras.layers.MaxPool3D(pool_size=(2, 2)))
-        self._model.add(keras.layers.Flatten())
-        self._model.compile(keras.optimizers.Adam(self.learning_rate), loss="mse")
+        self._model.add(keras.layers.MaxPool2D(pool_size=(2, 2), strides=(2, 2)))
+        self._model.add(keras.layers.Conv2D(64, (5, 5), activation="relu"))
+        self._model.add(keras.layers.MaxPooling2D(pool_size=(2, 2)))
+        self._model.add(keras.layers.Dense(64, activation="relu"))
+        self._model.add(keras.layers.Dense(1))
+        self._model.compile(optimizer="adam", loss="mse")
         return self

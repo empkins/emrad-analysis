@@ -2,9 +2,10 @@ from empkins_io.datasets.d03.micro_gapvii._dataset import MicroBaseDataset
 
 import numpy as np
 
-from emrad_analysis.pipelines.biLSTMPipelineNo1 import BiLstmPipeline
 from emrad_analysis.validation.PairwiseHeartRate import PairwiseHeartRate
 from emrad_analysis.validation.RPeakF1Score import RPeakF1Score
+from rbm_robust.data_loading.datasets import D02Dataset
+from rbm_robust.pipelines.cnnLstmPipeline import CnnPipeline
 
 
 # Use cases are:
@@ -14,12 +15,12 @@ from emrad_analysis.validation.RPeakF1Score import RPeakF1Score
 #   - Calculate beat-to-beat heart rates and then calculate the MAE between the instantaneous heart rates
 
 
-def biLSTMPipelineScoring(pipeline: BiLstmPipeline, datapoint: MicroBaseDataset):
+def cnnPipelineScoring(pipeline: CnnPipeline, dataset: D02Dataset):
     pipeline = pipeline.clone()
 
-    pipeline.run(datapoint)
+    pipeline.run(dataset)
 
-    labels = pipeline.feature_extractor.generate_training_labels_sitting(datapoint).input_labels_
+    labels = pipeline.feature_extractor.generate_training_labels(dataset).input_labels_
 
     # normalize predictions and labels between 0 and 1
     result = (
