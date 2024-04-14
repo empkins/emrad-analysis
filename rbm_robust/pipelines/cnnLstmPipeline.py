@@ -2,7 +2,6 @@ from typing_extensions import Self
 
 import numpy as np
 from tpcp import Algorithm, make_action_safe, cf, OptimizablePipeline, OptimizableParameter
-from tpcp._dataset import DatasetT
 import pandas as pd
 from rbm_robust.data_loading.datasets import D02Dataset
 from rbm_robust.label_generation.label_generation_algorithm import ComputeEcgBlips
@@ -12,6 +11,7 @@ from rbm_robust.preprocessing.preprocessing import (
     Downsampling,
     EmpiricalModeDecomposer,
     WaveletTransformer,
+    Segmentation,
 )
 from emrad_toolbox.radar_preprocessing.radar import RadarPreprocessor
 
@@ -91,8 +91,14 @@ class InputAndLabelGenerator(Algorithm):
     # PreProcessing
     pre_processor: PreProcessor
 
+    # Downsampling
+    downsampling: Downsampling
+
     # Label Generation
     blip_algo: ComputeEcgBlips
+
+    # Segmentation
+    segmentation: Segmentation
 
     # Input & Label parameters
     segment_size_in_seconds: int
@@ -107,6 +113,8 @@ class InputAndLabelGenerator(Algorithm):
         self,
         pre_processor: PreProcessor = cf(PreProcessor()),
         blip_algo: ComputeEcgBlips = cf(ComputeEcgBlips()),
+        downsampling: Downsampling = cf(Downsampling()),
+        segmentation: Segmentation = cf(Segmentation()),
         segment_size_in_seconds: int = 5,
         overlap: float = 0.8,
         downsampled_hz: int = 200,
@@ -116,6 +124,8 @@ class InputAndLabelGenerator(Algorithm):
         self.segment_size_in_seconds = segment_size_in_seconds
         self.overlap = overlap
         self.downsampled_hz = downsampled_hz
+        self.downsampling = downsampling
+        self.segmentation = segmentation
 
     @make_action_safe
     def generate_training_input(self, dataset: D02Dataset):
@@ -128,45 +138,27 @@ class InputAndLabelGenerator(Algorithm):
         Returns:
             np.ndarray: Input data for the BiLSTM model
         """
+        segmentation_clone = self.segmentation.clone()
         pre_processor_clone = self.pre_processor.clone()
         res = []
         for i in range(len(dataset.subjects)):
             radar_data = dataset[i].synced_radar
             phases = dataset[i].phases
             sampling_rate = dataset[i].SAMPLING_RATE_DOWNSAMPLED
-            phase_res = []
             for phase in phases.keys():
+                phase_res = []
                 # Get the data for the current phase
                 phase_radar_data = radar_data[phases[phase]["start"] : phases[phase]["end"]]
-                time_step = phase_radar_data.index[1] - phase_radar_data.index[0]
                 # Segmentation
-                step_size = int(self.segment_size_in_seconds * self.overlap)
-                total_seconds = (phase_radar_data.index.max() - phase_radar_data.index.min()).total_seconds()
-                step_count = int((total_seconds // step_size) - 1)
-                start_time = phase_radar_data.index[0]
-                for j in range(1, step_count):
-                    end = start_time + pd.Timedelta(seconds=step_size * j)
+                segments = segmentation_clone.segment(phase_radar_data, sampling_rate).segmented_signal_
+                for segment in segments:
                     # Preprocess the data
-                    data_segment = phase_radar_data[start_time:end]
-                    time_diff = data_segment.index[-1] - data_segment.index[0]
-                    # Zero padding
-                    if len(data_segment) < self.segment_size_in_seconds * sampling_rate:
-                        rows_needed = int((pd.Timedelta(seconds=4) - time_diff) / time_step)
-                        zero_df = pd.DataFrame(
-                            np.zeros((rows_needed, len(data_segment.columns))), columns=data_segment.columns
-                        )
-                        data_segment = data_segment.append(zero_df, ignore_index=True)
-                        data_segment.index = pd.date_range(
-                            start=data_segment.index[0], periods=len(data_segment), freq=time_step
-                        )
-                    pre_processor_clone = self.pre_processor.clone()
-                    segment = pre_processor_clone.preprocess(
-                        data_segment, dataset[i].SAMPLING_RATE_DOWNSAMPLED
+                    pre_processed_segment = pre_processor_clone.preprocess(
+                        segment, dataset[i].SAMPLING_RATE_DOWNSAMPLED
                     ).preprocessed_signal_
-                    start_time = end
-                    input_data_segment = [imf["coefficients"] for imf in segment]
+                    input_data_segment = [imf["coefficients"] for imf in pre_processed_segment]
                     phase_res.append(input_data_segment)
-            res.append(phase_res)
+                res.append(phase_res)
         self.input_data_ = np.array(res)
         return self
 
@@ -182,37 +174,27 @@ class InputAndLabelGenerator(Algorithm):
             np.ndarray: Input labels for the BiLSTM model
         """
         blip_algo_clone = self.blip_algo.clone()
+        downsampling_clone = self.downsampling.clone()
+        segmentation_clone = self.segmentation.clone()
         res = []
         for i in range(len(dataset.subjects)):
             data = dataset[i].synced_ecg
             phases = dataset[i].phases
             sampling_rate = dataset[i].SAMPLING_RATE_DOWNSAMPLED
-            time_step = data.index[1] - data.index[0]
-            phase_res = []
             for phase in phases.keys():
-                # Get the data for the current phase
+                phase_res = []
                 phase_data = data[phases[phase]["start"] : phases[phase]["end"]]
-                # Generate the labels
-                labels = blip_algo_clone.compute(phase_data).blips_
-                # Segmentation
-                step_size = int(self.segment_size_in_seconds * self.overlap)
-                total_seconds = (phase_data.index.max() - phase_data.index.min()).total_seconds()
-                step_count = (total_seconds // step_size) - 1
-                start_time = phase_data.index[0]
-                for i in range(step_count):
-                    end = start_time + pd.Timedelta(seconds=step_size * i)
-                    segment = labels[start_time:end]
-                    time_diff = segment.index[-1] - segment.index[0]
-                    # Zero padding
-                    if len(segment) < self.segment_size_in_seconds * sampling_rate:
-                        rows_needed = int((pd.Timedelta(seconds=4) - time_diff) / time_step)
-                        zero_df = pd.DataFrame(np.zeros((rows_needed, len(segment.columns))), columns=segment.columns)
-                        segment = segment.append(zero_df, ignore_index=True)
-                        segment.index = pd.date_range(start=segment.index[0], periods=len(segment), freq=time_step)
-                    start_time = end
-                    phase_res.append(segment)
-            res.append(phase_res)
-        self.input_labels_ = np.array(res)
+                segments = segmentation_clone.segment(phase_data, sampling_rate).segmented_signal_
+                for segment in segments:
+                    # Downsample the segment
+                    segment = downsampling_clone.downsample(
+                        segment, self.downsampled_hz, sampling_rate
+                    ).downsampled_signal_
+                    # Generate the labels for the segment
+                    labels = blip_algo_clone.compute(segment).blips_
+                    phase_res.append(labels)
+                res.append(phase_res)
+        self.input_labels_ = res
         return self
 
 

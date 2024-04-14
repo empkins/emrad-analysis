@@ -170,3 +170,45 @@ class WaveletTransformer(Algorithm):
 
         self.transformed_signal_ = transformed
         return self
+
+
+class Segmentation(Algorithm):
+    _action_methods = "segment"
+
+    # Input Parameters
+    window_size_in_seconds: Parameter[int]
+    overlap: Parameter[float]
+
+    # Results
+    segmented_signal_: np.ndarray
+
+    def __init__(self, window_size_in_seconds: int = 5, overlap: float = 0.8):
+        self.window_size_in_seconds = window_size_in_seconds
+        self.overlap = overlap
+
+    @make_action_safe
+    def segment(self, signal: pd.Series, sampling_rate: float):
+        step_size = int(self.window_size_in_seconds - self.window_size_in_seconds * self.overlap)
+        total_seconds = (signal.index.max() - signal.index.min()).total_seconds()
+        step_count = int((total_seconds // step_size) - 1)
+        start_time = signal.index[0]
+        time_step = signal.index[1] - signal.index[0]
+        segments = []
+        for j in range(1, step_count):
+            end = start_time + pd.Timedelta(seconds=self.window_size_in_seconds)
+            # Preprocess the data
+            data_segment = signal[start_time:end]
+            time_diff = data_segment.index[-1] - data_segment.index[0]
+            # Zero padding
+            if len(data_segment) < self.window_size_in_seconds * sampling_rate:
+                rows_needed = int((pd.Timedelta(seconds=self.window_size_in_seconds) - time_diff) / time_step)
+                # rows_needed = int((pd.Timedelta(seconds=4) - time_diff) / time_step)
+                zero_df = pd.DataFrame(np.zeros((rows_needed, len(data_segment.columns))), columns=data_segment.columns)
+                data_segment = data_segment.append(zero_df, ignore_index=True)
+                data_segment.index = pd.date_range(
+                    start=data_segment.index[0], periods=len(data_segment), freq=time_step
+                )
+            start_time = start_time + pd.Timedelta(seconds=step_size)
+            segments.append(data_segment)
+        self.segmented_signal_ = np.array(segments)
+        return self
