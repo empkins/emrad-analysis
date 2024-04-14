@@ -159,7 +159,7 @@ class InputAndLabelGenerator(Algorithm):
                     input_data_segment = [imf["coefficients"] for imf in pre_processed_segment]
                     phase_res.append(input_data_segment)
                 res.append(phase_res)
-        self.input_data_ = np.array(res)
+        self.input_data_ = res
         return self
 
     @make_action_safe

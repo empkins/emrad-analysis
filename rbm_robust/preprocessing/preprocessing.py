@@ -180,7 +180,7 @@ class Segmentation(Algorithm):
     overlap: Parameter[float]
 
     # Results
-    segmented_signal_: np.ndarray
+    segmented_signal_: list
 
     def __init__(self, window_size_in_seconds: int = 5, overlap: float = 0.8):
         self.window_size_in_seconds = window_size_in_seconds
@@ -209,6 +209,8 @@ class Segmentation(Algorithm):
                     start=data_segment.index[0], periods=len(data_segment), freq=time_step
                 )
             start_time = start_time + pd.Timedelta(seconds=step_size)
+            if isinstance(data_segment, pd.DataFrame) and "ecg" in data_segment.columns:
+                data_segment = data_segment["ecg"]
             segments.append(data_segment)
-        self.segmented_signal_ = np.array(segments)
+        self.segmented_signal_ = segments
         return self
