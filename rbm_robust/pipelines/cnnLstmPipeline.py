@@ -209,6 +209,7 @@ class CnnPipeline(OptimizablePipeline):
         self,
         feature_extractor: InputAndLabelGenerator,
         cnn: CNN,
+        input_shape: tuple = (255, 1000, 5),
     ):
         self.feature_extractor = feature_extractor
         self.cnn = cnn

@@ -150,25 +150,14 @@ class WaveletTransformer(Algorithm):
         transformed = []
         for i in range(len(signal)):
             imf = signal[i]
-            scales = np.arange(self.wavelet_coefficients[0], self.wavelet_coefficients[1])
+            scales = range(self.wavelet_coefficients[0], self.wavelet_coefficients[1])
             coefficients, frequencies = pywt.cwt(imf, scales, self.wavelet_type)
-            time = np.arange(0, len(imf) / self.sampling_rate, 1 / self.sampling_rate)
 
             # Normalize Coefficients
             coefficients = (coefficients - np.mean(coefficients)) / np.std(coefficients)
+            transformed.append(coefficients)
 
-            # Correct Shape for the CNN
-            coefficients = coefficients.reshape(1, coefficients.shape[0], coefficients.shape[1], 1)
-
-            wavelet_dict = {
-                "coefficients": coefficients,
-                "frequencies": frequencies,
-                "time": time,
-            }
-
-            transformed.append(wavelet_dict)
-
-        self.transformed_signal_ = transformed
+        self.transformed_signal_ = np.stack(transformed, axis=2)
         return self
 
 
