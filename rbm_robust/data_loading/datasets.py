@@ -7,7 +7,6 @@ from biopsykit.io.biopac import BiopacDataset
 import pandas as pd
 from empkins_io.sensors.emrad import EmradDataset
 from empkins_io.sync import SyncedDataset
-from rbm_robust.special_sync._sync import SyncedDatasetAltered
 from scipy.signal import periodogram, find_peaks
 from tpcp import Dataset
 import neurokit2 as nk
@@ -1056,7 +1055,7 @@ class RadarDatasetRaw(Dataset):
         # TODO: Hier erst mal Plotten und prüfen ob beide zur selben Zeit anfangen
 
         # Create and fill Synced Dataset
-        synced = SyncedDatasetAltered(sync_type="m-sequence")
+        synced = SyncedDataset(sync_type="m-sequence")
         synced.add_dataset("psg", data=df, sync_channel_name="Sync_Out", sampling_rate=self.SAMPLING_RATE_PSG)
         synced.add_dataset(
             "radar_1",
@@ -1167,7 +1166,7 @@ class RadarDatasetRaw(Dataset):
     @property
     def radar_cut_reset_resampled(self):
         df = self.radar_1_cut_and_reset
-        sync = SyncedDatasetAltered(sync_type="m-sequence")
+        sync = SyncedDataset(sync_type="m-sequence")
         sync.add_dataset(name="radar_1", data=df, sync_channel_name="Sync_In", sampling_rate=self.SAMPLING_RATE_RADAR)
         sync.resample_datasets(fs_out=100, method="dynamic", wave_frequency=250)
         return sync.datasets_resampled["radar_1_resampled_"]
@@ -1214,7 +1213,7 @@ class RadarDatasetRaw(Dataset):
         radar = self.radar_1_cut_and_reset
 
         # Create and fill Synced Dataset
-        synced = SyncedDatasetAltered(sync_type="m-sequence")
+        synced = SyncedDataset(sync_type="m-sequence")
         synced.add_dataset(name="psg", data=psg, sync_channel_name="Sync_Out", sampling_rate=self.SAMPLING_RATE_PSG)
         synced.add_dataset(
             name="radar_1", data=radar, sync_channel_name="Sync_In", sampling_rate=self.SAMPLING_RATE_RADAR
