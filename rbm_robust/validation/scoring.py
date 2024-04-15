@@ -1,6 +1,5 @@
-from empkins_io.datasets.d03.micro_gapvii._dataset import MicroBaseDataset
-
 import numpy as np
+from sklearn.model_selection import train_test_split
 
 from emrad_analysis.validation.PairwiseHeartRate import PairwiseHeartRate
 from emrad_analysis.validation.RPeakF1Score import RPeakF1Score
@@ -8,19 +7,18 @@ from rbm_robust.data_loading.datasets import D02Dataset
 from rbm_robust.pipelines.cnnLstmPipeline import CnnPipeline
 
 
-# Use cases are:
-# 1. Good heart rate extimation over the long run
-#   - Calculate beat-to-beat heart rate and take the mean for an experiment
-# 2. Good beat-to-beat accuracy important for HRV computation
-#   - Calculate beat-to-beat heart rates and then calculate the MAE between the instantaneous heart rates
-
-
 def cnnPipelineScoring(pipeline: CnnPipeline, dataset: D02Dataset):
     pipeline = pipeline.clone()
 
-    pipeline.run(dataset)
+    # Split Data
+    train_data, val_data = train_test_split(dataset.subjects, test_size=0.2, random_state=42)
+    training_dataset = dataset.get_subset(participants=train_data)
+    validation_dataset = dataset.get_subset(participants=val_data)
 
-    labels = pipeline.feature_extractor.generate_training_labels(dataset).input_labels_
+    pipeline.self_optimize(training_dataset)
+    pipeline.run(validation_dataset)
+
+    labels = pipeline.feature_extractor.generate_training_labels(validation_dataset).input_labels_
 
     # normalize predictions and labels between 0 and 1
     result = (

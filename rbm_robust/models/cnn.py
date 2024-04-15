@@ -67,11 +67,9 @@ class CNN(Algorithm):
             training_data (list): training data, multiple inputs
             labels (np.ndarray): corresponding labels
         """
-        # TODO: Ask which input_shape should be selected
-        input_shape = training_data[0][0].shape
 
         if self._model is None:
-            self._create_model(input_shape)
+            self._create_model()
 
         # assert (
         #     self._model.layers[0].input_shape[1] == training_data.shape[1]
@@ -86,11 +84,11 @@ class CNN(Algorithm):
             epochs=self.num_epochs,
             batch_size=self.batch_size,
             validation_split=0.1,
-            shuffle=False,
+            shuffle=True,
         )
         return self
 
-    def _create_model(self, input_shape: Tuple[int]):
+    def _create_model(self):
         self._model = keras.Sequential()
         self._model.add(
             keras.layers.Conv2D(
@@ -98,7 +96,6 @@ class CNN(Algorithm):
                 kernel_size=self.kernel_size,
                 strides=self.strides,
                 activation="relu",
-                input_shape=input_shape,
             )
         )
         self._model.add(keras.layers.MaxPool2D(pool_size=(2, 2), strides=(2, 2)))
