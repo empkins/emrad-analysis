@@ -6,11 +6,12 @@ from rbm_robust.validation.scoring import cnnPipelineScoring
 
 
 def main():
-    dataset_path = Path("/Users/simonmeske/Desktop/TestOrdner/data_per_subject")
-    dataset = D02Dataset(dataset_path)
-    cnn_pipeline = CnnPipeline()
-    cnnPipelineScoring(cnn_pipeline, dataset)
+    print("Starting")
+    # dataset_path = Path("/Users/simonmeske/Desktop/TestOrdner/data_per_subject")
+    # dataset = D02Dataset(dataset_path)
+    # cnn_pipeline = CnnPipeline()
+    # cnnPipelineScoring(cnn_pipeline, dataset)
 
 
-if __name__ == "main":
+if __name__ == "__main__":
     main()
