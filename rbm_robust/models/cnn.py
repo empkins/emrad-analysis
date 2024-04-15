@@ -1,4 +1,6 @@
+from datetime import datetime
 from typing import Optional, Tuple
+import tensorflow as tf
 
 import keras
 import numpy as np
@@ -71,6 +73,9 @@ class CNN(Algorithm):
         if self._model is None:
             self._create_model()
 
+        log_dir = "~/Runs/logs/fit/" + datetime.datetime.now().strftime("%Y%m%d-%H%M%S")
+        tensorboard_callback = tf.keras.callbacks.TensorBoard(log_dir=log_dir, histogram_freq=1)
+
         # assert (
         #     self._model.layers[0].input_shape[1] == training_data.shape[1]
         # ), f"Your training data has dimension {training_data.shape} while the model has input shape {self._model.layers[0].input_shape}!"
@@ -85,6 +90,7 @@ class CNN(Algorithm):
             batch_size=self.batch_size,
             validation_split=0.1,
             shuffle=True,
+            callbacks=[tensorboard_callback],
         )
         return self
 
