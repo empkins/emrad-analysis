@@ -1259,7 +1259,7 @@ class RadarDatasetRaw(Dataset):
         return psg.sampling_rate
 
     @property
-    def radar_sampling_rate(self) -> tuple[float | Any, float | Any, Any, Any]:
+    def radar_sampling_rate(self) -> float:
         """Returns the sampling rate of the radar data."""
         subject_id = self.subjects[0]
         subject_str = "Subject_{}".format(subject_id)
@@ -1282,7 +1282,8 @@ class RadarDatasetRaw(Dataset):
 
         nan_count_bottom = df_bottom.isna().sum().sum()
         nan_count_top = df_top.isna().sum().sum()
-        return freq_bottom, freq_top, nan_count_bottom, nan_count_top
+        # return freq_bottom, freq_top, nan_count_bottom, nan_count_top
+        return 1.0
 
     @property
     @lru_cache(maxsize=1)
