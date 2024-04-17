@@ -149,12 +149,11 @@ class D02Dataset(Dataset):
         if not (self.is_single(None) or (self.is_single(["participant"]))):
             raise ValueError("Data can only be accessed, when there is just a single participant in the dataset.")
 
-        subject_id = self.subjects[0]
-        ecg_signal = self._load_synced_ecg(subject_id)
+        ecg_signal = self.synced_data[["ecg"]]
         ecg_signal["ecg"] = nk.ecg_clean(
             ecg_signal=ecg_signal["ecg"], sampling_rate=int(self.SAMPLING_RATE_ACQ), method="neurokit"
         )
-        return ecg_signal
+        return ecg_signal[["ecg"]]
 
     @property
     def filtered_radar(self) -> pd.DataFrame:
@@ -181,11 +180,11 @@ class D02Dataset(Dataset):
             radar_df = pd.concat([radar_df, value], axis=1, keys=[key])
         return radar_df
 
-    @property
-    def synced_ecg(self) -> pd.DataFrame:
-        if not (self.is_single(None) or (self.is_single(["participant"]))):
-            raise ValueError("Data can only be accessed, when there is just a single participant in the dataset.")
-        return self.synced_data[["ecg"]]
+    # @property
+    # def synced_ecg(self) -> pd.DataFrame:
+    #     if not (self.is_single(None) or (self.is_single(["participant"]))):
+    #         raise ValueError("Data can only be accessed, when there is just a single participant in the dataset.")
+    #     return self.synced_data[["ecg"]]
 
     @lru_cache(maxsize=1)
     def _load_ecg(self, subject_id: str) -> pd.DataFrame:

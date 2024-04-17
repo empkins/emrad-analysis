@@ -11,6 +11,7 @@ from rbm_robust.preprocessing.preprocessing import (
     EmpiricalModeDecomposer,
     WaveletTransformer,
     Segmentation,
+    Normalizer,
 )
 from emrad_toolbox.radar_preprocessing.radar import RadarPreprocessor
 
@@ -99,6 +100,9 @@ class InputAndLabelGenerator(Algorithm):
     # Segmentation
     segmentation: Segmentation
 
+    # Normalization
+    normalizer: Normalizer
+
     # Input & Label parameters
     segment_size_in_seconds: int
     overlap: float
@@ -114,6 +118,7 @@ class InputAndLabelGenerator(Algorithm):
         blip_algo: ComputeEcgBlips = cf(ComputeEcgBlips()),
         downsampling: Downsampling = cf(Downsampling()),
         segmentation: Segmentation = cf(Segmentation()),
+        normalizer: Normalizer = cf(Normalizer()),
         segment_size_in_seconds: int = 5,
         overlap: float = 0.8,
         downsampled_hz: int = 200,
@@ -125,6 +130,7 @@ class InputAndLabelGenerator(Algorithm):
         self.downsampled_hz = downsampled_hz
         self.downsampling = downsampling
         self.segmentation = segmentation
+        self.normalizer = normalizer
 
     @make_action_safe
     def generate_training_input(self, dataset: D02Dataset):
@@ -174,6 +180,7 @@ class InputAndLabelGenerator(Algorithm):
         blip_algo_clone = self.blip_algo.clone()
         downsampling_clone = self.downsampling.clone()
         segmentation_clone = self.segmentation.clone()
+        normalization_clone = self.normalizer.clone()
         res = []
         for i in range(len(dataset.subjects)):
             data = dataset[i].synced_ecg
@@ -184,13 +191,15 @@ class InputAndLabelGenerator(Algorithm):
                 phase_data = data[phases[phase]["start"] : phases[phase]["end"]]
                 segments = segmentation_clone.segment(phase_data, sampling_rate).segmented_signal_
                 for segment in segments:
+                    # Compute the blips
+                    segment = blip_algo_clone.compute(segment).blips_
                     # Downsample the segment
                     segment = downsampling_clone.downsample(
                         segment, self.downsampled_hz, sampling_rate
                     ).downsampled_signal_
-                    # Generate the labels for the segment
-                    labels = blip_algo_clone.compute(segment).blips_
-                    phase_res.append(labels)
+                    # Normalize the segment
+                    segment = normalization_clone.normalize(segment).normalized_signal_
+                    phase_res.append(segment)
                 res.append(phase_res)
         self.input_labels_ = res
         return self
@@ -207,7 +216,6 @@ class CnnPipeline(OptimizablePipeline):
         self,
         feature_extractor: InputAndLabelGenerator = cf(InputAndLabelGenerator()),
         cnn: CNN = cf(CNN),
-        input_shape: tuple = (255, 1000, 5),
     ):
         self.feature_extractor = feature_extractor
         self.cnn = cnn

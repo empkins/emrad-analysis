@@ -1,24 +1,88 @@
-import numpy as np
-from sklearn.model_selection import train_test_split
+from datetime import datetime
 
+import numpy as np
+import pickle
+from sklearn.model_selection import train_test_split
+import pathlib
 from emrad_analysis.validation.PairwiseHeartRate import PairwiseHeartRate
 from emrad_analysis.validation.RPeakF1Score import RPeakF1Score
 from rbm_robust.data_loading.datasets import D02Dataset
+from rbm_robust.models.cnn import CNN
 from rbm_robust.pipelines.cnnLstmPipeline import CnnPipeline
+
+
+class Scoring:
+    heart_rate_prediction: np.ndarray
+    heart_rate_ground_truth: np.ndarray
+    f1_score: float
+    mean_relative_error_hr: float
+    mean_absolute_error: float
+    abs_hr_error: float
+    mean_instantaneous_abs_hr_diff: float
+    mean_relative_error_hr: float
+    mean_absolute_error: float
+    cnn: CNN
+    time_stamps: dict
+
+    def __init__(
+        self,
+        heart_rate_prediction: np.ndarray,
+        heart_rate_ground_truth: np.ndarray,
+        f1_score: float,
+        mean_relative_error_hr: float,
+        mean_absolute_error: float,
+        abs_hr_error: float,
+        mean_instantaneous_abs_hr_diff: float,
+        cnn: CNN,
+        time_stamps: dict,
+    ):
+        self.heart_rate_prediction = heart_rate_prediction
+        self.heart_rate_ground_truth = heart_rate_ground_truth
+        self.f1_score = f1_score
+        self.mean_relative_error_hr = mean_relative_error_hr
+        self.mean_absolute_error = mean_absolute_error
+        self.abs_hr_error = abs_hr_error
+        self.mean_instantaneous_abs_hr_diff = mean_instantaneous_abs_hr_diff
+        self.mean_relative_error_hr = mean_relative_error_hr
+        self.mean_absolute_error = mean_absolute_error
+        self.cnn = cnn
+        self.time_stamps = time_stamps
+
+    def save_myself(self):
+        path = pathlib.Path("~/Dumps")
+        path.mkdir(parents=True, exist_ok=True)
+        filename = datetime.datetime.now().isoformat(sep="-", timespec="seconds") + "_scoring.pkl"
+        file_path = path.joinpath(filename)
+        with open(file_path, "wb") as f:
+            pickle.dump(self, f)
+
+    @staticmethod
+    def load_myself(path: str):
+        with open(path, "rb") as f:
+            return pickle.load(f)
 
 
 def cnnPipelineScoring(pipeline: CnnPipeline, dataset: D02Dataset):
     pipeline = pipeline.clone()
 
+    time_stamps = {}
+
     # Split Data
     train_data, val_data = train_test_split(dataset.subjects, test_size=0.2, random_state=42)
     training_dataset = dataset.get_subset(participants=train_data)
-    validation_dataset = dataset.get_subset(participants=val_data)
+    testing_dataset = dataset.get_subset(participants=val_data)
+
+    time_stamps["Start"] = datetime.datetime.now().isoformat(sep="-", timespec="seconds")
 
     pipeline.self_optimize(training_dataset)
-    pipeline.run(validation_dataset)
 
-    labels = pipeline.feature_extractor.generate_training_labels(validation_dataset).input_labels_
+    time_stamps["AfterTraining"] = datetime.datetime.now().isoformat(sep="-", timespec="seconds")
+
+    pipeline.run(testing_dataset)
+    time_stamps["AfterTestRun"] = datetime.datetime.now().isoformat(sep="-", timespec="seconds")
+
+    labels = pipeline.feature_extractor.generate_training_labels(testing_dataset).input_labels_
+    time_stamps["AfterTestingLabelGeneration"] = datetime.datetime.now().isoformat(sep="-", timespec="seconds")
 
     # normalize predictions and labels between 0 and 1
     result = (
@@ -59,6 +123,19 @@ def cnnPipelineScoring(pipeline: CnnPipeline, dataset: D02Dataset):
     )
 
     mean_absolute_error = np.mean(np.sum(np.square(instantaneous_abs_hr_diff)))
+
+    scoring = Scoring(
+        heart_rate_prediction=heart_rate_prediction,
+        heart_rate_ground_truth=heart_rate_ground_truth,
+        f1_score=f1_score,
+        mean_relative_error_hr=mean_relative_error_hr,
+        mean_absolute_error=mean_absolute_error,
+        abs_hr_error=absolute_hr_error,
+        mean_instantaneous_abs_hr_diff=mean_instantaneous_abs_hr_diff,
+        model=pipeline.cnn,
+        time_stamps=time_stamps,
+    )
+    scoring.save_myself()
 
     # Scoring results
     return {

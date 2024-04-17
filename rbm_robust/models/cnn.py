@@ -96,18 +96,7 @@ class CNN(Algorithm):
 
     def _create_model(self):
         self._model = keras.Sequential()
-        self._model.add(
-            keras.layers.Conv2D(
-                filters=self.filters,
-                kernel_size=self.kernel_size,
-                strides=self.strides,
-                activation="relu",
-            )
-        )
-        self._model.add(keras.layers.MaxPool2D(pool_size=(2, 2), strides=(2, 2)))
-        self._model.add(keras.layers.Conv2D(64, (5, 5), activation="relu"))
-        self._model.add(keras.layers.MaxPooling2D(pool_size=(2, 2)))
-        self._model.add(keras.layers.Dense(64, activation="relu"))
+        self._model.add(keras.applications.ResNet50V2(include_top=False, input_shape=(255, 1000, 5)))
         self._model.add(keras.layers.Dense(1))
         self._model.compile(optimizer="adam", loss="mse")
         return self

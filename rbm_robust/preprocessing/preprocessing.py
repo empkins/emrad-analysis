@@ -203,3 +203,32 @@ class Segmentation(Algorithm):
             segments.append(data_segment)
         self.segmented_signal_ = segments
         return self
+
+
+class Normalizer(Algorithm):
+    _action_methods = "normalize"
+
+    # Input Parameters
+    method: Parameter[str]
+
+    # Results
+    normalized_signal_: pd.Series
+
+    def __init__(self, method: str = "zscore"):
+        self.method = method
+
+    @make_action_safe
+    def normalize(self, signal: pd.Series):
+        """Normalize the input signal
+
+        Args:
+            signal (pd.Series): Input signal to be normalized
+
+        Returns:
+            _type_: Normalized signal
+        """
+        if self.method == "zscore":
+            self.normalized_signal_ = (signal - signal.mean()) / signal.std()
+        elif self.method == "minmax":
+            self.normalized_signal_ = (signal - signal.min()) / (signal.max() - signal.min())
+        return self
