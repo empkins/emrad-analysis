@@ -10,7 +10,7 @@ def main():
     print("Starting")
     path = os.environ.get("DATA_PATH")
     print(path)
-    dataset_path = Path(path)
+    dataset_path = Path("/home/vault/empkins/tpD/D03/Data/MA_Simon_Meske/Data_D02")
     dataset = D02Dataset(dataset_path)
     cnn_pipeline = CnnPipeline()
     cnnPipelineScoring(cnn_pipeline, dataset)
