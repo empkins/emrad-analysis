@@ -12,7 +12,7 @@ pandas = "^1.2.0"
 numpy = ">=1.19,<1.25"
 keras = ">=2.15.0,<2.16"
 scipy = "1.13.0"
-tensorflow = "^2.15.0"
+tensorflow = { version = "^2.15.0", extras = ['and-cuda']}
 biopsykit = "^0.10.0"
 emd-signal = "^1.5.2"
 pywavelets = "^1.5.0"
