@@ -43,7 +43,7 @@ class D02Dataset(Dataset):
             "end": "training_end",
         },  # hier kann es auch training_trial_end sein
     }
-    EXCLUDE_SUBJECTS = ("005", "044", "074", "093", "131", "597", "115")
+    EXCLUDE_SUBJECTS = ("005", "044", "074", "093", "131", "597", "115", "Radar_DB")
 
     def __init__(
         self,

@@ -215,7 +215,7 @@ class CnnPipeline(OptimizablePipeline):
     def __init__(
         self,
         feature_extractor: InputAndLabelGenerator = cf(InputAndLabelGenerator()),
-        cnn: CNN = cf(CNN),
+        cnn: CNN = cf(CNN()),
     ):
         self.feature_extractor = feature_extractor
         self.cnn = cnn

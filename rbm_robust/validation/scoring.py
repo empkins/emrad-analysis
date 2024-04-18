@@ -51,7 +51,7 @@ class Scoring:
     def save_myself(self):
         path = pathlib.Path("~/Dumps")
         path.mkdir(parents=True, exist_ok=True)
-        filename = datetime.datetime.now().isoformat(sep="-", timespec="seconds") + "_scoring.pkl"
+        filename = datetime.now().isoformat(sep="-", timespec="seconds") + "_scoring.pkl"
         file_path = path.joinpath(filename)
         with open(file_path, "wb") as f:
             pickle.dump(self, f)
@@ -69,20 +69,20 @@ def cnnPipelineScoring(pipeline: CnnPipeline, dataset: D02Dataset):
 
     # Split Data
     train_data, val_data = train_test_split(dataset.subjects, test_size=0.2, random_state=42)
-    training_dataset = dataset.get_subset(participants=train_data)
-    testing_dataset = dataset.get_subset(participants=val_data)
+    training_dataset = dataset.get_subset(participant=train_data)
+    testing_dataset = dataset.get_subset(participant=val_data)
 
-    time_stamps["Start"] = datetime.datetime.now().isoformat(sep="-", timespec="seconds")
+    time_stamps["Start"] = datetime.now().isoformat(sep="-", timespec="seconds")
 
     pipeline.self_optimize(training_dataset)
 
-    time_stamps["AfterTraining"] = datetime.datetime.now().isoformat(sep="-", timespec="seconds")
+    time_stamps["AfterTraining"] = datetime.now().isoformat(sep="-", timespec="seconds")
 
     pipeline.run(testing_dataset)
-    time_stamps["AfterTestRun"] = datetime.datetime.now().isoformat(sep="-", timespec="seconds")
+    time_stamps["AfterTestRun"] = datetime.now().isoformat(sep="-", timespec="seconds")
 
     labels = pipeline.feature_extractor.generate_training_labels(testing_dataset).input_labels_
-    time_stamps["AfterTestingLabelGeneration"] = datetime.datetime.now().isoformat(sep="-", timespec="seconds")
+    time_stamps["AfterTestingLabelGeneration"] = datetime.now().isoformat(sep="-", timespec="seconds")
 
     # normalize predictions and labels between 0 and 1
     result = (
