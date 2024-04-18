@@ -10,10 +10,10 @@ def main():
     print("Starting")
     path = os.environ.get("DATA_PATH")
     print(path)
-    # dataset_path = Path(path)
-    # dataset = D02Dataset(dataset_path)
-    # cnn_pipeline = CnnPipeline()
-    # cnnPipelineScoring(cnn_pipeline, dataset)
+    dataset_path = Path(path)
+    dataset = D02Dataset(dataset_path)
+    cnn_pipeline = CnnPipeline()
+    cnnPipelineScoring(cnn_pipeline, dataset)
 
 
 if __name__ == "__main__":
