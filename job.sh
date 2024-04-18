@@ -5,7 +5,7 @@
 #SBATCH --time=02:00:00
 #SBATCH --gres=gpu:1
 
-cd "$WORK"/emrad-analysis || exit
+cd "$HOME"/emrad-analysis || exit
 
 module unload python
 module module load python/3.10-anaconda
