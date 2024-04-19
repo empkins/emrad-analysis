@@ -339,15 +339,14 @@ class D02Dataset(Dataset):
     @lru_cache(maxsize=1)
     def _load_synced_data_windowed(self, subject_id) -> pd.DataFrame:
         ecg_df = self._load_ecg(subject_id)
-
         # Load the radar data
         radar_df = self._load_radar(subject_id, add_sync_in=True, add_sync_out=False)
-        # radar_df = radar_df.droplevel(0, axis=1)
+        radar_df.rename(columns={"Sync_In": "Sync_Out"}, inplace=True)
 
         # Resample the data
         synced = SyncedDataset(sync_type="m-sequence")
         # Synchronize the data
-        synced.add_dataset("radar", data=radar_df, sync_channel_name="Sync_In", sampling_rate=self.SAMPLING_RATE_RADAR)
+        synced.add_dataset("radar", data=radar_df, sync_channel_name="Sync_Out", sampling_rate=self.SAMPLING_RATE_RADAR)
         synced.add_dataset("ecg", data=ecg_df, sync_channel_name="Sync_Out", sampling_rate=self.SAMPLING_RATE_ACQ)
         synced.resample_datasets(fs_out=self.SAMPLING_RATE_DOWNSAMPLED, method="dynamic", wave_frequency=0.2)
 
@@ -371,7 +370,10 @@ class D02Dataset(Dataset):
             synced_window = SyncedDataset(sync_type="m-sequence")
             # Synchronize the data
             synced_window.add_dataset(
-                "radar", data=radar_df_window, sync_channel_name="Sync_In", sampling_rate=self.SAMPLING_RATE_DOWNSAMPLED
+                "radar",
+                data=radar_df_window,
+                sync_channel_name="Sync_Out",
+                sampling_rate=self.SAMPLING_RATE_DOWNSAMPLED,
             )
             synced_window.add_dataset(
                 "ecg", data=ecg_df_window, sync_channel_name="Sync_Out", sampling_rate=self.SAMPLING_RATE_DOWNSAMPLED
