@@ -10,7 +10,7 @@ def main():
     print("Starting")
     path = os.environ.get("DATA_PATH")
     print(path)
-    dataset_path = Path("/Users/simonmeske/Desktop/TestOrdner/data_per_subject")
+    dataset_path = Path(path)
     dataset = D02Dataset(dataset_path)
     cnn_pipeline = CnnPipeline()
     cnnPipelineScoring(cnn_pipeline, dataset)
