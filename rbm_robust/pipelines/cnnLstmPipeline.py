@@ -1,3 +1,5 @@
+import os
+
 import pytz
 from typing_extensions import Self
 
@@ -147,8 +149,10 @@ class InputAndLabelGenerator(Algorithm):
         segmentation_clone = self.segmentation.clone()
         pre_processor_clone = self.pre_processor.clone()
         res = []
+        base_path = "$WORK"
         for i in range(len(dataset.subjects)):
             subject = dataset.get_subset(participant=dataset.subjects[i])
+            subject_list = []
             print(f"Subject {subject.subjects[0]}")
             radar_data = subject.synced_radar
             phases = subject.phases
@@ -168,8 +172,14 @@ class InputAndLabelGenerator(Algorithm):
                         segment, subject.SAMPLING_RATE_DOWNSAMPLED
                     ).preprocessed_signal_
                     phase_res.append(pre_processed_segment)
-                res.append(phase_res)
-        self.input_data_ = res
+                # res.append(phase_res)
+                subject_list.append(phase_res)
+            # Save subject data
+            subject_path = base_path + f"/{subject.subjects[0]}/inputs"
+            if not os.path.exists(subject_path):
+                os.makedirs(subject_path)
+            for j in range(len(subject_list)):
+                np.save(subject_path + f"/{j}.npy", subject_list[j])
         return self
 
     @make_action_safe
@@ -187,11 +197,13 @@ class InputAndLabelGenerator(Algorithm):
         downsampling_clone = self.downsampling.clone()
         segmentation_clone = self.segmentation.clone()
         normalization_clone = self.normalizer.clone()
-        res = []
+        base_path = "$WORK"
         for i in range(len(dataset.subjects)):
-            data = dataset[i].synced_ecg
-            phases = dataset[i].phases
-            sampling_rate = dataset[i].SAMPLING_RATE_DOWNSAMPLED
+            subject = dataset.get_subset(participant=dataset.subjects[i])
+            subject_list = []
+            data = subject.synced_ecg
+            phases = subject.phases
+            sampling_rate = subject.SAMPLING_RATE_DOWNSAMPLED
             for phase in phases.keys():
                 phase_res = []
                 phase_data = data[phases[phase]["start"] : phases[phase]["end"]]
@@ -206,8 +218,12 @@ class InputAndLabelGenerator(Algorithm):
                     # Normalize the segment
                     segment = normalization_clone.normalize(segment).normalized_signal_
                     phase_res.append(segment)
-                res.append(phase_res)
-        self.input_labels_ = res
+                subject_list.append(phase_res)
+            subject_path = base_path + f"/{subject.subjects[0]}/labels"
+            if not os.path.exists(subject_path):
+                os.makedirs(subject_path)
+            for j in range(len(subject_list)):
+                np.save(subject_path + f"/{j}.npy", subject_list[j])
         return self
 
 

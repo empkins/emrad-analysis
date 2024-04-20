@@ -1,3 +1,4 @@
+import os
 from datetime import datetime
 from typing import Optional, Tuple
 import tensorflow as tf
@@ -62,7 +63,39 @@ class CNN(Algorithm):
         self.batch_size = batch_size
         self._model = _model
 
-    def self_optimize(self, training_data: list, labels: np.ndarray):
+    def batch_generator(self, base_path):
+        subjects = [name for name in os.listdir(base_path) if os.path.isdir(os.path.join(base_path, name))]
+        i = 0
+        batch_size = 32
+        while True:
+            if i == len(subjects):
+                i = 0  # reset the counter if we've gone through all subjects
+
+            subject_path = os.path.join(base_path, subjects[i])
+            input_path = os.path.join(subject_path, "inputs")
+            label_path = os.path.join(subject_path, "labels")
+
+            input_paths = [os.path.join(input_path, file) for file in os.listdir(input_path) if file.endswith(".npy")]
+            label_paths = [os.path.join(label_path, file) for file in os.listdir(label_path) if file.endswith(".npy")]
+
+            # Order the paths
+            input_paths.sort()
+            label_paths.sort()
+
+            # zip the paths
+            paths = zip(input_paths, label_paths)
+
+            for element in paths:
+                # Load inputs
+                inputs = np.load(element[0])
+                # Load labels
+                labels = np.load(element[1])
+                # Yield batches
+                for j in range(0, len(inputs), batch_size):
+                    yield inputs[j : j + batch_size], labels[j : j + batch_size]
+            i += 1
+
+    def self_optimize(self, training_data_path: str, label_path: str):
         """Use the training data and the corresponding labels to train the model with the hyperparameters passed in the init
 
         Args:
@@ -76,6 +109,8 @@ class CNN(Algorithm):
         log_dir = "~/Runs/logs/fit/" + datetime.datetime.now().strftime("%Y%m%d-%H%M%S")
         tensorboard_callback = tf.keras.callbacks.TensorBoard(log_dir=log_dir, histogram_freq=1)
 
+        batch_generator = self.batch_generator(training_data_path, label_path, self.batch_size)
+
         # assert (
         #     self._model.layers[0].input_shape[1] == training_data.shape[1]
         # ), f"Your training data has dimension {training_data.shape} while the model has input shape {self._model.layers[0].input_shape}!"
@@ -84,8 +119,7 @@ class CNN(Algorithm):
         # ), f"Your training data has dimension {training_data.shape} while the model has input shape {self._model.layers[0].input_shape}!"
 
         self._model.fit(
-            training_data,
-            labels,
+            batch_generator,
             epochs=self.num_epochs,
             batch_size=self.batch_size,
             validation_split=0.1,
