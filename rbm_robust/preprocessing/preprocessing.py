@@ -156,7 +156,7 @@ class WaveletTransformer(Algorithm):
             coefficients, frequencies = pywt.cwt(imf, scales, self.wavelet_type)
 
             # Normalize Coefficients
-            if sum(coefficients) != 0:
+            if np.sum(coefficients) != 0:
                 coefficients = (coefficients - np.mean(coefficients)) / np.std(coefficients)
             transformed.append(coefficients)
         if len(transformed) == 0:
