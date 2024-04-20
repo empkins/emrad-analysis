@@ -128,7 +128,7 @@ class WaveletTransformer(Algorithm):
     sampling_rate: Parameter[float]
 
     # Results
-    transformed_signal_: list[dict[str : np.ndarray]]
+    transformed_signal_: np.array
 
     def __init__(
         self, wavelet_coefficients: Tuple[int, int] = (1, 256), wavelet_type="morl", sampling_rate: float = 200
@@ -156,7 +156,9 @@ class WaveletTransformer(Algorithm):
             # Normalize Coefficients
             coefficients = (coefficients - np.mean(coefficients)) / np.std(coefficients)
             transformed.append(coefficients)
-
+        print(len(transformed))
+        if len(transformed) == 0:
+            self.transformed_signal_ = np.zeros(1)
         self.transformed_signal_ = np.stack(transformed, axis=2)
         return self
 

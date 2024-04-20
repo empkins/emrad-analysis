@@ -10,11 +10,12 @@ def main():
     print("Starting")
     path = os.environ.get("DATA_PATH")
     print(path)
-    dataset_path = Path("/home/vault/empkins/tpD/D03/Data/MA_Simon_Meske/Data_D02/data_per_subject")
+    dataset_path = Path("/Users/simonmeske/Desktop/TestOrdner/data_per_subject")
     dataset = D02Dataset(dataset_path)
     cnn_pipeline = CnnPipeline()
     cnnPipelineScoring(cnn_pipeline, dataset)
 
 
+# /home/vault/empkins/tpD/D03/Data/MA_Simon_Meske/Data_D02/data_per_subject
 if __name__ == "__main__":
     main()

@@ -1,3 +1,4 @@
+import pytz
 from typing_extensions import Self
 
 import numpy as np
@@ -147,19 +148,24 @@ class InputAndLabelGenerator(Algorithm):
         pre_processor_clone = self.pre_processor.clone()
         res = []
         for i in range(len(dataset.subjects)):
-            radar_data = dataset[i].synced_radar
-            phases = dataset[i].phases
-            sampling_rate = dataset[i].SAMPLING_RATE_DOWNSAMPLED
+            subject = dataset.get_subset(participant=dataset.subjects[i])
+            print(f"Subject {subject.subjects[0]}")
+            radar_data = subject.synced_radar
+            phases = subject.phases
+            sampling_rate = subject.SAMPLING_RATE_DOWNSAMPLED
             for phase in phases.keys():
                 phase_res = []
                 # Get the data for the current phase
-                phase_radar_data = radar_data[phases[phase]["start"] : phases[phase]["end"]]
+                timezone = pytz.timezone("Europe/Berlin")
+                phase_start = timezone.localize(phases[phase]["start"])
+                phase_end = timezone.localize(phases[phase]["end"])
+                phase_radar_data = radar_data[phase_start:phase_end]
                 # Segmentation
                 segments = segmentation_clone.segment(phase_radar_data, sampling_rate).segmented_signal_
                 for segment in segments:
                     # Preprocess the data
                     pre_processed_segment = pre_processor_clone.preprocess(
-                        segment, dataset[i].SAMPLING_RATE_DOWNSAMPLED
+                        segment, subject.SAMPLING_RATE_DOWNSAMPLED
                     ).preprocessed_signal_
                     phase_res.append(pre_processed_segment)
                 res.append(phase_res)

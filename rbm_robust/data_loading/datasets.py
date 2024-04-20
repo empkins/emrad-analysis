@@ -447,13 +447,16 @@ class D02Dataset(Dataset):
     @lru_cache(maxsize=1)
     def _load_synced_radar(self, subject_id):
         synced_data = self._load_synced_data_windowed(subject_id).copy()
-        df = synced_data.filter(regex="^radar")
+        df = synced_data.filter(regex="^radar").copy()
         df.columns = [col.replace("radar_", "") for col in df.columns]
-        df.drop(columns=["Sync_In"], inplace=True)
+        if "Sync_Out" in df.columns:
+            df.drop(columns=["Sync_Out"], inplace=True)
+        if "Sync_In" in df.columns:
+            df.drop(columns=["Sync_In"], inplace=True)
         return df
 
     def _load_synced_ecg(self, subject_id):
-        synced_data = self._load_synced_data(subject_id).copy()
+        synced_data = self._load_synced_data_windowed(subject_id).copy()
         df = synced_data.filter(regex="^ecg")
         df.drop(columns=["ecg_Sync_Out"], inplace=True)
         return df
@@ -488,9 +491,9 @@ class D02Dataset(Dataset):
         # If you want to set the index back to its original column
         df.set_index("index", inplace=True)
 
-        if not os.path.exists(subject_path_cleaned):
-            os.mkdir(subject_path_cleaned)
-        df.to_csv(subject_path_cleaned_file)
+        # if not os.path.exists(subject_path_cleaned):
+        #     os.mkdir(subject_path_cleaned)
+        # df.to_csv(subject_path_cleaned_file)
         return df
 
     def _clean_phase_df(self, df) -> Dict:
@@ -544,9 +547,9 @@ class D02Dataset(Dataset):
                 phases[phase_name] = {"start": pair[0], "end": pair[1]}
         # Save Phase dict as df
         phase_df = pd.DataFrame.from_dict(phases, orient="index")
-        if not os.path.exists(subject_phase_path):
-            os.mkdir(subject_phase_path)
-        phase_df.to_csv(subject_phase_path_file)
+        # if not os.path.exists(subject_phase_path):
+        #     os.mkdir(subject_phase_path)
+        # phase_df.to_csv(subject_phase_path_file)
         return phases
 
 
