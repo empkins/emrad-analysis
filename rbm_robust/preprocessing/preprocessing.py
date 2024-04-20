@@ -113,9 +113,11 @@ class EmpiricalModeDecomposer(Algorithm):
         Returns:
             _type_: Decomposed signal
         """
-
+        # Hier kann manchmal ein leeres array zurückgegeben werden
         emd = EMD()
         self.imfs_ = emd.emd(signal, np.arange(len(signal)) / self.sampling_rate, max_imf=self.n_imfs)
+        if len(self.imfs_) == 0:
+            self.imfs_ = np.zeros((5, 1000))
         return self
 
 
@@ -154,9 +156,9 @@ class WaveletTransformer(Algorithm):
             coefficients, frequencies = pywt.cwt(imf, scales, self.wavelet_type)
 
             # Normalize Coefficients
-            coefficients = (coefficients - np.mean(coefficients)) / np.std(coefficients)
+            if sum(coefficients) != 0:
+                coefficients = (coefficients - np.mean(coefficients)) / np.std(coefficients)
             transformed.append(coefficients)
-        print(len(transformed))
         if len(transformed) == 0:
             self.transformed_signal_ = np.zeros(1)
         self.transformed_signal_ = np.stack(transformed, axis=2)
@@ -189,7 +191,10 @@ class Segmentation(Algorithm):
             end = start_time + pd.Timedelta(seconds=self.window_size_in_seconds)
             # Preprocess the data
             data_segment = signal[start_time:end]
-            time_diff = data_segment.index[-1] - data_segment.index[0]
+            if len(data_segment) == 0:
+                time_diff = pd.Timedelta(seconds=0)
+            else:
+                time_diff = data_segment.index[-1] - data_segment.index[0]
             # Zero padding
             if len(data_segment) < self.window_size_in_seconds * sampling_rate:
                 rows_needed = int((pd.Timedelta(seconds=self.window_size_in_seconds) - time_diff) / time_step)
