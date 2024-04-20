@@ -230,9 +230,12 @@ class CnnPipeline(OptimizablePipeline):
         self.feature_extractor = self.feature_extractor.clone()
         self.cnn = self.cnn.clone()
 
+        print("Extracting features")
         self.feature_extractor.generate_training_input(dataset)
+        print("Extracting labels")
         self.feature_extractor.generate_training_labels(dataset)
 
+        print("Optimizing CNN")
         self.cnn.self_optimize(self.feature_extractor.input_data_, self.feature_extractor.input_labels_)
 
         return self

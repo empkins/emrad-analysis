@@ -73,11 +73,11 @@ def cnnPipelineScoring(pipeline: CnnPipeline, dataset: D02Dataset):
     testing_dataset = dataset.get_subset(participant=val_data)
 
     time_stamps["Start"] = datetime.now().isoformat(sep="-", timespec="seconds")
-
+    print("Start Training")
     pipeline.self_optimize(training_dataset)
 
     time_stamps["AfterTraining"] = datetime.now().isoformat(sep="-", timespec="seconds")
-
+    print("Training done")
     pipeline.run(testing_dataset)
     time_stamps["AfterTestRun"] = datetime.now().isoformat(sep="-", timespec="seconds")
 
@@ -135,7 +135,7 @@ def cnnPipelineScoring(pipeline: CnnPipeline, dataset: D02Dataset):
         model=pipeline.cnn,
         time_stamps=time_stamps,
     )
-    scoring.save_myself()
+    # scoring.save_myself()
 
     # Scoring results
     return {
