@@ -113,8 +113,8 @@ class InputAndLabelGenerator(Algorithm):
     downsampled_hz: int
 
     # Results
-    input_data_: np.ndarray
-    input_labels_: np.ndarray
+    input_data_path_: str
+    input_labels_path_: str
 
     def __init__(
         self,
@@ -149,7 +149,7 @@ class InputAndLabelGenerator(Algorithm):
         """
         segmentation_clone = self.segmentation.clone()
         pre_processor_clone = self.pre_processor.clone()
-        base_path = "$WORK"
+        base_path = "$TMPDIR"
         for i in range(len(dataset.subjects)):
             subject = dataset.get_subset(participant=dataset.subjects[i])
             subject_path = base_path + f"/{subject.subjects[0]}/inputs"
@@ -157,31 +157,39 @@ class InputAndLabelGenerator(Algorithm):
                 os.makedirs(subject_path)
             print(f"Subject {subject.subjects[0]}")
             radar_data = subject.synced_radar
+            ecg_data = subject.synced_ecg
             phases = subject.phases
             sampling_rate = subject.SAMPLING_RATE_DOWNSAMPLED
             for phase in phases.keys():
                 if "ei" not in phase:
                     continue
                 print(f"Starting phase {phase}")
-                phase_res = []
                 # Get the data for the current phase
                 timezone = pytz.timezone("Europe/Berlin")
                 phase_start = timezone.localize(phases[phase]["start"])
                 phase_end = timezone.localize(phases[phase]["end"])
                 phase_radar_data = radar_data[phase_start:phase_end]
+                phase_ecg_data = ecg_data[phase_start:phase_end]
                 # Segmentation
+                if len(phase_radar_data) == 0 or len(phase_ecg_data) == 0:
+                    continue
+                # Create Dir
+                phase_path = subject_path + f"/{phase}"
+                if not os.path.exists(phase_path):
+                    os.makedirs(phase_path)
                 segments = segmentation_clone.segment(phase_radar_data, sampling_rate).segmented_signal_
+                segment_count = 0
                 for segment in segments:
                     # Preprocess the data
                     pre_processed_segment = pre_processor_clone.preprocess(
                         segment, subject.SAMPLING_RATE_DOWNSAMPLED
                     ).preprocessed_signal_
-                    phase_res.append(pre_processed_segment)
-                # res.append(phase_res)
-                print(f"Saving Phase {phase}")
-                with open(subject_path + f"/{phase}.pkl", "wb") as f:
-                    pickle.dump(phase_res, f)
-            # Save subject data
+                    # Save the segment
+                    with open(phase_path + f"/{segment_count}.pkl", "wb") as f:
+                        pickle.dump(pre_processed_segment, f)
+                    segment_count += 1
+                print(f"Phase processed {phase}")
+        self.input_data_path_ = base_path
         return self
 
     @make_action_safe
@@ -199,11 +207,11 @@ class InputAndLabelGenerator(Algorithm):
         downsampling_clone = self.downsampling.clone()
         segmentation_clone = self.segmentation.clone()
         normalization_clone = self.normalizer.clone()
-        base_path = "$WORK"
+        base_path = "$TMPDIR"
         for i in range(len(dataset.subjects)):
             subject = dataset.get_subset(participant=dataset.subjects[i])
-            subject_list = []
-            data = subject.synced_ecg
+            ecg_data = subject.synced_ecg
+            radar_data = subject.synced_radar
             phases = subject.phases
             sampling_rate = subject.SAMPLING_RATE_DOWNSAMPLED
             print(f"Subject {subject.subjects[0]}")
@@ -214,9 +222,16 @@ class InputAndLabelGenerator(Algorithm):
                 if "ei" not in phase:
                     continue
                 print(f"Starting phase {phase}")
-                phase_res = []
-                phase_data = data[phases[phase]["start"] : phases[phase]["end"]]
+                phase_data = ecg_data[phases[phase]["start"] : phases[phase]["end"]]
+                phase_radar = radar_data[phases[phase]["start"] : phases[phase]["end"]]
+                if len(phase_data) == 0 or len(phase_radar) == 0:
+                    continue
+                # Create Dir
+                phase_path = subject_path + f"/{phase}"
+                if not os.path.exists(phase_path):
+                    os.makedirs(phase_path)
                 segments = segmentation_clone.segment(phase_data, sampling_rate).segmented_signal_
+                segment_count = 0
                 for segment in segments:
                     # Compute the blips
                     segment = blip_algo_clone.compute(segment).blips_
@@ -226,10 +241,13 @@ class InputAndLabelGenerator(Algorithm):
                     ).downsampled_signal_
                     # Normalize the segment
                     segment = normalization_clone.normalize(segment).normalized_signal_
-                    phase_res.append(segment)
-                print(f"Saving Phase {phase}")
-                with open(subject_path + f"/{phase}.pkl", "wb") as f:
-                    pickle.dump(phase_res, f)
+                    # Save the segment
+                    with open(phase_path + f"/{segment_count}.pkl", "wb") as f:
+                        pickle.dump(segment, f)
+                    segment_count += 1
+                    # phase_res.append(segment)
+                print(f"Phase finished {phase}")
+        self.input_labels_path_ = base_path
         return self
 
 
@@ -258,7 +276,7 @@ class CnnPipeline(OptimizablePipeline):
         self.feature_extractor.generate_training_labels(dataset)
 
         print("Optimizing CNN")
-        self.cnn.self_optimize(self.feature_extractor.input_data_, self.feature_extractor.input_labels_)
+        self.cnn.self_optimize(self.feature_extractor.input_data_path_, self.feature_extractor.input_labels_path_)
 
         return self
 

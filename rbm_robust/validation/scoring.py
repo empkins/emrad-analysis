@@ -80,7 +80,7 @@ def cnnPipelineScoring(pipeline: CnnPipeline, dataset: D02Dataset):
     print("Training done")
     pipeline.run(testing_dataset)
     time_stamps["AfterTestRun"] = datetime.now().isoformat(sep="-", timespec="seconds")
-
+    # TODO
     labels = pipeline.feature_extractor.generate_training_labels(testing_dataset).input_labels_
     time_stamps["AfterTestingLabelGeneration"] = datetime.now().isoformat(sep="-", timespec="seconds")
 
