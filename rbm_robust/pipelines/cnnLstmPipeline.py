@@ -1,4 +1,5 @@
 import os
+import pickle
 
 import pytz
 from typing_extensions import Self
@@ -123,7 +124,7 @@ class InputAndLabelGenerator(Algorithm):
         segmentation: Segmentation = cf(Segmentation()),
         normalizer: Normalizer = cf(Normalizer()),
         segment_size_in_seconds: int = 5,
-        overlap: float = 0.8,
+        overlap: float = 0.4,
         downsampled_hz: int = 200,
     ):
         self.pre_processor = pre_processor
@@ -148,16 +149,20 @@ class InputAndLabelGenerator(Algorithm):
         """
         segmentation_clone = self.segmentation.clone()
         pre_processor_clone = self.pre_processor.clone()
-        res = []
         base_path = "$WORK"
         for i in range(len(dataset.subjects)):
             subject = dataset.get_subset(participant=dataset.subjects[i])
-            subject_list = []
+            subject_path = base_path + f"/{subject.subjects[0]}/inputs"
+            if not os.path.exists(subject_path):
+                os.makedirs(subject_path)
             print(f"Subject {subject.subjects[0]}")
             radar_data = subject.synced_radar
             phases = subject.phases
             sampling_rate = subject.SAMPLING_RATE_DOWNSAMPLED
             for phase in phases.keys():
+                if "ei" not in phase:
+                    continue
+                print(f"Starting phase {phase}")
                 phase_res = []
                 # Get the data for the current phase
                 timezone = pytz.timezone("Europe/Berlin")
@@ -173,13 +178,10 @@ class InputAndLabelGenerator(Algorithm):
                     ).preprocessed_signal_
                     phase_res.append(pre_processed_segment)
                 # res.append(phase_res)
-                subject_list.append(phase_res)
+                print(f"Saving Phase {phase}")
+                with open(subject_path + f"/{phase}.pkl", "wb") as f:
+                    pickle.dump(phase_res, f)
             # Save subject data
-            subject_path = base_path + f"/{subject.subjects[0]}/inputs"
-            if not os.path.exists(subject_path):
-                os.makedirs(subject_path)
-            for j in range(len(subject_list)):
-                np.save(subject_path + f"/{j}.npy", subject_list[j])
         return self
 
     @make_action_safe
@@ -204,7 +206,14 @@ class InputAndLabelGenerator(Algorithm):
             data = subject.synced_ecg
             phases = subject.phases
             sampling_rate = subject.SAMPLING_RATE_DOWNSAMPLED
+            print(f"Subject {subject.subjects[0]}")
+            subject_path = base_path + f"/{subject.subjects[0]}/labels"
+            if not os.path.exists(subject_path):
+                os.makedirs(subject_path)
             for phase in phases.keys():
+                if "ei" not in phase:
+                    continue
+                print(f"Starting phase {phase}")
                 phase_res = []
                 phase_data = data[phases[phase]["start"] : phases[phase]["end"]]
                 segments = segmentation_clone.segment(phase_data, sampling_rate).segmented_signal_
@@ -218,12 +227,9 @@ class InputAndLabelGenerator(Algorithm):
                     # Normalize the segment
                     segment = normalization_clone.normalize(segment).normalized_signal_
                     phase_res.append(segment)
-                subject_list.append(phase_res)
-            subject_path = base_path + f"/{subject.subjects[0]}/labels"
-            if not os.path.exists(subject_path):
-                os.makedirs(subject_path)
-            for j in range(len(subject_list)):
-                np.save(subject_path + f"/{j}.npy", subject_list[j])
+                print(f"Saving Phase {phase}")
+                with open(subject_path + f"/{phase}.pkl", "wb") as f:
+                    pickle.dump(phase_res, f)
         return self
 
 

@@ -148,7 +148,11 @@ class D02Dataset(Dataset):
         """
         if not (self.is_single(None) or (self.is_single(["participant"]))):
             raise ValueError("Data can only be accessed, when there is just a single participant in the dataset.")
-
+        subject_id = self.subjects[0]
+        try:
+            synced_data = self._load_synced_data_windowed(subject_id).copy()
+        except Exception as _:
+            synced_data = self._load_synced_data(subject_id).copy()
         ecg_signal = self.synced_data[["ecg"]]
         ecg_signal["ecg"] = nk.ecg_clean(
             ecg_signal=ecg_signal["ecg"], sampling_rate=int(self.SAMPLING_RATE_ACQ), method="neurokit"
@@ -413,12 +417,12 @@ class D02Dataset(Dataset):
 
         # Load the radar data
         radar_df = self._load_radar(subject_id, add_sync_in=True, add_sync_out=False)
-        # radar_df = radar_df.droplevel(0, axis=1)
+        radar_df.rename(columns={"Sync_In": "Sync_Out"}, inplace=True)
 
         # Synchronize the data
         synced_dataset = SyncedDataset(sync_type="m-sequence")
         synced_dataset.add_dataset(
-            "radar", data=radar_df, sync_channel_name="Sync_In", sampling_rate=self.SAMPLING_RATE_RADAR
+            "radar", data=radar_df, sync_channel_name="Sync_Out", sampling_rate=self.SAMPLING_RATE_RADAR
         )
         synced_dataset.add_dataset(
             "ecg", data=ecg_df, sync_channel_name="Sync_Out", sampling_rate=self.SAMPLING_RATE_ACQ
@@ -440,13 +444,14 @@ class D02Dataset(Dataset):
         result_df.columns = [
             "".join(col).replace("aligned_", "") if col[1] != "ecg" else "ecg" for col in result_df.columns.values
         ]
-        # cols_to_drop = result_df.columns[result_df.columns.str.contains("sync", case=False)]
-        # result_df = result_df.drop(columns=cols_to_drop)
         return result_df
 
     @lru_cache(maxsize=1)
     def _load_synced_radar(self, subject_id):
-        synced_data = self._load_synced_data_windowed(subject_id).copy()
+        try:
+            synced_data = self._load_synced_data_windowed(subject_id).copy()
+        except Exception as _:
+            synced_data = self._load_synced_data(subject_id).copy()
         df = synced_data.filter(regex="^radar").copy()
         df.columns = [col.replace("radar_", "") for col in df.columns]
         if "Sync_Out" in df.columns:
@@ -456,7 +461,10 @@ class D02Dataset(Dataset):
         return df
 
     def _load_synced_ecg(self, subject_id):
-        synced_data = self._load_synced_data_windowed(subject_id).copy()
+        try:
+            synced_data = self._load_synced_data_windowed(subject_id).copy()
+        except Exception as _:
+            synced_data = self._load_synced_data(subject_id).copy()
         df = synced_data.filter(regex="^ecg")
         df.drop(columns=["ecg_Sync_Out"], inplace=True)
         return df
