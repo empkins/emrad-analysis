@@ -10,9 +10,7 @@ readme = "README.md"
 python = ">=3.9,<3.11"
 pandas = "^1.2.0"
 numpy = ">=1.19,<1.25"
-keras = ">=2.15.0,<2.16"
 scipy = "1.13.0"
-tensorflow = "^2.15.0"
 biopsykit = "^0.10.0"
 emd-signal = "^1.5.2"
 pywavelets = "^1.5.0"
@@ -21,6 +19,8 @@ ipympl = "^0.9.3"
 emrad-toolbox = {git = "https://github.com/empkins/emrad-toolbox.git", rev = "develop"}
 mne = "1.4"
 empkins-io = {git = "https://github.com/empkins/empkins-io.git", rev = "dev_simon"}
+tensorflow = "2.11.0"
+keras = "2.11.0"
 
 [tool.poetry.group.dev.dependencies]
 black = "^23.11.0"

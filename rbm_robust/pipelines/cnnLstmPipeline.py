@@ -149,10 +149,10 @@ class InputAndLabelGenerator(Algorithm):
         """
         segmentation_clone = self.segmentation.clone()
         pre_processor_clone = self.pre_processor.clone()
-        base_path = "$TMPDIR"
+        base_path = "Data"
         for i in range(len(dataset.subjects)):
             subject = dataset.get_subset(participant=dataset.subjects[i])
-            subject_path = base_path + f"/{subject.subjects[0]}/inputs"
+            subject_path = base_path + f"/{subject.subjects[0]}"
             if not os.path.exists(subject_path):
                 os.makedirs(subject_path)
             print(f"Subject {subject.subjects[0]}")
@@ -174,19 +174,25 @@ class InputAndLabelGenerator(Algorithm):
                 if len(phase_radar_data) == 0 or len(phase_ecg_data) == 0:
                     continue
                 # Create Dir
-                phase_path = subject_path + f"/{phase}"
+                phase_path = subject_path + f"/{phase}/inputs"
                 if not os.path.exists(phase_path):
                     os.makedirs(phase_path)
                 segments = segmentation_clone.segment(phase_radar_data, sampling_rate).segmented_signal_
                 segment_count = 0
+                data_segments = []
                 for segment in segments:
+                    if len(data_segments) == 32:
+                        with open(phase_path + f"/{segment_count}.pkl",'wb') as f:
+                            pickle.dump(data_segments,f)
+                        data_segments = []
                     # Preprocess the data
                     pre_processed_segment = pre_processor_clone.preprocess(
                         segment, subject.SAMPLING_RATE_DOWNSAMPLED
                     ).preprocessed_signal_
+                    data_segments.append(pre_processed_segment)
                     # Save the segment
-                    with open(phase_path + f"/{segment_count}.pkl", "wb") as f:
-                        pickle.dump(pre_processed_segment, f)
+                with open(phase_path + f"/{segment_count}.pkl", "wb") as f:
+                    pickle.dump(data_segments, f)
                     segment_count += 1
                 print(f"Phase processed {phase}")
         self.input_data_path_ = base_path
@@ -203,11 +209,12 @@ class InputAndLabelGenerator(Algorithm):
         Returns:
             np.ndarray: Input labels for the BiLSTM model
         """
+        print("Labels")
         blip_algo_clone = self.blip_algo.clone()
         downsampling_clone = self.downsampling.clone()
         segmentation_clone = self.segmentation.clone()
         normalization_clone = self.normalizer.clone()
-        base_path = "$TMPDIR"
+        base_path = "Data"
         for i in range(len(dataset.subjects)):
             subject = dataset.get_subset(participant=dataset.subjects[i])
             ecg_data = subject.synced_ecg
@@ -215,7 +222,7 @@ class InputAndLabelGenerator(Algorithm):
             phases = subject.phases
             sampling_rate = subject.SAMPLING_RATE_DOWNSAMPLED
             print(f"Subject {subject.subjects[0]}")
-            subject_path = base_path + f"/{subject.subjects[0]}/labels"
+            subject_path = base_path + f"/{subject.subjects[0]}"
             if not os.path.exists(subject_path):
                 os.makedirs(subject_path)
             for phase in phases.keys():
@@ -227,12 +234,17 @@ class InputAndLabelGenerator(Algorithm):
                 if len(phase_data) == 0 or len(phase_radar) == 0:
                     continue
                 # Create Dir
-                phase_path = subject_path + f"/{phase}"
+                phase_path = subject_path + f"/{phase}/labels"
                 if not os.path.exists(phase_path):
                     os.makedirs(phase_path)
                 segments = segmentation_clone.segment(phase_data, sampling_rate).segmented_signal_
                 segment_count = 0
+                data_segments = []
                 for segment in segments:
+                    if len(data_segments) == 32:
+                        with open(phase_path + f"/{segment_count}.pkl",'wb') as f:
+                            pickle.dump(data_segments,f)
+                        data_segments = []
                     # Compute the blips
                     segment = blip_algo_clone.compute(segment).blips_
                     # Downsample the segment
@@ -241,9 +253,10 @@ class InputAndLabelGenerator(Algorithm):
                     ).downsampled_signal_
                     # Normalize the segment
                     segment = normalization_clone.normalize(segment).normalized_signal_
+                    data_segments.append(segment)
                     # Save the segment
-                    with open(phase_path + f"/{segment_count}.pkl", "wb") as f:
-                        pickle.dump(segment, f)
+                with open(phase_path + f"/{segment_count}.pkl", "wb") as f:
+                    pickle.dump(data_segments, f)
                     segment_count += 1
                     # phase_res.append(segment)
                 print(f"Phase finished {phase}")
@@ -271,12 +284,13 @@ class CnnPipeline(OptimizablePipeline):
         self.cnn = self.cnn.clone()
 
         print("Extracting features")
-        self.feature_extractor.generate_training_input(dataset)
+        #self.feature_extractor.generate_training_input(dataset)
         print("Extracting labels")
-        self.feature_extractor.generate_training_labels(dataset)
+        #self.feature_extractor.generate_training_labels(dataset)
 
         print("Optimizing CNN")
-        self.cnn.self_optimize(self.feature_extractor.input_data_path_, self.feature_extractor.input_labels_path_)
+        #self.cnn.self_optimize(self.feature_extractor.input_data_path_, self.feature_extractor.input_labels_path_)
+        self.cnn.self_optimize("Data", "Data")
 
         return self
 

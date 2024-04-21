@@ -2,7 +2,7 @@ import os
 from datetime import datetime
 from typing import Optional, Tuple
 import tensorflow as tf
-
+import pickle
 import keras
 import numpy as np
 from tpcp import Algorithm, OptimizableParameter
@@ -45,7 +45,7 @@ class CNN(Algorithm):
         bias_initializer: str = "zeros",
         learning_rate: float = 0.001,
         num_epochs: int = 12,
-        batch_size: int = 128,
+        batch_size: int = 255,
         _model=None,
     ):
         self.groups = groups
@@ -66,33 +66,54 @@ class CNN(Algorithm):
     def batch_generator(self, base_path):
         subjects = [name for name in os.listdir(base_path) if os.path.isdir(os.path.join(base_path, name))]
         i = 0
-        batch_size = 32
+        batch_size = self.batch_size
         while True:
             if i == len(subjects):
                 i = 0  # reset the counter if we've gone through all subjects
+            
+            subject_id = subjects[i]
+            phases = [name for name in os.listdir(os.path.join(base_path,subject_id)) if os.path.isdir(os.path.join(base_path, subject_id, name))]
 
-            subject_path = os.path.join(base_path, subjects[i])
-            input_path = os.path.join(subject_path, "inputs")
-            label_path = os.path.join(subject_path, "labels")
+            for phase in phases:
+                phase_path = os.path.join(base_path, subject_id, phase)
+                input_path = os.path.join(phase_path, "inputs")
+                label_path = os.path.join(phase_path, "labels")
 
-            input_paths = [os.path.join(input_path, file) for file in os.listdir(input_path) if file.endswith(".npy")]
-            label_paths = [os.path.join(label_path, file) for file in os.listdir(label_path) if file.endswith(".npy")]
+                input_paths = [os.path.join(input_path, file) for file in os.listdir(input_path) if file.endswith(".pkl")]
+                label_paths = [os.path.join(label_path, file) for file in os.listdir(label_path) if file.endswith(".pkl")]
 
-            # Order the paths
-            input_paths.sort()
-            label_paths.sort()
+                # Order the paths
+                input_paths.sort()
+                label_paths.sort()
 
-            # zip the paths
-            paths = zip(input_paths, label_paths)
+                # zip the paths
+                paths = zip(input_paths, label_paths)
 
-            for element in paths:
-                # Load inputs
-                inputs = np.load(element[0])
-                # Load labels
-                labels = np.load(element[1])
-                # Yield batches
-                for j in range(0, len(inputs), batch_size):
-                    yield inputs[j : j + batch_size], labels[j : j + batch_size]
+                for element in paths:
+                    print(element[0])
+                    print(element[1])
+                    # Load inputs
+                    with open(element[0], 'rb') as f:
+                        inputs = pickle.load(f)
+                    # Load labels
+                    with open(element[1], 'rb') as w:
+                        labels = pickle.load(w)
+                    
+                    print("stack")
+                    ins = np.stack(inputs, axis=0)
+                    print(ins.shape)
+                    labs = np.stack(labels, axis=0)
+                    yield ins,labs
+
+                    #for i in range(len(inputs)):
+                        #yield inputs[i], labels[i]
+                    
+                    # Yield batches
+                    #yield inputs, labels
+                    #for j in range(0, len(inputs), batch_size):
+                        #a = inputs[j: j + batch_size]
+                        #b = labels[j: j + batch_size]
+                        #yield inputs[j : j + batch_size], labels[j : j + batch_size]
             i += 1
 
     def self_optimize(self, training_data_path: str, label_path: str):
@@ -106,10 +127,10 @@ class CNN(Algorithm):
         if self._model is None:
             self._create_model()
 
-        log_dir = "~/Runs/logs/fit/" + datetime.datetime.now().strftime("%Y%m%d-%H%M%S")
+        log_dir = "Runs/logs/fit/" + datetime.now().strftime("%Y%m%d-%H%M%S")
         tensorboard_callback = tf.keras.callbacks.TensorBoard(log_dir=log_dir, histogram_freq=1)
 
-        batch_generator = self.batch_generator(training_data_path, label_path, self.batch_size)
+        batch_generator = self.batch_generator("Data")
 
         # assert (
         #     self._model.layers[0].input_shape[1] == training_data.shape[1]
@@ -117,20 +138,22 @@ class CNN(Algorithm):
         # assert (
         #     self._model.layers[0].input_shape[2] == training_data.shape[2]
         # ), f"Your training data has dimension {training_data.shape} while the model has input shape {self._model.layers[0].input_shape}!"
-
+        print(f"Is compiled {self._model._is_compiled}")
+        print("Fitting")
         self._model.fit(
             batch_generator,
             epochs=self.num_epochs,
             batch_size=self.batch_size,
-            validation_split=0.1,
-            shuffle=True,
+            shuffle=False,
             callbacks=[tensorboard_callback],
+            verbose=2
         )
         return self
 
     def _create_model(self):
         self._model = keras.Sequential()
-        self._model.add(keras.applications.ResNet50V2(include_top=False, input_shape=(255, 1000, 5)))
+        self._model.add(keras.layers.Conv2D(3,(1,1), padding="same"))
+        self._model.add(keras.applications.ResNet50V2(include_top=False, input_shape=(255, 1000, 3), weights="Weights/resNet50V2.h5"))
         self._model.add(keras.layers.Dense(1))
         self._model.compile(optimizer="adam", loss="mse")
         return self
