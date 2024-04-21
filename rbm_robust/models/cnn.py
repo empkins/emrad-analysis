@@ -67,51 +67,47 @@ class CNN(Algorithm):
         subjects = [name for name in os.listdir(base_path) if os.path.isdir(os.path.join(base_path, name))]
         i = 0
         batch_size = self.batch_size
-        for a in range(self.num_epochs):
+        while True:
+            if i == len(subjects):
+                i = 0  # reset the counter if we've gone through all subjects
+            try:
+                subject_id = subjects[i]
+            except Exception as _:
+                print(f"i is {i}")
+                print(subjects)
+                raise ValueError("oh no")
+            phases = [name for name in os.listdir(os.path.join(base_path,subject_id)) if os.path.isdir(os.path.join(base_path, subject_id, name))]
 
-            for i in range(len(subjects)):
-                if i == len(subjects):
-                    i = 0  # reset the counter if we've gone through all subjects
-                try:
-                    subject_id = subjects[i]
-                except Exception as _:
-                    print(f"i is {i}")
-                    print(subjects)
-                    raise ValueError("oh no")
-                phases = [name for name in os.listdir(os.path.join(base_path,subject_id)) if os.path.isdir(os.path.join(base_path, subject_id, name))]
+            for phase in phases:
+                phase_path = os.path.join(base_path, subject_id, phase)
+                input_path = os.path.join(phase_path, "inputs")
+                label_path = os.path.join(phase_path, "labels")
 
-                for phase in phases:
-                    phase_path = os.path.join(base_path, subject_id, phase)
-                    input_path = os.path.join(phase_path, "inputs")
-                    label_path = os.path.join(phase_path, "labels")
+                input_paths = [os.path.join(input_path, file) for file in os.listdir(input_path) if file.endswith(".pkl")]
+                label_paths = [os.path.join(label_path, file) for file in os.listdir(label_path) if file.endswith(".pkl")]
 
-                    input_paths = [os.path.join(input_path, file) for file in os.listdir(input_path) if file.endswith(".pkl")]
-                    label_paths = [os.path.join(label_path, file) for file in os.listdir(label_path) if file.endswith(".pkl")]
+                # Order the paths
+                input_paths.sort()
+                label_paths.sort()
 
-                    # Order the paths
-                    input_paths.sort()
-                    label_paths.sort()
+                # zip the paths
+                paths = zip(input_paths, label_paths)
 
-                    # zip the paths
-                    paths = zip(input_paths, label_paths)
-
-                    for element in paths:
-                        #print(element[0])
-                        #print(element[1])
-                        # Load inputs
-                        with open(element[0], 'rb') as f:
-                            inputs = pickle.load(f)
-                        # Load labels
-                        with open(element[1], 'rb') as w:
-                            labels = pickle.load(w)
+                for element in paths:  
+                    # Load inputs
+                    with open(element[0], 'rb') as f:
+                        inputs = pickle.load(f)
+                    # Load labels
+                    with open(element[1], 'rb') as w:
+                        labels = pickle.load(w)
                     
                     
-                        ins = np.stack(inputs, axis=0)
-                        labs = np.stack(labels, axis=0)
-                        for j in range(ins.shape[0]):
-                            sub_ins = ins[j:j+1, :,:,:]
-                            sub_lab = labs[j:j+1,:]                       
-                            yield sub_ins,sub_lab
+                    ins = np.stack(inputs, axis=0)
+                    labs = np.stack(labels, axis=0)
+                    for j in range(ins.shape[0]):
+                        sub_ins = ins[j:j+1, :,:,:]
+                        sub_lab = labs[j:j+1,:]                       
+                        yield sub_ins,sub_lab
 
                     #for i in range(len(inputs)):
                         #yield inputs[i], labels[i]
@@ -122,7 +118,7 @@ class CNN(Algorithm):
                         #a = inputs[j: j + batch_size]
                         #b = labels[j: j + batch_size]
                         #yield inputs[j : j + batch_size], labels[j : j + batch_size]
-            #i += 1
+            i += 1
 
     def get_steps_per_epoch(self, base_path):
         steps = 0
@@ -141,16 +137,11 @@ class CNN(Algorithm):
                 input_paths = [
                     os.path.join(input_path, file) for file in os.listdir(input_path) if file.endswith(".pkl")
                 ]
-
-                # Order the paths
-                input_paths.sort()
-
                 for element in input_paths:
                     # Load inputs
                     with open(element, "rb") as f:
                         inputs = pickle.load(f)
                     steps += len(inputs)
-        print(steps)
         return steps
 
 
