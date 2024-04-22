@@ -44,7 +44,7 @@ class CNN(Algorithm):
         kernel_initializer: str = "glorot_uniform",
         bias_initializer: str = "zeros",
         learning_rate: float = 0.001,
-        num_epochs: int = 12,
+        num_epochs: int = 1,
         batch_size: int = 255,
         _model=None,
     ):
@@ -86,6 +86,9 @@ class CNN(Algorithm):
                 phase_path = os.path.join(base_path, subject_id, phase)
                 input_path = os.path.join(phase_path, "inputs")
                 label_path = os.path.join(phase_path, "labels")
+                
+                if not os.path.exists(input_path) or not os.path.exists(label_path):
+                    continue
 
                 input_paths = [
                     os.path.join(input_path, file) for file in os.listdir(input_path) if file.endswith(".pkl")
@@ -111,9 +114,13 @@ class CNN(Algorithm):
 
                     ins = np.stack(inputs, axis=0)
                     labs = np.stack(labels, axis=0)
+                    labs = np.transpose(labs)
+                    #print(f"labels len {len(labels)}")
+                    #print(f"labs shape {labs.shape}")
                     for j in range(ins.shape[0]):
                         sub_ins = ins[j : j + 1, :, :, :]
-                        sub_lab = labs[j : j + 1, :]
+                        sub_lab = labs[:, j : j + 1]
+                        #print(f"input shape: {sub_ins.shape} sub_lab shape: {sub_lab.shape}")
                         yield sub_ins, sub_lab
             i += 1
 
@@ -130,7 +137,11 @@ class CNN(Algorithm):
             for phase in phases:
                 phase_path = os.path.join(base_path, subject_id, phase)
                 input_path = os.path.join(phase_path, "inputs")
+                label_path = os.path.join(phase_path, "labels")
 
+                if not os.path.exists(input_path) or not os.path.exists(label_path):
+                    continue
+                
                 input_paths = [
                     os.path.join(input_path, file) for file in os.listdir(input_path) if file.endswith(".pkl")
                 ]
@@ -161,11 +172,13 @@ class CNN(Algorithm):
                 ]
                 input_paths.sort()
                 for element in input_paths:
-                    with open(element[0], "rb") as f:
+                    with open(element, "rb") as f:
                         inputs = pickle.load(f)
                     ins = np.stack(inputs, axis=0)
                     for j in range(ins.shape[0]):
                         sub_ins = ins[j : j + 1, :, :, :]
+                        pred = self._model.predict(sub_ins)
+                        print(f"Predictions for {ins.shape} are {pred.shape} shape")
                         phase_predictions.append(self._model.predict(sub_ins))
                 subject_dict[phase] = phase_predictions
             predictions[subject_id] = subject_dict
@@ -211,6 +224,10 @@ class CNN(Algorithm):
         self._model = keras.Sequential()
         self._model.add(keras.layers.Conv2D(3, (1, 1), padding="same"))
         self._model.add(keras.applications.ResNet50V2(include_top=False, weights="Weights/resNet50V2.h5"))
-        self._model.add(keras.layers.Dense(1))
+        
+        self._model.add(keras.layers.Flatten())
+        self._model.add(keras.layers.Dense(500))
+
+        #self._model.add(keras.layers.Dense(1))
         self._model.compile(optimizer="adam", loss="mse")
         return self

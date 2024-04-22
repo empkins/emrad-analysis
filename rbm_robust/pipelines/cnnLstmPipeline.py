@@ -338,8 +338,10 @@ class CnnPipeline(OptimizablePipeline):
         input_data_path = self.feature_extractor.generate_training_input(datapoint, "Testing").input_data_path_
 
         # model predict
-        cnn_copy = self.cnn.clone()
-        cnn_copy = cnn_copy.predict(input_data_path, input_data_path)
-        self.result_ = cnn_copy.predictions_
+        #cnn_copy = self.cnn.clone()
+        #cnn_copy = cnn_copy.predict(input_data_path, input_data_path)
+        self.cnn.predict(input_data_path)
+        self.result_ = self.cnn.predictions_
+        #self.result_ = cnn_copy.predictions_
 
         return self
