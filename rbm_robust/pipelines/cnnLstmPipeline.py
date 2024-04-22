@@ -115,6 +115,7 @@ class InputAndLabelGenerator(Algorithm):
     # Results
     input_data_path_: str
     input_labels_path_: str
+    test_label_dict_: dict
 
     def __init__(
         self,
@@ -137,7 +138,7 @@ class InputAndLabelGenerator(Algorithm):
         self.normalizer = normalizer
 
     @make_action_safe
-    def generate_training_input(self, dataset: D02Dataset):
+    def generate_training_input(self, dataset: D02Dataset, base_path: str = "Data"):
         """Generate the input data for the BiLSTM model
 
         Args:
@@ -149,7 +150,7 @@ class InputAndLabelGenerator(Algorithm):
         """
         segmentation_clone = self.segmentation.clone()
         pre_processor_clone = self.pre_processor.clone()
-        base_path = "Data"
+        base_path = base_path
         for i in range(len(dataset.subjects)):
             subject = dataset.get_subset(participant=dataset.subjects[i])
             subject_path = base_path + f"/{subject.subjects[0]}"
@@ -182,8 +183,8 @@ class InputAndLabelGenerator(Algorithm):
                 data_segments = []
                 for segment in segments:
                     if len(data_segments) == 32:
-                        with open(phase_path + f"/{segment_count}.pkl",'wb') as f:
-                            pickle.dump(data_segments,f)
+                        with open(phase_path + f"/{segment_count}.pkl", "wb") as f:
+                            pickle.dump(data_segments, f)
                         data_segments = []
                     # Preprocess the data
                     pre_processed_segment = pre_processor_clone.preprocess(
@@ -199,7 +200,7 @@ class InputAndLabelGenerator(Algorithm):
         return self
 
     @make_action_safe
-    def generate_training_labels(self, dataset: D02Dataset):
+    def generate_training_labels(self, dataset: D02Dataset, base_path: str = "Data"):
         """Generate the input labels for the BiLSTM model
 
         Args:
@@ -214,7 +215,7 @@ class InputAndLabelGenerator(Algorithm):
         downsampling_clone = self.downsampling.clone()
         segmentation_clone = self.segmentation.clone()
         normalization_clone = self.normalizer.clone()
-        base_path = "Data"
+        base_path = base_path
         for i in range(len(dataset.subjects)):
             subject = dataset.get_subset(participant=dataset.subjects[i])
             ecg_data = subject.synced_ecg
@@ -242,8 +243,8 @@ class InputAndLabelGenerator(Algorithm):
                 data_segments = []
                 for segment in segments:
                     if len(data_segments) == 32:
-                        with open(phase_path + f"/{segment_count}.pkl",'wb') as f:
-                            pickle.dump(data_segments,f)
+                        with open(phase_path + f"/{segment_count}.pkl", "wb") as f:
+                            pickle.dump(data_segments, f)
                         data_segments = []
                     # Compute the blips
                     segment = blip_algo_clone.compute(segment).blips_
@@ -261,6 +262,44 @@ class InputAndLabelGenerator(Algorithm):
                     # phase_res.append(segment)
                 print(f"Phase finished {phase}")
         self.input_labels_path_ = base_path
+        return self
+
+    @make_action_safe
+    def generate_label_dict(self, dataset: D02Dataset):
+        blip_algo_clone = self.blip_algo.clone()
+        downsampling_clone = self.downsampling.clone()
+        segmentation_clone = self.segmentation.clone()
+        normalization_clone = self.normalizer.clone()
+        label_dict = {}
+        for i in range(len(dataset.subjects)):
+            subject_dict = {}
+            subject = dataset.get_subset(participant=dataset.subjects[i])
+            ecg_data = subject.synced_ecg
+            radar_data = subject.synced_radar
+            phases = subject.phases
+            sampling_rate = subject.SAMPLING_RATE_DOWNSAMPLED
+            for phase in phases.keys():
+                if "ei" not in phase:
+                    continue
+                phase_data = ecg_data[phases[phase]["start"] : phases[phase]["end"]]
+                phase_radar = radar_data[phases[phase]["start"] : phases[phase]["end"]]
+                if len(phase_data) == 0 or len(phase_radar) == 0:
+                    continue
+                segments = segmentation_clone.segment(phase_data, sampling_rate).segmented_signal_
+                phase_list = []
+                for segment in segments:
+                    # Compute the blips
+                    segment = blip_algo_clone.compute(segment).blips_
+                    # Downsample the segment
+                    segment = downsampling_clone.downsample(
+                        segment, self.downsampled_hz, sampling_rate
+                    ).downsampled_signal_
+                    # Normalize the segment
+                    segment = normalization_clone.normalize(segment).normalized_signal_
+                    phase_list.append(segment)
+                subject_dict[phase] = phase_list
+            label_dict[subject.subjects[0]] = subject_dict
+        self.test_label_dict_ = label_dict
         return self
 
 
@@ -284,23 +323,23 @@ class CnnPipeline(OptimizablePipeline):
         self.cnn = self.cnn.clone()
 
         print("Extracting features")
-        #self.feature_extractor.generate_training_input(dataset)
+        # self.feature_extractor.generate_training_input(dataset)
         print("Extracting labels")
-        #self.feature_extractor.generate_training_labels(dataset)
+        # self.feature_extractor.generate_training_labels(dataset)
 
         print("Optimizing CNN")
-        #self.cnn.self_optimize(self.feature_extractor.input_data_path_, self.feature_extractor.input_labels_path_)
+        # self.cnn.self_optimize(self.feature_extractor.input_data_path_, self.feature_extractor.input_labels_path_)
         self.cnn.self_optimize("Data", "Data")
 
         return self
 
     def run(self, datapoint: D02Dataset) -> Self:
         # Get data from dataset
-        input_data = self.feature_extractor.generate_training_input(datapoint).input_data_
+        input_data_path = self.feature_extractor.generate_training_input(datapoint, "Testing").input_data_path_
 
         # model predict
         cnn_copy = self.cnn.clone()
-        cnn_copy = cnn_copy.predict(input_data)
+        cnn_copy = cnn_copy.predict(input_data_path, input_data_path)
         self.result_ = cnn_copy.predictions_
 
         return self

@@ -80,49 +80,55 @@ def cnnPipelineScoring(pipeline: CnnPipeline, dataset: D02Dataset):
     print("Training done")
     pipeline.run(testing_dataset)
     time_stamps["AfterTestRun"] = datetime.now().isoformat(sep="-", timespec="seconds")
-    # TODO
-    labels = pipeline.feature_extractor.generate_training_labels(testing_dataset).input_labels_
+
+    label_dict = pipeline.feature_extractor.generate_label_dict(testing_dataset).test_label_dict_
     time_stamps["AfterTestingLabelGeneration"] = datetime.now().isoformat(sep="-", timespec="seconds")
 
-    # normalize predictions and labels between 0 and 1
-    result = (
-        (pipeline.result_ - np.min(pipeline.result_, axis=1)[:, None])
-        / (np.max(pipeline.result_, axis=1)[:, None] - np.min(pipeline.result_, axis=1)[:, None])
-    )[::20, :].flatten()
-    labels = (
-        (labels - np.min(labels, axis=1)[:, None]) / (np.max(labels, axis=1)[:, None] - np.min(labels, axis=1)[:, None])
-    )[::20, :].flatten()
+    for subject in label_dict.keys():
+        for phase in label_dict[subject].keys():
+            phase_labels = label_dict[subject][phase]
+            phase_predictions = pipeline.result_[subject][phase]
 
-    f1_score = (
-        RPeakF1Score(max_deviation_ms=100)
-        .compute(predicted_r_peak_signal=result, ground_truth_r_peak_signal=labels)
-        .f1_score_
-    )
+            # normalize predictions and labels between 0 and 1
+            result = (
+                (phase_predictions - np.min(phase_predictions, axis=1)[:, None])
+                / (np.max(phase_predictions, axis=1)[:, None] - np.min(phase_predictions, axis=1)[:, None])
+            )[::20, :].flatten()
+            labels = (
+                (phase_labels - np.min(phase_labels, axis=1)[:, None])
+                / (np.max(phase_labels, axis=1)[:, None] - np.min(phase_labels, axis=1)[:, None])
+            )[::20, :].flatten()
 
-    # Compute beat-to-beat heart rates
-    heart_rate_prediction = PairwiseHeartRate().compute(result).heart_rate_
-    heart_rate_ground_truth = PairwiseHeartRate().compute(labels).heart_rate_
+            f1_score = (
+                RPeakF1Score(max_deviation_ms=100)
+                .compute(predicted_r_peak_signal=result, ground_truth_r_peak_signal=labels)
+                .f1_score_
+            )
 
-    # 1. heart rate estimation over long run
-    hr_pred = heart_rate_prediction.mean()
-    hr_g_t = heart_rate_ground_truth.mean()
+            # Compute beat-to-beat heart rates
+            heart_rate_prediction = PairwiseHeartRate().compute(result).heart_rate_
+            heart_rate_ground_truth = PairwiseHeartRate().compute(labels).heart_rate_
 
-    absolute_hr_error = abs(hr_pred - hr_g_t)
+            # 1. heart rate estimation over long run
+            hr_pred = heart_rate_prediction.mean()
+            hr_g_t = heart_rate_ground_truth.mean()
 
-    # 2. beat_to_beat_accuracy
-    assert len(heart_rate_ground_truth) == len(
-        heart_rate_prediction
-    ), "The heart_rate_ground_truth and heart_rate_prediction should be equally long."
+            absolute_hr_error = abs(hr_pred - hr_g_t)
 
-    instantaneous_abs_hr_diff = np.abs(np.subtract(heart_rate_prediction, heart_rate_ground_truth))
+            # 2. beat_to_beat_accuracy
+            assert len(heart_rate_ground_truth) == len(
+                heart_rate_prediction
+            ), "The heart_rate_ground_truth and heart_rate_prediction should be equally long."
 
-    mean_instantaneous_abs_hr_diff = instantaneous_abs_hr_diff.mean()
+            instantaneous_abs_hr_diff = np.abs(np.subtract(heart_rate_prediction, heart_rate_ground_truth))
 
-    mean_relative_error_hr = (
-        1 / len(heart_rate_ground_truth) * np.sum(instantaneous_abs_hr_diff / heart_rate_ground_truth)
-    )
+            mean_instantaneous_abs_hr_diff = instantaneous_abs_hr_diff.mean()
 
-    mean_absolute_error = np.mean(np.sum(np.square(instantaneous_abs_hr_diff)))
+            mean_relative_error_hr = (
+                1 / len(heart_rate_ground_truth) * np.sum(instantaneous_abs_hr_diff / heart_rate_ground_truth)
+            )
+
+            mean_absolute_error = np.mean(np.sum(np.square(instantaneous_abs_hr_diff)))
 
     scoring = Scoring(
         heart_rate_prediction=heart_rate_prediction,

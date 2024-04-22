@@ -76,15 +76,23 @@ class CNN(Algorithm):
                 print(f"i is {i}")
                 print(subjects)
                 raise ValueError("oh no")
-            phases = [name for name in os.listdir(os.path.join(base_path,subject_id)) if os.path.isdir(os.path.join(base_path, subject_id, name))]
+            phases = [
+                name
+                for name in os.listdir(os.path.join(base_path, subject_id))
+                if os.path.isdir(os.path.join(base_path, subject_id, name))
+            ]
 
             for phase in phases:
                 phase_path = os.path.join(base_path, subject_id, phase)
                 input_path = os.path.join(phase_path, "inputs")
                 label_path = os.path.join(phase_path, "labels")
 
-                input_paths = [os.path.join(input_path, file) for file in os.listdir(input_path) if file.endswith(".pkl")]
-                label_paths = [os.path.join(label_path, file) for file in os.listdir(label_path) if file.endswith(".pkl")]
+                input_paths = [
+                    os.path.join(input_path, file) for file in os.listdir(input_path) if file.endswith(".pkl")
+                ]
+                label_paths = [
+                    os.path.join(label_path, file) for file in os.listdir(label_path) if file.endswith(".pkl")
+                ]
 
                 # Order the paths
                 input_paths.sort()
@@ -93,31 +101,20 @@ class CNN(Algorithm):
                 # zip the paths
                 paths = zip(input_paths, label_paths)
 
-                for element in paths:  
+                for element in paths:
                     # Load inputs
-                    with open(element[0], 'rb') as f:
+                    with open(element[0], "rb") as f:
                         inputs = pickle.load(f)
                     # Load labels
-                    with open(element[1], 'rb') as w:
+                    with open(element[1], "rb") as w:
                         labels = pickle.load(w)
-                    
-                    
+
                     ins = np.stack(inputs, axis=0)
                     labs = np.stack(labels, axis=0)
                     for j in range(ins.shape[0]):
-                        sub_ins = ins[j:j+1, :,:,:]
-                        sub_lab = labs[j:j+1,:]                       
-                        yield sub_ins,sub_lab
-
-                    #for i in range(len(inputs)):
-                        #yield inputs[i], labels[i]
-                    
-                    # Yield batches
-                    #yield inputs, labels
-                    #for j in range(0, len(inputs), batch_size):
-                        #a = inputs[j: j + batch_size]
-                        #b = labels[j: j + batch_size]
-                        #yield inputs[j : j + batch_size], labels[j : j + batch_size]
+                        sub_ins = ins[j : j + 1, :, :, :]
+                        sub_lab = labs[j : j + 1, :]
+                        yield sub_ins, sub_lab
             i += 1
 
     def get_steps_per_epoch(self, base_path):
@@ -144,7 +141,35 @@ class CNN(Algorithm):
                     steps += len(inputs)
         return steps
 
+    def predict(self, data_path: str):
+        subjects = [name for name in os.listdir(data_path) if os.path.isdir(os.path.join(data_path, name))]
+        predictions = {}
 
+        for subject_id in subjects:
+            subject_dict = {}
+            subject_path = os.path.join(data_path, subject_id)
+            phases = [name for name in os.listdir(subject_path) if os.path.isdir(os.path.join(subject_path, name))]
+            phase_predictions = []
+            for phase in phases:
+                phase_path = os.path.join(data_path, subject_id, phase)
+                prediction_path = os.path.join(phase_path, "predictions")
+                if not os.path.exists(prediction_path):
+                    os.makedirs(prediction_path)
+                input_path = os.path.join(phase_path, "inputs")
+                input_paths = [
+                    os.path.join(input_path, file) for file in os.listdir(input_path) if file.endswith(".pkl")
+                ]
+                input_paths.sort()
+                for element in input_paths:
+                    with open(element[0], "rb") as f:
+                        inputs = pickle.load(f)
+                    ins = np.stack(inputs, axis=0)
+                    for j in range(ins.shape[0]):
+                        sub_ins = ins[j : j + 1, :, :, :]
+                        phase_predictions.append(self._model.predict(sub_ins))
+                subject_dict[phase] = phase_predictions
+            predictions[subject_id] = subject_dict
+        self.predictions_ = predictions
 
     def self_optimize(self, training_data_path: str, label_path: str):
         """Use the training data and the corresponding labels to train the model with the hyperparameters passed in the init
@@ -174,17 +199,17 @@ class CNN(Algorithm):
         self._model.fit(
             batch_generator,
             epochs=self.num_epochs,
-            steps_per_epoch = steps,
+            steps_per_epoch=steps,
             batch_size=self.batch_size,
             shuffle=False,
             callbacks=[tensorboard_callback],
-            verbose=1
+            verbose=1,
         )
         return self
 
     def _create_model(self):
         self._model = keras.Sequential()
-        self._model.add(keras.layers.Conv2D(3,(1,1), padding="same"))
+        self._model.add(keras.layers.Conv2D(3, (1, 1), padding="same"))
         self._model.add(keras.applications.ResNet50V2(include_top=False, weights="Weights/resNet50V2.h5"))
         self._model.add(keras.layers.Dense(1))
         self._model.compile(optimizer="adam", loss="mse")
