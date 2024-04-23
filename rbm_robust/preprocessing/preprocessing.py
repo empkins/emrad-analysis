@@ -1,10 +1,12 @@
-from typing import Tuple
+import os.path
+from typing import Tuple, List
 
+import emrad_toolbox
 import numpy as np
 import pywt
 import resampy
-import scipy
 from PyEMD import EMD
+from matplotlib import pyplot as plt
 from scipy.signal import filtfilt, butter
 from tpcp import Algorithm, Parameter, make_action_safe
 
@@ -116,8 +118,10 @@ class EmpiricalModeDecomposer(Algorithm):
         # Hier kann manchmal ein leeres array zurückgegeben werden
         emd = EMD()
         self.imfs_ = emd.emd(signal, np.arange(len(signal)) / self.sampling_rate, max_imf=self.n_imfs)
-        if len(self.imfs_) == 0:
-            self.imfs_ = np.zeros((5, 1000))
+        if len(self.imfs_) != 5:
+            filled_array = np.zeros((5, 1000))
+            filled_array[: self.imfs_.shape[0], : self.imfs_.shape[1]] = self.imfs_
+            self.imfs_ = filled_array
         return self
 
 
@@ -140,7 +144,14 @@ class WaveletTransformer(Algorithm):
         self.sampling_rate = sampling_rate
 
     @make_action_safe
-    def transform(self, signal: np.array):
+    def transform(
+        self,
+        signal: np.array,
+        subject_id: str,
+        phase: str,
+        segment: int,
+        base_path: str = "DataImg",
+    ):
         """Transform the input signal using a wavelet transform
 
         Args:
@@ -149,20 +160,33 @@ class WaveletTransformer(Algorithm):
         Returns:
             _type_: Transformed signal
         """
+
+        path = self.get_path(base_path, subject_id, phase, segment)
+
         transformed = []
         for i in range(len(signal)):
             imf = signal[i]
             scales = range(self.wavelet_coefficients[0], self.wavelet_coefficients[1])
             coefficients, frequencies = pywt.cwt(imf, scales, self.wavelet_type)
-
-            # Normalize Coefficients
-            if np.sum(coefficients) != 0:
-                coefficients = (coefficients - np.mean(coefficients)) / np.std(coefficients)
-            transformed.append(coefficients)
-        if len(transformed) == 0:
-            self.transformed_signal_ = np.zeros(1)
-        self.transformed_signal_ = np.stack(transformed, axis=2)
+            fig, ax = plt.subplots()
+            time = np.arange(0, len(imf) / self.sampling_rate, 1 / self.sampling_rate)
+            ax.imshow(
+                np.abs(coefficients),
+                aspect="auto",
+                cmap="jet",
+                extent=[time.min(), time.max(), frequencies.min(), frequencies.max()],
+            )
+            ax.set_xticks([])
+            ax.set_yticks([])
+            plt.savefig(os.path.join(path, f"{segment}_{i}.png"), bbox_inches="tight", pad_inches=0)
+        self.transformed_signal_ = []
         return self
+
+    def get_path(self, base_path: str, subject_id: str, phase: str, segment: int):
+        path = f"{base_path}/{subject_id}/{phase}/inputs"
+        if not os.path.exists(path):
+            os.makedirs(path)
+        return path
 
 
 class Segmentation(Algorithm):
@@ -238,4 +262,33 @@ class Normalizer(Algorithm):
             self.normalized_signal_ = (signal - signal.mean()) / signal.std()
         elif self.method == "minmax":
             self.normalized_signal_ = (signal - signal.min()) / (signal.max() - signal.min())
+        return self
+
+
+class ImageGenerator(Algorithm):
+    _action_methods = "generate"
+
+    # Input Parameters
+    coefficients: List
+    frequencies: List
+    phase: str
+    subject_id: str
+
+    # Results
+    path_: str
+
+    def generate(self, coefficients: List, frequencies: List, phase: str, subject_id: str, base_path: str):
+        """Generate an image from the input coefficients and frequencies
+
+        Args:
+            coefficients (List): List of coefficients
+            frequencies (List): List of frequencies
+            phase (str): Phase of the signal
+            subject_id (str): Subject ID
+
+        Returns:
+            _type_: Path to the generated image
+        """
+        emrad_toolbox.plotting.radar_plotting.RadarPlotter()
+
         return self

@@ -45,7 +45,7 @@ class PreProcessor(Algorithm):
         self.wavelet_transform = wavelet_transform
 
     @make_action_safe
-    def preprocess(self, raw_radar: np.array, sampling_rate: float):
+    def preprocess(self, raw_radar: np.array, sampling_rate: float, subject_id: str, phase: str, segment: int):
         """Preprocess the input signal using a bandpass filter
 
         Args:
@@ -77,9 +77,63 @@ class PreProcessor(Algorithm):
         self.preprocessed_signal_ = emd_clone.decompose(self.preprocessed_signal_).imfs_
 
         # Wavelet Transform
-        self.preprocessed_signal_ = wavelet_transform_clone.transform(self.preprocessed_signal_).transformed_signal_
+        self.preprocessed_signal_ = wavelet_transform_clone.transform(
+            self.preprocessed_signal_, subject_id, phase, segment
+        ).transformed_signal_
 
         return self
+
+
+class LabelProcessor(Algorithm):
+    _action_methods = "label_generation"
+
+    blip_algo: ComputeEcgBlips
+    downsampling: Downsampling
+    normalizer: Normalizer
+
+    labels_: np.array
+
+    def __init__(
+        self,
+        blip_algo: ComputeEcgBlips = cf(ComputeEcgBlips()),
+        downsampling: Downsampling = cf(Downsampling()),
+        normalizer: Normalizer = cf(Normalizer()),
+    ):
+        self.blip_algo = blip_algo
+        self.downsampling = downsampling
+        self.normalizer = normalizer
+
+    @make_action_safe
+    def label_generation(
+        self,
+        raw_ecg: np.array,
+        sampling_rate: float,
+        subject_id: str,
+        phase: str,
+        segment: int,
+        downsample_hz: int = 200,
+    ):
+        blip_algo_clone = self.blip_algo.clone()
+        downsampling_clone = self.downsampling.clone()
+        normalization_clone = self.normalizer.clone()
+        # Compute the blips
+        raw_ecg = blip_algo_clone.compute(raw_ecg).blips_
+        # Downsample the segment
+        raw_ecg = downsampling_clone.downsample(raw_ecg, downsample_hz, sampling_rate).downsampled_signal_
+        # Normalize the segment
+        raw_ecg = normalization_clone.normalize(raw_ecg).normalized_signal_
+
+        # Save the labels
+        path = self.get_path(subject_id, phase, segment) + f"/{segment}.npy"
+        np.save(path, raw_ecg)
+        self.labels_ = raw_ecg
+        return self
+
+    def get_path(self, subject_id: str, phase: str, segment: int, base_path: str = "DataImg"):
+        path = f"{base_path}/{subject_id}/{phase}/labels"
+        if not os.path.exists(path):
+            os.makedirs(path)
+        return path
 
 
 class InputAndLabelGenerator(Algorithm):
@@ -107,6 +161,8 @@ class InputAndLabelGenerator(Algorithm):
     # Normalization
     normalizer: Normalizer
 
+    labelProcessor: LabelProcessor
+
     # Input & Label parameters
     segment_size_in_seconds: int
     overlap: float
@@ -124,6 +180,7 @@ class InputAndLabelGenerator(Algorithm):
         downsampling: Downsampling = cf(Downsampling()),
         segmentation: Segmentation = cf(Segmentation()),
         normalizer: Normalizer = cf(Normalizer()),
+        labelProcessor: LabelProcessor = cf(LabelProcessor()),
         segment_size_in_seconds: int = 5,
         overlap: float = 0.4,
         downsampled_hz: int = 200,
@@ -136,6 +193,7 @@ class InputAndLabelGenerator(Algorithm):
         self.downsampling = downsampling
         self.segmentation = segmentation
         self.normalizer = normalizer
+        self.labelProcessor = labelProcessor
 
     @make_action_safe
     def generate_training_input(self, dataset: D02Dataset, base_path: str = "Data"):
@@ -179,23 +237,52 @@ class InputAndLabelGenerator(Algorithm):
                 if not os.path.exists(phase_path):
                     os.makedirs(phase_path)
                 segments = segmentation_clone.segment(phase_radar_data, sampling_rate).segmented_signal_
-                segment_count = 0
-                data_segments = []
-                for segment in segments:
-                    if len(data_segments) == 32:
-                        with open(phase_path + f"/{segment_count}.pkl", "wb") as f:
-                            pickle.dump(data_segments, f)
-                        data_segments = []
-                    # Preprocess the data
-                    pre_processed_segment = pre_processor_clone.preprocess(
-                        segment, subject.SAMPLING_RATE_DOWNSAMPLED
-                    ).preprocessed_signal_
-                    data_segments.append(pre_processed_segment)
-                    # Save the segment
-                with open(phase_path + f"/{segment_count}.pkl", "wb") as f:
-                    pickle.dump(data_segments, f)
-                    segment_count += 1
-                print(f"Phase processed {phase}")
+                for j in range(len(segments)):
+                    pre_processor_clone.preprocess(
+                        segments[j], subject.SAMPLING_RATE_DOWNSAMPLED, subject.subjects[0], phase, j
+                    )
+        self.input_data_path_ = base_path
+        return self
+
+    @make_action_safe
+    def generate_training_inputs_and_labels(self, dataset: D02Dataset, base_path: str = "Data"):
+        # Init Clones
+        pre_processor_clone = self.pre_processor.clone()
+        label_processor_clone = self.labelProcessor.clone()
+        segmentation_clone = self.segmentation.clone()
+        for i in range(len(dataset.subjects)):
+            subject = dataset.get_subset(participant=dataset.subjects[i])
+            radar_data = subject.synced_radar
+            ecg_data = subject.synced_ecg
+            phases = subject.phases
+            sampling_rate = subject.SAMPLING_RATE_DOWNSAMPLED
+            for phase in phases.keys():
+                if "ei" not in phase:
+                    continue
+                print(f"Starting phase {phase}")
+                timezone = pytz.timezone("Europe/Berlin")
+                phase_start = timezone.localize(phases[phase]["start"])
+                phase_end = timezone.localize(phases[phase]["end"])
+                phase_radar_data = radar_data[phase_start:phase_end]
+                phase_ecg_data = ecg_data[phase_start:phase_end]
+                # Segmentation
+                if len(phase_radar_data) == 0 or len(phase_ecg_data) == 0:
+                    continue
+                segments_radar = segmentation_clone.segment(phase_radar_data, sampling_rate).segmented_signal_
+                segments_ecg = segmentation_clone.segment(phase_ecg_data, sampling_rate).segmented_signal_
+                # Create Inputs
+                for j in range(len(segments_radar)):
+                    pre_processor_clone.preprocess(
+                        segments_radar[j], subject.SAMPLING_RATE_DOWNSAMPLED, subject.subjects[0], phase, j
+                    )
+                    label_processor_clone.label_generation(
+                        segments_ecg[j],
+                        subject.SAMPLING_RATE_DOWNSAMPLED,
+                        subject.subjects[0],
+                        phase,
+                        j,
+                        self.downsampled_hz,
+                    )
         self.input_data_path_ = base_path
         return self
 
@@ -338,10 +425,10 @@ class CnnPipeline(OptimizablePipeline):
         input_data_path = self.feature_extractor.generate_training_input(datapoint, "Testing").input_data_path_
 
         # model predict
-        #cnn_copy = self.cnn.clone()
-        #cnn_copy = cnn_copy.predict(input_data_path, input_data_path)
+        # cnn_copy = self.cnn.clone()
+        # cnn_copy = cnn_copy.predict(input_data_path, input_data_path)
         self.cnn.predict(input_data_path)
         self.result_ = self.cnn.predictions_
-        #self.result_ = cnn_copy.predictions_
+        # self.result_ = cnn_copy.predictions_
 
         return self

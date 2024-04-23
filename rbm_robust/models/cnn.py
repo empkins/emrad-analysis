@@ -6,6 +6,8 @@ import pickle
 import keras
 import numpy as np
 from tpcp import Algorithm, OptimizableParameter
+from keras.preprocessing.image import load_img, img_to_array
+from itertools import groupby
 
 
 class CNN(Algorithm):
@@ -44,8 +46,8 @@ class CNN(Algorithm):
         kernel_initializer: str = "glorot_uniform",
         bias_initializer: str = "zeros",
         learning_rate: float = 0.001,
-        num_epochs: int = 1,
-        batch_size: int = 255,
+        num_epochs: int = 12,
+        batch_size: int = 1,
         _model=None,
     ):
         self.groups = groups
@@ -62,6 +64,35 @@ class CNN(Algorithm):
         self.num_epochs = num_epochs
         self.batch_size = batch_size
         self._model = _model
+
+    def batch_generator_images(self, base_path):
+        subjects = [name for name in os.listdir(base_path) if os.path.isdir(os.path.join(base_path, name))]
+        i = 0
+        while i < len(subjects):
+            if i == len(subjects):
+                i = 0
+            subject_id = subjects[i]
+            subject_path = os.path.join(base_path, subject_id)
+            phases = [name for name in os.listdir(subject_path) if os.path.isdir(os.path.join(subject_path, name))]
+            for phase in phases:
+                phase_path = os.path.join(subject_path, phase)
+                input_path = os.path.join(phase_path, "inputs")
+                label_path = os.path.join(phase_path, "labels")
+                if not os.path.exists(input_path) or not os.path.exists(label_path):
+                    continue
+                input_names = [
+                    name for name in os.listdir(input_path) if os.path.isfile(os.path.join(input_path, name))
+                ]
+                input_names.sort()
+                grouped_inputs = {k: list(g) for k, g in groupby(input_names, key=lambda s: s.split("_")[0])}
+                sorted_keys = sorted(grouped_inputs.keys())
+                for key in sorted_keys:
+                    label = np.load(os.path.join(label_path, f"{key}.npy"))
+                    inputs = [
+                        img_to_array(load_img(os.path.join(input_path, f"{in_path}"), target_size=(255, 1000)))
+                        for in_path in grouped_inputs[key]
+                    ]
+                    yield inputs, label
 
     def batch_generator(self, base_path):
         subjects = [name for name in os.listdir(base_path) if os.path.isdir(os.path.join(base_path, name))]
@@ -86,7 +117,7 @@ class CNN(Algorithm):
                 phase_path = os.path.join(base_path, subject_id, phase)
                 input_path = os.path.join(phase_path, "inputs")
                 label_path = os.path.join(phase_path, "labels")
-                
+
                 if not os.path.exists(input_path) or not os.path.exists(label_path):
                     continue
 
@@ -115,12 +146,12 @@ class CNN(Algorithm):
                     ins = np.stack(inputs, axis=0)
                     labs = np.stack(labels, axis=0)
                     labs = np.transpose(labs)
-                    #print(f"labels len {len(labels)}")
-                    #print(f"labs shape {labs.shape}")
+                    # print(f"labels len {len(labels)}")
+                    # print(f"labs shape {labs.shape}")
                     for j in range(ins.shape[0]):
                         sub_ins = ins[j : j + 1, :, :, :]
                         sub_lab = labs[:, j : j + 1]
-                        #print(f"input shape: {sub_ins.shape} sub_lab shape: {sub_lab.shape}")
+                        # print(f"input shape: {sub_ins.shape} sub_lab shape: {sub_lab.shape}")
                         yield sub_ins, sub_lab
             i += 1
 
@@ -141,7 +172,7 @@ class CNN(Algorithm):
 
                 if not os.path.exists(input_path) or not os.path.exists(label_path):
                     continue
-                
+
                 input_paths = [
                     os.path.join(input_path, file) for file in os.listdir(input_path) if file.endswith(".pkl")
                 ]
@@ -183,6 +214,7 @@ class CNN(Algorithm):
                 subject_dict[phase] = phase_predictions
             predictions[subject_id] = subject_dict
         self.predictions_ = predictions
+        return self
 
     def self_optimize(self, training_data_path: str, label_path: str):
         """Use the training data and the corresponding labels to train the model with the hyperparameters passed in the init
@@ -198,7 +230,7 @@ class CNN(Algorithm):
         log_dir = "Runs/logs/fit/" + datetime.now().strftime("%Y%m%d-%H%M%S")
         tensorboard_callback = tf.keras.callbacks.TensorBoard(log_dir=log_dir, histogram_freq=1)
 
-        batch_generator = self.batch_generator("Data")
+        batch_generator = self.batch_generator_images("Data")
         steps = self.get_steps_per_epoch("Data")
 
         # assert (
@@ -222,12 +254,9 @@ class CNN(Algorithm):
 
     def _create_model(self):
         self._model = keras.Sequential()
-        self._model.add(keras.layers.Conv2D(3, (1, 1), padding="same"))
-        self._model.add(keras.applications.ResNet50V2(include_top=False, weights="Weights/resNet50V2.h5"))
-        
+        self._model.add(keras.layers.Conv2D(3, (1, 1), padding="same", input_shape=(255, 1000, 5)))
+        self._model.add(keras.applications.ResNet50V2(include_top=False, weights="imagenet", pooling="avg"))
         self._model.add(keras.layers.Flatten())
-        self._model.add(keras.layers.Dense(500))
-
-        #self._model.add(keras.layers.Dense(1))
+        self._model.add(keras.layers.Dense(1000))
         self._model.compile(optimizer="adam", loss="mse")
         return self
