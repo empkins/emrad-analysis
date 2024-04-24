@@ -151,6 +151,7 @@ class WaveletTransformer(Algorithm):
         phase: str,
         segment: int,
         base_path: str = "DataImg",
+        img_based: bool = False,
     ):
         """Transform the input signal using a wavelet transform
 
@@ -162,23 +163,24 @@ class WaveletTransformer(Algorithm):
         """
 
         path = self.get_path(base_path, subject_id, phase, segment)
-
-        transformed = []
         for i in range(len(signal)):
             imf = signal[i]
             scales = range(self.wavelet_coefficients[0], self.wavelet_coefficients[1])
             coefficients, frequencies = pywt.cwt(imf, scales, self.wavelet_type)
-            fig, ax = plt.subplots()
-            time = np.arange(0, len(imf) / self.sampling_rate, 1 / self.sampling_rate)
-            ax.imshow(
-                np.abs(coefficients),
-                aspect="auto",
-                cmap="jet",
-                extent=[time.min(), time.max(), frequencies.min(), frequencies.max()],
-            )
-            ax.set_xticks([])
-            ax.set_yticks([])
-            plt.savefig(os.path.join(path, f"{segment}_{i}.png"), bbox_inches="tight", pad_inches=0)
+            if img_based:
+                fig, ax = plt.subplots()
+                time = np.arange(0, len(imf) / self.sampling_rate, 1 / self.sampling_rate)
+                ax.imshow(
+                    np.abs(coefficients),
+                    aspect="auto",
+                    cmap="jet",
+                    extent=[time.min(), time.max(), frequencies.min(), frequencies.max()],
+                )
+                ax.set_xticks([])
+                ax.set_yticks([])
+                plt.savefig(os.path.join(path, f"{segment}_{i}.png"), bbox_inches="tight", pad_inches=0)
+            else:
+                np.save(os.path.join(path, f"{segment}_{i}.npy"), coefficients)
         self.transformed_signal_ = []
         return self
 

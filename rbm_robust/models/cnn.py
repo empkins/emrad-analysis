@@ -88,10 +88,13 @@ class CNN(Algorithm):
                 sorted_keys = sorted(grouped_inputs.keys())
                 for key in sorted_keys:
                     label = np.load(os.path.join(label_path, f"{key}.npy"))
-                    inputs = [
-                        img_to_array(load_img(os.path.join(input_path, f"{in_path}"), target_size=(255, 1000)))
-                        for in_path in grouped_inputs[key]
-                    ]
+                    if ".png" in grouped_inputs[key][0]:
+                        inputs = [
+                            img_to_array(load_img(os.path.join(input_path, f"{in_path}"), target_size=(255, 1000)))
+                            for in_path in grouped_inputs[key]
+                        ]
+                    elif ".npy" in grouped_inputs[key][0]:
+                        inputs = [np.load(os.path.join(input_path, f"{in_path}")) for in_path in grouped_inputs[key]]
                     yield inputs, label
 
     def batch_generator(self, base_path):
