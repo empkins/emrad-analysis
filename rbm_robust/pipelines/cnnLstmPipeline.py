@@ -154,7 +154,7 @@ class InputAndLabelGenerator(Algorithm):
         self.input_labels
     """
 
-    _action_methods = ("generate_training_input", "generate_training_labels")
+    _action_methods = ("generate_training_input", "generate_training_labels", "generate_training_inputs_and_labels")
 
     # PreProcessing
     pre_processor: PreProcessor

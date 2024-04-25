@@ -8,6 +8,13 @@ import numpy as np
 from tpcp import Algorithm, OptimizableParameter
 from keras.preprocessing.image import load_img, img_to_array
 from itertools import groupby
+from tensorflow.keras.callbacks import Callback
+
+
+class PrintShapeCallback(Callback):
+    def on_epoch_end(self, epoch, logs=None):
+        for layer in self.model.layers:
+            print(f"Output shape of layer {layer.name}: {layer.output_shape}")
 
 
 class CNN(Algorithm):
@@ -84,6 +91,7 @@ class CNN(Algorithm):
                     inputs = [self._load_input(input_path / name) for name in group]
                     inputs = np.stack(inputs, axis=0)
                     inputs = np.transpose(inputs)
+                    inputs = np.array([inputs])
                     yield inputs, label
 
     def _load_input(self, path):
@@ -142,6 +150,7 @@ class CNN(Algorithm):
             os.makedirs(log_dir)
 
         tensorboard_callback = tf.keras.callbacks.TensorBoard(log_dir=log_dir, histogram_freq=1)
+        print_shape_callback = PrintShapeCallback()
 
         batch_generator = self.batch_generator(base_path)
         steps = self.get_steps_per_epoch(base_path)
@@ -153,7 +162,7 @@ class CNN(Algorithm):
             steps_per_epoch=steps,
             batch_size=self.batch_size,
             shuffle=False,
-            callbacks=[tensorboard_callback],
+            callbacks=[tensorboard_callback, print_shape_callback],
             verbose=1,
         )
         return self
