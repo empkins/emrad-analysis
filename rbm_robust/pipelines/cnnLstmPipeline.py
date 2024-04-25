@@ -433,7 +433,7 @@ class CnnPipeline(OptimizablePipeline):
         # cnn_copy = self.cnn.clone()
         # cnn_copy = cnn_copy.predict(input_data_path, input_data_path)
         self.cnn.predict(input_data_path)
-        self.result_ = self.cnn.predictions_
+        # self.result_ = self.cnn.predictions_
         # self.result_ = cnn_copy.predictions_
 
         return self

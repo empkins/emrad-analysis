@@ -14,6 +14,7 @@ from tensorflow.keras.callbacks import Callback
 class PrintShapeCallback(Callback):
     def on_epoch_end(self, epoch, logs=None):
         for layer in self.model.layers:
+            print(f"Input shape of layer {layer.name}: {layer.input_shape}")
             print(f"Output shape of layer {layer.name}: {layer.output_shape}")
 
 
@@ -159,7 +160,7 @@ class CNN(Algorithm):
         self._model.fit(
             batch_generator,
             epochs=self.num_epochs,
-            steps_per_epoch=steps,
+            steps_per_epoch=1,
             batch_size=self.batch_size,
             shuffle=False,
             callbacks=[tensorboard_callback, print_shape_callback],
@@ -201,20 +202,8 @@ class CNN(Algorithm):
             keras.layers.Conv2D(3, (1, 1), padding="same", input_shape=(1000, 255, 5), batch_size=self.batch_size)
         )
         self._model.add(keras.applications.ResNet50V2(include_top=False, weights="imagenet"))
+        self._model.add(keras.layers.TimeDistributed(keras.layers.Dense(1000)))
         self._model.add(keras.layers.Flatten())
         self._model.add(keras.layers.Dense(1000))
         self._model.compile(optimizer="adam", loss="mse")
-
-        # self._model = keras.Sequential()
-        # self._model.add(
-        #     keras.layers.Conv2D(3, (1, 1), padding="same", input_shape=(1000, 255, 5), batch_size=self.batch_size)
-        # )
-        # self._model.add(
-        #     keras.applications.ResNet50V2(include_top=False, weights="imagenet", input_shape=(1000, 255, 3))
-        # )
-        # self._model.add(keras.layers.TimeDistributed(keras.layers.Dense(1000)))
-        # self._model.add(keras.layers.Flatten())
-        # self._model.add(keras.layers.Dense(1000))
-        # self._model.compile(optimizer="adam", loss="mse")
-
         return self
