@@ -160,7 +160,7 @@ class CNN(Algorithm):
         self._model.fit(
             batch_generator,
             epochs=self.num_epochs,
-            steps_per_epoch=1,
+            steps_per_epoch=steps,
             batch_size=self.batch_size,
             shuffle=False,
             callbacks=[tensorboard_callback, print_shape_callback],
