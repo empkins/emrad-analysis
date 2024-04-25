@@ -3,7 +3,6 @@ from datetime import datetime
 from pathlib import Path
 from typing import Optional, Tuple
 import tensorflow as tf
-import pickle
 import keras
 import numpy as np
 from tpcp import Algorithm, OptimizableParameter
@@ -66,7 +65,7 @@ class CNN(Algorithm):
         self.batch_size = batch_size
         self._model = _model
 
-    def batch_generator_images(self, base_path):
+    def batch_generator(self, base_path):
         base_path = Path(base_path)
         subjects = [path.name for path in base_path.iterdir() if path.is_dir()]
         for subject_id in subjects:
@@ -85,12 +84,11 @@ class CNN(Algorithm):
                     inputs = [self._load_input(input_path / name) for name in group]
                     inputs = np.stack(inputs, axis=0)
                     inputs = np.transpose(inputs)
-                    inputs = np.array([inputs])
                     yield inputs, label
 
     def _load_input(self, path):
         if path.suffix == ".png":
-            return img_to_array(load_img(path, target_size=(255, 1000)))
+            return img_to_array(load_img(path, target_size=(224, 224)))
         elif path.suffix == ".npy":
             return np.load(path)
 
@@ -123,7 +121,7 @@ class CNN(Algorithm):
                 input_path = phase_path / "inputs"
                 prediction_path = phase_path / "predictions"
                 prediction_path.mkdir(exist_ok=True)
-                input_files = sorted(input_path.glob("*.pkl"))
+                input_files = sorted(input_path.glob("*.npy"))
                 grouped_inputs = {k: list(g) for k, g in groupby(input_files, key=lambda s: s.stem.split("_")[0])}
                 for key, group in grouped_inputs.items():
                     inputs = [np.load(file) for file in group]
@@ -132,9 +130,11 @@ class CNN(Algorithm):
                     print(f"Predictions for {inputs.shape} are {pred.shape} shape")
         return self
 
-    def self_optimize(self, training_data_path: str, base_path: str = "Data"):
-        if self._model is None:
+    def self_optimize(self, base_path: str = "Data", image_based: bool = False):
+        if not image_based:
             self._create_model()
+        else:
+            self._image_model()
 
         log_dir = "Runs/logs/fit/"
         log_dir += datetime.now().strftime("%Y%m%d-%H%M%S")
@@ -143,7 +143,7 @@ class CNN(Algorithm):
 
         tensorboard_callback = tf.keras.callbacks.TensorBoard(log_dir=log_dir, histogram_freq=1)
 
-        batch_generator = self.batch_generator_images(base_path)
+        batch_generator = self.batch_generator(base_path)
         steps = self.get_steps_per_epoch(base_path)
 
         print("Fitting")
@@ -158,17 +158,54 @@ class CNN(Algorithm):
         )
         return self
 
+    def _image_model(self):
+        input_layer = keras.layers.Input(shape=(5, 224, 224, 3))
+
+        processed_images = []
+        for i in range(5):
+            img = input_layer[:, i, :, :, :]
+            resnet_model = keras.applications.ResNet50V2(weights="imagenet", include_top=False)
+            resnet_model = keras.models.Model(
+                inputs=resnet_model.input, outputs=resnet_model.output, name=f"resnet50v2_{i}"
+            )
+            features = resnet_model(img)
+            features = keras.layers.Flatten()(features)
+            processed_images.append(features)
+
+        # Combine the feature vectors from each image
+        combined = keras.layers.Concatenate()(processed_images)
+
+        # Pass the combined feature vector through a fully connected layer
+        fc_layer = keras.layers.Dense(1024, activation="relu")(combined)
+
+        # Define the output layer
+        output_layer = keras.layers.Dense(1000, activation="linear")(fc_layer)
+
+        # Create the model
+        model = keras.models.Model(inputs=input_layer, outputs=output_layer)
+        self._model = model
+        self._model.compile(optimizer="adam", loss="mse")
+
     def _create_model(self):
         self._model = keras.Sequential()
         self._model.add(
-            keras.layers.Conv2D(3, (1, 1), padding="same", input_shape=(1, 1000, 255, 5), batch_size=self.batch_size)
+            keras.layers.Conv2D(3, (1, 1), padding="same", input_shape=(1000, 255, 5), batch_size=self.batch_size)
         )
-        self._model.add(
-            keras.layers.TimeDistributed(
-                keras.applications.ResNet50V2(include_top=False, weights="imagenet", input_shape=(1000, 255, 3))
-            )
-        )
+        self._model.add(keras.applications.ResNet50V2(include_top=False, weights="imagenet"))
         self._model.add(keras.layers.Flatten())
         self._model.add(keras.layers.Dense(1000))
         self._model.compile(optimizer="adam", loss="mse")
+
+        # self._model = keras.Sequential()
+        # self._model.add(
+        #     keras.layers.Conv2D(3, (1, 1), padding="same", input_shape=(1000, 255, 5), batch_size=self.batch_size)
+        # )
+        # self._model.add(
+        #     keras.applications.ResNet50V2(include_top=False, weights="imagenet", input_shape=(1000, 255, 3))
+        # )
+        # self._model.add(keras.layers.TimeDistributed(keras.layers.Dense(1000)))
+        # self._model.add(keras.layers.Flatten())
+        # self._model.add(keras.layers.Dense(1000))
+        # self._model.compile(optimizer="adam", loss="mse")
+
         return self

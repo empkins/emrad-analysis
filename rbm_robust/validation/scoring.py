@@ -4,8 +4,7 @@ import numpy as np
 import pickle
 from sklearn.model_selection import train_test_split
 import pathlib
-from emrad_analysis.validation.PairwiseHeartRate import PairwiseHeartRate
-from emrad_analysis.validation.RPeakF1Score import RPeakF1Score
+from rbm_robust.validation.RPeakF1Score import RPeakF1Score
 from rbm_robust.data_loading.datasets import D02Dataset
 from rbm_robust.models.cnn import CNN
 from rbm_robust.pipelines.cnnLstmPipeline import CnnPipeline
@@ -81,73 +80,55 @@ def cnnPipelineScoring(pipeline: CnnPipeline, dataset: D02Dataset):
     pipeline.run(testing_dataset)
     time_stamps["AfterTestRun"] = datetime.now().isoformat(sep="-", timespec="seconds")
 
-    label_dict = pipeline.feature_extractor.generate_label_dict(testing_dataset).test_label_dict_
+    label_base_path = pipeline.feature_extractor.generate_training_labels(testing_dataset)
     time_stamps["AfterTestingLabelGeneration"] = datetime.now().isoformat(sep="-", timespec="seconds")
 
-    for subject in label_dict.keys():
-        for phase in label_dict[subject].keys():
-            phase_labels = label_dict[subject][phase]
-            phase_predictions = pipeline.result_[subject][phase]
+    true_positives = 0
+    total_gt_peaks = 0
+    total_pred_peaks = 0
 
-            # normalize predictions and labels between 0 and 1
-            result = (
-                (phase_predictions - np.min(phase_predictions, axis=1)[:, None])
-                / (np.max(phase_predictions, axis=1)[:, None] - np.min(phase_predictions, axis=1)[:, None])
-            )[::20, :].flatten()
-            labels = (
-                (phase_labels - np.min(phase_labels, axis=1)[:, None])
-                / (np.max(phase_labels, axis=1)[:, None] - np.min(phase_labels, axis=1)[:, None])
-            )[::20, :].flatten()
+    for subject in label_base_path.iterdir():
+        if not subject.is_dir():
+            continue
+        for phase in subject.iterdir():
+            if not phase.is_dir():
+                continue
+            prediction_path = phase / "predictions"
+            label_path = phase / "labels"
+            prediction_files = sorted(path.name for path in prediction_path.iterdir() if path.is_file())
+            f1RPeakScore = RPeakF1Score(max_deviation_ms=100)
+            for prediction_file in prediction_files:
+                prediction = np.load(prediction_path / prediction_file)
+                label = np.load(label_path / prediction_file)
 
-            f1_score = (
-                RPeakF1Score(max_deviation_ms=100)
-                .compute(predicted_r_peak_signal=result, ground_truth_r_peak_signal=labels)
-                .f1_score_
-            )
+                f1RPeakScore.compute_predictions(prediction, label)
+                true_positives += f1RPeakScore.tp_
+                total_gt_peaks += f1RPeakScore.total_peaks_
+                total_pred_peaks += f1RPeakScore.pred_peaks_
 
-            # Compute beat-to-beat heart rates
-            heart_rate_prediction = PairwiseHeartRate().compute(result).heart_rate_
-            heart_rate_ground_truth = PairwiseHeartRate().compute(labels).heart_rate_
-
-            # 1. heart rate estimation over long run
-            hr_pred = heart_rate_prediction.mean()
-            hr_g_t = heart_rate_ground_truth.mean()
-
-            absolute_hr_error = abs(hr_pred - hr_g_t)
-
-            # 2. beat_to_beat_accuracy
-            assert len(heart_rate_ground_truth) == len(
-                heart_rate_prediction
-            ), "The heart_rate_ground_truth and heart_rate_prediction should be equally long."
-
-            instantaneous_abs_hr_diff = np.abs(np.subtract(heart_rate_prediction, heart_rate_ground_truth))
-
-            mean_instantaneous_abs_hr_diff = instantaneous_abs_hr_diff.mean()
-
-            mean_relative_error_hr = (
-                1 / len(heart_rate_ground_truth) * np.sum(instantaneous_abs_hr_diff / heart_rate_ground_truth)
-            )
-
-            mean_absolute_error = np.mean(np.sum(np.square(instantaneous_abs_hr_diff)))
+    precision = true_positives / total_pred_peaks
+    recall = true_positives / total_gt_peaks
+    f1_score = 2 * (precision * recall) / (precision + recall)
 
     scoring = Scoring(
-        heart_rate_prediction=heart_rate_prediction,
-        heart_rate_ground_truth=heart_rate_ground_truth,
+        heart_rate_prediction=0,
+        heart_rate_ground_truth=0,
         f1_score=f1_score,
-        mean_relative_error_hr=mean_relative_error_hr,
-        mean_absolute_error=mean_absolute_error,
-        abs_hr_error=absolute_hr_error,
-        mean_instantaneous_abs_hr_diff=mean_instantaneous_abs_hr_diff,
+        mean_relative_error_hr=0,
+        mean_absolute_error=0,
+        abs_hr_error=0,
+        mean_instantaneous_abs_hr_diff=0,
         model=pipeline.cnn,
         time_stamps=time_stamps,
     )
     # scoring.save_myself()
 
+    print(f"f1 Score {f1_score}")
     # Scoring results
     return {
-        "abs_hr_error": absolute_hr_error,
-        "mean_instantaneous_error": mean_instantaneous_abs_hr_diff,
+        "abs_hr_error": 0,
+        "mean_instantaneous_error": 0,
         "f1_score": f1_score,
-        "mean_relative_error_hr": mean_relative_error_hr,
-        "mean_absolute_error": mean_absolute_error,
+        "mean_relative_error_hr": 0,
+        "mean_absolute_error": 0,
     }
