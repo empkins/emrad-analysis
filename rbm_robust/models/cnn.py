@@ -76,24 +76,25 @@ class CNN(Algorithm):
     def batch_generator(self, base_path):
         base_path = Path(base_path)
         subjects = [path.name for path in base_path.iterdir() if path.is_dir()]
-        for subject_id in subjects:
-            subject_path = base_path / subject_id
-            phases = [path.name for path in subject_path.iterdir() if path.is_dir()]
-            for phase in phases:
-                phase_path = subject_path / phase
-                input_path = phase_path / "inputs"
-                label_path = phase_path / "labels"
-                if not input_path.exists() or not label_path.exists():
-                    continue
-                input_names = sorted(path.name for path in input_path.iterdir() if path.is_file())
-                grouped_inputs = {k: list(g) for k, g in groupby(input_names, key=lambda s: s.split("_")[0])}
-                for key, group in grouped_inputs.items():
-                    label = np.load(label_path / f"{key}.npy")
-                    inputs = [self._load_input(input_path / name) for name in group]
-                    inputs = np.stack(inputs, axis=0)
-                    inputs = np.transpose(inputs)
-                    inputs = np.array([inputs])
-                    yield inputs, label
+        while True:
+            for subject_id in subjects:
+                subject_path = base_path / subject_id
+                phases = [path.name for path in subject_path.iterdir() if path.is_dir()]
+                for phase in phases:
+                    phase_path = subject_path / phase
+                    input_path = phase_path / "inputs"
+                    label_path = phase_path / "labels"
+                    if not input_path.exists() or not label_path.exists():
+                        continue
+                    input_names = sorted(path.name for path in input_path.iterdir() if path.is_file())
+                    grouped_inputs = {k: list(g) for k, g in groupby(input_names, key=lambda s: s.split("_")[0])}
+                    for key, group in grouped_inputs.items():
+                        label = np.load(label_path / f"{key}.npy")
+                        inputs = [self._load_input(input_path / name) for name in group]
+                        inputs = np.stack(inputs, axis=0)
+                        inputs = np.transpose(inputs)
+                        inputs = np.array([inputs])
+                        yield inputs, label
 
     def _load_input(self, path):
         if path.suffix == ".png":
