@@ -24,4 +24,4 @@ def alt():
 
 
 if __name__ == "__main__":
-    alt()
+    main()
