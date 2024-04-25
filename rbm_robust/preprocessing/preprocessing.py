@@ -150,7 +150,7 @@ class WaveletTransformer(Algorithm):
         subject_id: str,
         phase: str,
         segment: int,
-        base_path: str = "DataImg",
+        base_path: str = "Data",
         img_based: bool = False,
     ):
         """Transform the input signal using a wavelet transform

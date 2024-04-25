@@ -121,7 +121,7 @@ class LabelProcessor(Algorithm):
         phase: str,
         segment: int,
         downsample_hz: int = 200,
-        base_path: str = "DataImg",
+        base_path: str = "Data",
     ):
         blip_algo_clone = self.blip_algo.clone()
         downsampling_clone = self.downsampling.clone()
@@ -139,7 +139,7 @@ class LabelProcessor(Algorithm):
         self.labels_ = processed_ecg
         return self
 
-    def get_path(self, subject_id: str, phase: str, base_path: str = "DataImg"):
+    def get_path(self, subject_id: str, phase: str, base_path: str = "Data"):
         path = f"{base_path}/{subject_id}/{phase}/labels"
         if not os.path.exists(path):
             os.makedirs(path)
@@ -413,7 +413,7 @@ class CnnPipeline(OptimizablePipeline):
         self.feature_extractor = feature_extractor
         self.cnn = cnn
 
-    def self_optimize(self, dataset: D02Dataset, path: str = "DataNew", image_based: bool = False) -> Self:
+    def self_optimize(self, dataset: D02Dataset, path: str = "Data", image_based: bool = False) -> Self:
         self.feature_extractor = self.feature_extractor.clone()
         self.cnn = self.cnn.clone()
 
