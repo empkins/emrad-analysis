@@ -418,7 +418,7 @@ class CnnPipeline(OptimizablePipeline):
         self.cnn = self.cnn.clone()
 
         print("Extracting features and Labels")
-        self.feature_extractor.generate_training_inputs_and_labels(dataset, path, image_based)
+        #self.feature_extractor.generate_training_inputs_and_labels(dataset, path, image_based)
 
         print("Optimizing CNN")
         self.cnn.self_optimize("Data", image_based)

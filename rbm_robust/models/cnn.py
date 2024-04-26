@@ -9,7 +9,7 @@ from tpcp import Algorithm, OptimizableParameter
 from keras.preprocessing.image import load_img, img_to_array
 from itertools import groupby
 from tensorflow.keras.callbacks import Callback
-
+import gc
 
 class PrintShapeCallback(Callback):
     def on_epoch_end(self, epoch, logs=None):
@@ -95,6 +95,8 @@ class CNN(Algorithm):
                         inputs = np.transpose(inputs)
                         inputs = np.array([inputs])
                         yield inputs, label
+                        del inputs, label
+                        gc.collect()
 
     def _load_input(self, path):
         if path.suffix == ".png":
@@ -164,7 +166,7 @@ class CNN(Algorithm):
             steps_per_epoch=steps,
             batch_size=self.batch_size,
             shuffle=False,
-            callbacks=[tensorboard_callback, print_shape_callback],
+            #callbacks=[tensorboard_callback, print_shape_callback],
             verbose=1,
         )
         return self
@@ -202,7 +204,7 @@ class CNN(Algorithm):
         self._model.add(
             keras.layers.Conv2D(3, (1, 1), padding="same", input_shape=(1000, 255, 5), batch_size=self.batch_size)
         )
-        self._model.add(keras.applications.ResNet50V2(include_top=False, weights="imagenet"))
+        self._model.add(keras.applications.ResNet50V2(include_top=False, weights="Weights/resNet50V2.h5"))
         self._model.add(keras.layers.TimeDistributed(keras.layers.Dense(1000)))
         self._model.add(keras.layers.Flatten())
         self._model.add(keras.layers.Dense(1000))
