@@ -74,7 +74,7 @@ def cnnPipelineScoring(pipeline: CnnPipeline, dataset: D02Dataset):
 
     time_stamps["Start"] = datetime.now().isoformat(sep="-", timespec="seconds")
     print("Prepare Data")
-    pipeline.prepare_data(training_dataset, validation_dataset, testing_dataset)
+    # pipeline.prepare_data(training_dataset, validation_dataset, testing_dataset)
 
     print("Start Training")
     pipeline.self_optimize(training_dataset, validation_dataset)
@@ -84,7 +84,6 @@ def cnnPipelineScoring(pipeline: CnnPipeline, dataset: D02Dataset):
     pipeline.run(testing_dataset)
     time_stamps["AfterTestRun"] = datetime.now().isoformat(sep="-", timespec="seconds")
 
-    pipeline.feature_extractor.generate_training_labels(testing_dataset)
     label_base_path = pathlib.Path("Testing")
     time_stamps["AfterTestingLabelGeneration"] = datetime.now().isoformat(sep="-", timespec="seconds")
 
@@ -95,9 +94,11 @@ def cnnPipelineScoring(pipeline: CnnPipeline, dataset: D02Dataset):
     for subject in label_base_path.iterdir():
         if not subject.is_dir():
             continue
+        print(f"subject {subject}")
         for phase in subject.iterdir():
             if not phase.is_dir():
                 continue
+            print(f"phase {phase}")
             prediction_path = phase / "predictions"
             label_path = phase / "labels"
             prediction_files = sorted(path.name for path in prediction_path.iterdir() if path.is_file())
@@ -105,7 +106,6 @@ def cnnPipelineScoring(pipeline: CnnPipeline, dataset: D02Dataset):
             for prediction_file in prediction_files:
                 prediction = np.load(prediction_path / prediction_file)
                 label = np.load(label_path / prediction_file)
-
                 f1RPeakScore.compute_predictions(prediction, label)
                 true_positives += f1RPeakScore.tp_
                 total_gt_peaks += f1RPeakScore.total_peaks_

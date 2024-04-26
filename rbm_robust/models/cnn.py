@@ -160,7 +160,12 @@ class CNN(Algorithm):
                 grouped_inputs = {k: list(g) for k, g in groupby(input_files, key=lambda s: s.stem.split("_")[0])}
                 for key, group in grouped_inputs.items():
                     inputs = [np.load(file) for file in group]
+                    if self._model is None:
+                        print("Model not trained yet")
+                    else:
+                        print("Model found")
                     pred = self._model.predict(inputs)
+                    print(f"Predictions for {inputs.shape} are {pred.shape}")
                     np.save(prediction_path / f"{key}.npy", pred)
                     print(f"Predictions for {inputs.shape} are {pred.shape} shape")
         return self
@@ -181,7 +186,7 @@ class CNN(Algorithm):
         # print_shape_callback = PrintShapeCallback()
 
         batch_generator = self.batch_generator(base_path)
-        validation_generator = self.batch_generator("Validation")
+        validation_generator = self.validation_generator("Validation")
         steps = self.get_steps_per_epoch(base_path)
 
         print("Fitting")
