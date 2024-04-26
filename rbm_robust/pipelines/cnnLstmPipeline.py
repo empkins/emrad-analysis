@@ -413,31 +413,39 @@ class CnnPipeline(OptimizablePipeline):
         self.feature_extractor = feature_extractor
         self.cnn = cnn
 
+    def prepare_data(
+        self,
+        training_data: D02Dataset,
+        validation_data: D02Dataset,
+        testing_data: D02Dataset,
+        path: str = "Data",
+        image_based: bool = False,
+    ):
+        print("Extracting features and Labels")
+        self.feature_extractor.generate_training_inputs_and_labels(training_data, path, image_based)
+        print("Generating Validation Set")
+        self.feature_extractor.generate_training_inputs_and_labels(validation_data, "Validation", image_based)
+        print("Generating Testing Set")
+        self.feature_extractor.generate_training_input(testing_data, "Testing")
+        return self
+
     def self_optimize(
         self, dataset: D02Dataset, validation: D02Dataset, path: str = "Data", image_based: bool = False
     ) -> Self:
         self.feature_extractor = self.feature_extractor.clone()
         self.cnn = self.cnn.clone()
-
-        print("Extracting features and Labels")
-        self.feature_extractor.generate_training_inputs_and_labels(dataset, path, image_based)
-
-        print("Generating Validation Set")
-        self.feature_extractor.generate_training_inputs_and_labels(validation, "Validation", image_based)
-
         print("Optimizing CNN")
-        self.cnn.self_optimize("Data", image_based)
-
+        self.cnn.self_optimize(path, image_based)
         return self
 
     def run(self, datapoint: D02Dataset) -> Self:
         # Get data from dataset
-        input_data_path = self.feature_extractor.generate_training_input(datapoint, "Testing").input_data_path_
+        # input_data_path = self.feature_extractor.generate_training_input(datapoint, "Testing").input_data_path_
 
         # model predict
         # cnn_copy = self.cnn.clone()
         # cnn_copy = cnn_copy.predict(input_data_path, input_data_path)
-        self.cnn.predict(input_data_path)
+        self.cnn.predict("Testing")
         # self.result_ = self.cnn.predictions_
         # self.result_ = cnn_copy.predictions_
 

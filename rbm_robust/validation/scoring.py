@@ -73,6 +73,9 @@ def cnnPipelineScoring(pipeline: CnnPipeline, dataset: D02Dataset):
     testing_dataset = dataset.get_subset(participant=val_data)
 
     time_stamps["Start"] = datetime.now().isoformat(sep="-", timespec="seconds")
+    print("Prepare Data")
+    pipeline.prepare_data(training_dataset, validation_dataset, testing_dataset)
+
     print("Start Training")
     pipeline.self_optimize(training_dataset, validation_dataset)
 
@@ -81,7 +84,8 @@ def cnnPipelineScoring(pipeline: CnnPipeline, dataset: D02Dataset):
     pipeline.run(testing_dataset)
     time_stamps["AfterTestRun"] = datetime.now().isoformat(sep="-", timespec="seconds")
 
-    label_base_path = pipeline.feature_extractor.generate_training_labels(testing_dataset)
+    pipeline.feature_extractor.generate_training_labels(testing_dataset)
+    label_base_path = pathlib.Path("Testing")
     time_stamps["AfterTestingLabelGeneration"] = datetime.now().isoformat(sep="-", timespec="seconds")
 
     true_positives = 0
