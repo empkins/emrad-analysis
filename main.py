@@ -6,6 +6,7 @@ from rbm_robust.models.cnn import CNN
 from rbm_robust.pipelines.cnnLstmPipeline import CnnPipeline
 from rbm_robust.validation.scoring import cnnPipelineScoring
 import os
+import tensorflow as tf
 
 
 def main():
@@ -24,4 +25,6 @@ def alt():
 
 
 if __name__ == "__main__":
+    devices = tf.config.experimental.list_physical_devices("GPU")
+    tf.config.experimental.set_memory_growth(devices[0], True)
     main()
