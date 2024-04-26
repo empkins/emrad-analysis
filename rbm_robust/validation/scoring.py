@@ -69,11 +69,12 @@ def cnnPipelineScoring(pipeline: CnnPipeline, dataset: D02Dataset):
     # Split Data
     train_data, val_data = train_test_split(dataset.subjects, test_size=0.2, random_state=42)
     training_dataset = dataset.get_subset(participant=train_data)
+    training_dataset, validation_dataset = train_test_split(training_dataset, test_size=0.2, random_state=42)
     testing_dataset = dataset.get_subset(participant=val_data)
 
     time_stamps["Start"] = datetime.now().isoformat(sep="-", timespec="seconds")
     print("Start Training")
-    pipeline.self_optimize(training_dataset)
+    pipeline.self_optimize(training_dataset, validation_dataset)
 
     time_stamps["AfterTraining"] = datetime.now().isoformat(sep="-", timespec="seconds")
     print("Training done")

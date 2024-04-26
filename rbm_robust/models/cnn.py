@@ -11,6 +11,7 @@ from itertools import groupby
 from tensorflow.keras.callbacks import Callback
 import gc
 
+
 class PrintShapeCallback(Callback):
     def on_epoch_end(self, epoch, logs=None):
         for layer in self.model.layers:
@@ -153,10 +154,12 @@ class CNN(Algorithm):
         if not os.path.exists(log_dir):
             os.makedirs(log_dir)
 
-        tensorboard_callback = tf.keras.callbacks.TensorBoard(log_dir=log_dir, histogram_freq=1)
-        print_shape_callback = PrintShapeCallback()
+        # Commented out since the tensorboard callback leads to too much necessary memory
+        # tensorboard_callback = tf.keras.callbacks.TensorBoard(log_dir=log_dir, histogram_freq=1)
+        # print_shape_callback = PrintShapeCallback()
 
         batch_generator = self.batch_generator(base_path)
+        validation_generator = self.batch_generator("Validation")
         steps = self.get_steps_per_epoch(base_path)
 
         print("Fitting")
@@ -166,7 +169,8 @@ class CNN(Algorithm):
             steps_per_epoch=steps,
             batch_size=self.batch_size,
             shuffle=False,
-            #callbacks=[tensorboard_callback, print_shape_callback],
+            validation_data=validation_generator,
+            # callbacks=[tensorboard_callback, print_shape_callback],
             verbose=1,
         )
         return self

@@ -413,12 +413,17 @@ class CnnPipeline(OptimizablePipeline):
         self.feature_extractor = feature_extractor
         self.cnn = cnn
 
-    def self_optimize(self, dataset: D02Dataset, path: str = "Data", image_based: bool = False) -> Self:
+    def self_optimize(
+        self, dataset: D02Dataset, validation: D02Dataset, path: str = "Data", image_based: bool = False
+    ) -> Self:
         self.feature_extractor = self.feature_extractor.clone()
         self.cnn = self.cnn.clone()
 
         print("Extracting features and Labels")
-        #self.feature_extractor.generate_training_inputs_and_labels(dataset, path, image_based)
+        self.feature_extractor.generate_training_inputs_and_labels(dataset, path, image_based)
+
+        print("Generating Validation Set")
+        self.feature_extractor.generate_training_inputs_and_labels(validation, "Validation", image_based)
 
         print("Optimizing CNN")
         self.cnn.self_optimize("Data", image_based)
