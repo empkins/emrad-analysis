@@ -146,6 +146,7 @@ class CNN(Algorithm):
         return steps
 
     def predict(self, data_path: str):
+        print("Prediction started")
         data_path = Path(data_path)
         for subject_path in data_path.iterdir():
             if not subject_path.is_dir():
