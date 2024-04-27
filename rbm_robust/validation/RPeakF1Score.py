@@ -9,7 +9,7 @@ class RPeakF1Score(Algorithm):
     of true positives and false negatives) and from that the F1-score of the predicted R-Peaks.
     """
 
-    _action_methods = "compute"
+    _action_methods = ("compute", "compute_predictions")
 
     # INPUT PARAMETERS
     max_deviation_ms: int
