@@ -74,7 +74,7 @@ def cnnPipelineScoring(pipeline: CnnPipeline, dataset: D02Dataset):
 
     time_stamps["Start"] = datetime.now().isoformat(sep="-", timespec="seconds")
     print("Prepare Data")
-    pipeline.prepare_data(training_dataset, validation_dataset, testing_dataset)
+    #pipeline.prepare_data(training_dataset, validation_dataset, testing_dataset)
 
     print("Start Training")
     pipeline.self_optimize(training_dataset, validation_dataset)
@@ -115,17 +115,17 @@ def cnnPipelineScoring(pipeline: CnnPipeline, dataset: D02Dataset):
     recall = true_positives / total_gt_peaks
     f1_score = 2 * (precision * recall) / (precision + recall)
 
-    scoring = Scoring(
-        heart_rate_prediction=0,
-        heart_rate_ground_truth=0,
-        f1_score=f1_score,
-        mean_relative_error_hr=0,
-        mean_absolute_error=0,
-        abs_hr_error=0,
-        mean_instantaneous_abs_hr_diff=0,
-        model=pipeline.cnn,
-        time_stamps=time_stamps,
-    )
+    #scoring = Scoring(
+    #    heart_rate_prediction=0,
+    #    heart_rate_ground_truth=0,
+    #    f1_score=f1_score,
+    #    mean_relative_error_hr=0,
+    #    mean_absolute_error=0,
+    #    abs_hr_error=0,
+    #    mean_instantaneous_abs_hr_diff=0,
+    #    model=pipeline.cnn,
+    #    time_stamps=time_stamps,
+    #)
     # scoring.save_myself()
 
     print(f"f1 Score {f1_score}")

@@ -169,6 +169,8 @@ class CNN(Algorithm):
                     else:
                         print("Model found")
                     pred = self._model.predict(inputs)
+                    #print(f"Predictions for {inputs.shape} are {pred.shape}")
+                    pred = pred.flatten()
                     print(f"Predictions for {inputs.shape} are {pred.shape}")
                     np.save(prediction_path / f"{key}.npy", pred)
                     print(f"Predictions for {inputs.shape} are {pred.shape} shape")
