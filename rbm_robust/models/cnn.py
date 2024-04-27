@@ -161,6 +161,9 @@ class CNN(Algorithm):
                 grouped_inputs = {k: list(g) for k, g in groupby(input_files, key=lambda s: s.stem.split("_")[0])}
                 for key, group in grouped_inputs.items():
                     inputs = [np.load(file) for file in group]
+                    inputs = np.stack(inputs, axis=0)
+                    inputs = np.transpose(inputs)
+                    inputs = np.array([inputs])
                     if self._model is None:
                         print("Model not trained yet")
                     else:
