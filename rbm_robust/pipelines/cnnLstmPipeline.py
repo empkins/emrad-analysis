@@ -426,7 +426,7 @@ class CnnPipeline(OptimizablePipeline):
         print("Generating Validation Set")
         self.feature_extractor.generate_training_inputs_and_labels(validation_data, "Validation", image_based)
         print("Generating Testing Set")
-        self.feature_extractor.generate_training_input(testing_data, "Testing")
+        self.feature_extractor.generate_training_inputs_and_labels(testing_data, "Testing", image_based)
         return self
 
     def self_optimize(
