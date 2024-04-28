@@ -2,7 +2,7 @@
 #
 #SBATCH --job-name=secondTry
 #SBATCH --nodes=1
-#SBATCH --time=02:00:00
+#SBATCH --time=11:00:00
 #SBATCH --gres=gpu:1
 
 cd "$HOME"/emrad-analysis || exit

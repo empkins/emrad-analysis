@@ -114,6 +114,7 @@ def cnnPipelineScoring(pipeline: CnnPipeline, dataset: D02Dataset):
     precision = true_positives / total_pred_peaks
     recall = true_positives / total_gt_peaks
     f1_score = 2 * (precision * recall) / (precision + recall)
+    print(f"f1 Score {f1_score}")
 
     # Save the Model
     pipeline.cnn.save_model()
@@ -131,7 +132,6 @@ def cnnPipelineScoring(pipeline: CnnPipeline, dataset: D02Dataset):
     # )
     # scoring.save_myself()
 
-    print(f"f1 Score {f1_score}")
     # Scoring results
     return {
         "abs_hr_error": 0,

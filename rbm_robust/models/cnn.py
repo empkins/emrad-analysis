@@ -55,7 +55,7 @@ class CNN(Algorithm):
         kernel_initializer: str = "glorot_uniform",
         bias_initializer: str = "zeros",
         learning_rate: float = 0.001,
-        num_epochs: int = 1,
+        num_epochs: int = 20,
         batch_size: int = 1,
         _model=None,
     ):
@@ -171,9 +171,9 @@ class CNN(Algorithm):
                     pred = self._model.predict(inputs)
                     # print(f"Predictions for {inputs.shape} are {pred.shape}")
                     pred = pred.flatten()
-                    print(f"Predictions for {inputs.shape} are {pred.shape}")
+                    # print(f"Predictions for {inputs.shape} are {pred.shape}")
                     np.save(prediction_path / f"{key}.npy", pred)
-                    print(f"Predictions for {inputs.shape} are {pred.shape} shape")
+                    # print(f"Predictions for {inputs.shape} are {pred.shape} shape")
         return self
 
     def self_optimize(self, base_path: str = "Data", image_based: bool = False):
@@ -249,10 +249,10 @@ class CNN(Algorithm):
         return self
 
     def save_model(self):
-        name = datetime.now().strftime("%Y%m%d-%H%M%S")
+        name = datetime.now().strftime("%Y%m%d_%H%M%S")
         if not os.path.exists("Models"):
             os.makedirs("Models")
-        self._model.save("Models/" + name + ".h5")
+        self._model.save("Models/" + name + ".keras")
         with open("Models/" + name + "_history.pkl", "wb") as f:
             pickle.dump(self._model.history, f)
         return self

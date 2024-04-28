@@ -281,9 +281,9 @@ class InputAndLabelGenerator(Algorithm):
                 segments_radar = segmentation_clone.segment(phase_radar_data, sampling_rate).segmented_signal_
                 segments_ecg = segmentation_clone.segment(phase_ecg_data, sampling_rate).segmented_signal_
                 if len(segments_radar) != len(segments_ecg):
-                    print(
-                        f"Length of radar and ecg segments do not match for {subject} in pahse {phase} the radar_length is {len(segments_radar)} and the ecg_length is {len(segments_ecg)}"
-                    )
+                    # print(
+                    #     f"Length of radar and ecg segments do not match for {subject} in pahse {phase} the radar_length is {len(segments_radar)} and the ecg_length is {len(segments_ecg)}"
+                    # )
                     continue
                 # Create Inputs
                 length = min(len(segments_radar), len(segments_ecg))
