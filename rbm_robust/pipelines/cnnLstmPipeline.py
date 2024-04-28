@@ -269,8 +269,6 @@ class InputAndLabelGenerator(Algorithm):
             phases = subject.phases
             sampling_rate = subject.SAMPLING_RATE_DOWNSAMPLED
             for phase in phases.keys():
-                if "ei" not in phase:
-                    continue
                 print(f"Starting phase {phase}")
                 timezone = pytz.timezone("Europe/Berlin")
                 phase_start = timezone.localize(phases[phase]["start"])
@@ -283,10 +281,13 @@ class InputAndLabelGenerator(Algorithm):
                 segments_radar = segmentation_clone.segment(phase_radar_data, sampling_rate).segmented_signal_
                 segments_ecg = segmentation_clone.segment(phase_ecg_data, sampling_rate).segmented_signal_
                 if len(segments_radar) != len(segments_ecg):
-                    print("Length of radar and ecg segments do not match")
+                    print(
+                        f"Length of radar and ecg segments do not match for {subject} in pahse {phase} the radar_length is {len(segments_radar)} and the ecg_length is {len(segments_ecg)}"
+                    )
                     continue
                 # Create Inputs
-                for j in range(len(segments_radar)):
+                length = min(len(segments_radar), len(segments_ecg))
+                for j in range(length):
                     pre_processor_clone.preprocess(
                         segments_radar[j],
                         subject.SAMPLING_RATE_DOWNSAMPLED,

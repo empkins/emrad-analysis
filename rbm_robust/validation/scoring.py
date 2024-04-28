@@ -115,6 +115,9 @@ def cnnPipelineScoring(pipeline: CnnPipeline, dataset: D02Dataset):
     recall = true_positives / total_gt_peaks
     f1_score = 2 * (precision * recall) / (precision + recall)
 
+    # Save the Model
+    pipeline.cnn.save_model()
+
     # scoring = Scoring(
     #    heart_rate_prediction=0,
     #    heart_rate_ground_truth=0,

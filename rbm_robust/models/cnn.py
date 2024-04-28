@@ -1,8 +1,8 @@
 import os
+import pickle
 from datetime import datetime
 from pathlib import Path
 from typing import Optional, Tuple
-import tensorflow as tf
 import keras
 import numpy as np
 from tpcp import Algorithm, OptimizableParameter
@@ -123,7 +123,7 @@ class CNN(Algorithm):
 
     def _load_input(self, path):
         if path.suffix == ".png":
-            return img_to_array(load_img(path, target_size=(224, 224)))
+            return img_to_array(load_img(path, target_size=(1000, 255)))
         elif path.suffix == ".npy":
             return np.load(path)
 
@@ -169,7 +169,7 @@ class CNN(Algorithm):
                     else:
                         print("Model found")
                     pred = self._model.predict(inputs)
-                    #print(f"Predictions for {inputs.shape} are {pred.shape}")
+                    # print(f"Predictions for {inputs.shape} are {pred.shape}")
                     pred = pred.flatten()
                     print(f"Predictions for {inputs.shape} are {pred.shape}")
                     np.save(prediction_path / f"{key}.npy", pred)
@@ -209,7 +209,7 @@ class CNN(Algorithm):
         return self
 
     def _image_model(self):
-        input_layer = keras.layers.Input(shape=(5, 224, 224, 3))
+        input_layer = keras.layers.Input(shape=(5, 1000, 255, 3))
 
         processed_images = []
         for i in range(5):
@@ -246,4 +246,13 @@ class CNN(Algorithm):
         self._model.add(keras.layers.Flatten())
         self._model.add(keras.layers.Dense(1000))
         self._model.compile(optimizer="adam", loss="mse")
+        return self
+
+    def save_model(self):
+        name = datetime.now().strftime("%Y%m%d-%H%M%S")
+        if not os.path.exists("Models"):
+            os.makedirs("Models")
+        self._model.save("Models/" + name + ".h5")
+        with open("Models/" + name + "_history.pkl", "wb") as f:
+            pickle.dump(self._model.history, f)
         return self

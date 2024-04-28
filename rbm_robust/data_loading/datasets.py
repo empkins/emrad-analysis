@@ -44,8 +44,8 @@ class D02Dataset(Dataset):
         },  # hier kann es auch training_trial_end sein
     }
     EXCLUDE_SUBJECTS = ("005", "044", "074", "093", "131", "597", "115", "Radar_DB")
-    INCLUDE_SUBJECTS = ("338","251","310","094")
-    
+    INCLUDE_SUBJECTS = ("338", "251", "310", "094")
+
     def __init__(
         self,
         data_path: Path,
@@ -74,7 +74,7 @@ class D02Dataset(Dataset):
         :return: DataFrame containing the index.
         """
         participant_ids = [item.name for item in Path(self.data_path).iterdir() if item.is_dir()]
-        #participant_ids = [pid for pid in participant_ids if pid not in self.EXCLUDE_SUBJECTS]
+        # participant_ids = [pid for pid in participant_ids if pid not in self.EXCLUDE_SUBJECTS]
         participant_ids = [pid for pid in participant_ids if pid in self.INCLUDE_SUBJECTS]
 
         df = pd.DataFrame({"participant": participant_ids})
