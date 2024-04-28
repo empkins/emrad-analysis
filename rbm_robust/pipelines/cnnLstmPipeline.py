@@ -52,7 +52,7 @@ class PreProcessor(Algorithm):
         subject_id: str,
         phase: str,
         segment: int,
-        base_path: str = "Data",
+        base_path: str = "$WORK/Data",
         image_based: bool = False,
     ):
         """Preprocess the input signal using a bandpass filter
@@ -419,19 +419,19 @@ class CnnPipeline(OptimizablePipeline):
         training_data: D02Dataset,
         validation_data: D02Dataset,
         testing_data: D02Dataset,
-        path: str = "Data",
+        path: str = "$WORK/Data",
         image_based: bool = False,
     ):
         print("Extracting features and Labels")
         self.feature_extractor.generate_training_inputs_and_labels(training_data, path, image_based)
         print("Generating Validation Set")
-        self.feature_extractor.generate_training_inputs_and_labels(validation_data, "Validation", image_based)
+        self.feature_extractor.generate_training_inputs_and_labels(validation_data, "$WORK/Validation", image_based)
         print("Generating Testing Set")
-        self.feature_extractor.generate_training_inputs_and_labels(testing_data, "Testing", image_based)
+        self.feature_extractor.generate_training_inputs_and_labels(testing_data, "$WORK/Testing", image_based)
         return self
 
     def self_optimize(
-        self, dataset: D02Dataset, validation: D02Dataset, path: str = "Data", image_based: bool = False
+        self, dataset: D02Dataset, validation: D02Dataset, path: str = "$WORK/Data", image_based: bool = False
     ) -> Self:
         self.feature_extractor = self.feature_extractor.clone()
         self.cnn = self.cnn.clone()
@@ -441,5 +441,5 @@ class CnnPipeline(OptimizablePipeline):
 
     def run(self, datapoint: D02Dataset) -> Self:
         print("Run")
-        self.cnn.predict("Testing")
+        self.cnn.predict("$WORK/Testing")
         return self

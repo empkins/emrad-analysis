@@ -176,7 +176,7 @@ class CNN(Algorithm):
                     # print(f"Predictions for {inputs.shape} are {pred.shape} shape")
         return self
 
-    def self_optimize(self, base_path: str = "Data", image_based: bool = False):
+    def self_optimize(self, base_path: str = "$WORK/Data", image_based: bool = False):
         if not image_based:
             self._create_model()
         else:
@@ -192,7 +192,7 @@ class CNN(Algorithm):
         # print_shape_callback = PrintShapeCallback()
 
         batch_generator = self.batch_generator(base_path)
-        validation_generator = self.validation_generator("Validation")
+        validation_generator = self.validation_generator("$WORK/Validation")
         steps = self.get_steps_per_epoch(base_path)
 
         print("Fitting")
