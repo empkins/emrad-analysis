@@ -15,5 +15,6 @@ module add cuda/11.8.0
 
 export OUTDATED_IGNORE=1
 export DATA_PATH="/home/vault/empkins/tpD/D03/Data/MA_Simon_Meske/Data_D02/data_per_subject"
+export PATH="/home/hpc/iwso/iwso116h/.local/bin:$PATH"
 
 poetry run python main.py
