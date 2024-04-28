@@ -84,7 +84,7 @@ def cnnPipelineScoring(pipeline: CnnPipeline, dataset: D02Dataset):
     pipeline.run(testing_dataset)
     time_stamps["AfterTestRun"] = datetime.now().isoformat(sep="-", timespec="seconds")
 
-    label_base_path = pathlib.Path("$WORK/Testing")
+    label_base_path = pathlib.Path("/home/woody/iwso/iwso116h/Testing")
     time_stamps["AfterTestingLabelGeneration"] = datetime.now().isoformat(sep="-", timespec="seconds")
 
     true_positives = 0
