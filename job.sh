@@ -1,6 +1,6 @@
 #!/bin/bash -l
 #
-#SBATCH --job-name=secondTry
+#SBATCH --job-name=withWorkDirectory
 #SBATCH --nodes=1
 #SBATCH --time=11:00:00
 #SBATCH --gres=gpu:1
