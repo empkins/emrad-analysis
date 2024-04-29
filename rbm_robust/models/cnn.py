@@ -74,9 +74,11 @@ class CNN(Algorithm):
         self.batch_size = batch_size
         self._model = _model
 
-    def batch_generator(self, base_path):
+    def batch_generator(self, base_path, training_subjects: list = None):
         base_path = Path(base_path)
         subjects = [path.name for path in base_path.iterdir() if path.is_dir()]
+        if training_subjects is not None:
+            subjects = [subject for subject in subjects if subject in training_subjects]
         while True:
             for subject_id in subjects:
                 subject_path = base_path / subject_id
@@ -99,9 +101,11 @@ class CNN(Algorithm):
                         del inputs, label
                         gc.collect()
 
-    def validation_generator(self, base_path):
+    def validation_generator(self, base_path, validation_subjects: list = None):
         base_path = Path(base_path)
         subjects = [path.name for path in base_path.iterdir() if path.is_dir()]
+        if validation_subjects is not None:
+            subjects = [subject for subject in subjects if subject in validation_subjects]
         for subject_id in subjects:
             subject_path = base_path / subject_id
             phases = [path.name for path in subject_path.iterdir() if path.is_dir()]
@@ -127,11 +131,13 @@ class CNN(Algorithm):
         elif path.suffix == ".npy":
             return np.load(path)
 
-    def get_steps_per_epoch(self, base_path):
+    def get_steps_per_epoch(self, base_path, training_subjects: list = None):
         base_path = Path(base_path)
         steps = 0
         for subject_path in base_path.iterdir():
             if not subject_path.is_dir():
+                continue
+            if training_subjects is not None and subject_path.name not in training_subjects:
                 continue
             for phase_path in subject_path.iterdir():
                 if not phase_path.is_dir():
@@ -145,12 +151,14 @@ class CNN(Algorithm):
                 steps += len(grouped_inputs.keys())
         return steps
 
-    def predict(self, data_path: str):
+    def predict(self, data_path: str, testing_subjects: list = None):
         print("Prediction started")
         data_path = Path(data_path)
-        for subject_path in data_path.iterdir():
-            if not subject_path.is_dir():
-                continue
+        subjects = [path.name for path in data_path.iterdir() if path.is_dir()]
+        if testing_subjects is not None:
+            subjects = [subject for subject in subjects if subject in testing_subjects]
+        for subject_id in subjects:
+            subject_path = data_path / subject_id
             for phase_path in subject_path.iterdir():
                 if not phase_path.is_dir():
                     continue
@@ -169,14 +177,17 @@ class CNN(Algorithm):
                     else:
                         print("Model found")
                     pred = self._model.predict(inputs)
-                    # print(f"Predictions for {inputs.shape} are {pred.shape}")
                     pred = pred.flatten()
-                    # print(f"Predictions for {inputs.shape} are {pred.shape}")
                     np.save(prediction_path / f"{key}.npy", pred)
-                    # print(f"Predictions for {inputs.shape} are {pred.shape} shape")
         return self
 
-    def self_optimize(self, base_path: str = "/home/woody/iwso/iwso116h/Data", image_based: bool = False):
+    def self_optimize(
+        self,
+        base_path: str = "/home/woody/iwso/iwso116h/Data",
+        image_based: bool = False,
+        training_subjects: list = None,
+        validation_subjects: list = None,
+    ):
         if not image_based:
             self._create_model()
         else:
@@ -191,9 +202,9 @@ class CNN(Algorithm):
         # tensorboard_callback = tf.keras.callbacks.TensorBoard(log_dir=log_dir, histogram_freq=1)
         # print_shape_callback = PrintShapeCallback()
 
-        batch_generator = self.batch_generator(base_path)
-        validation_generator = self.validation_generator("/home/woody/iwso/iwso116h/Validation")
-        steps = self.get_steps_per_epoch(base_path)
+        batch_generator = self.batch_generator(base_path, training_subjects)
+        validation_generator = self.validation_generator("/home/woody/iwso/iwso116h/Data", validation_subjects)
+        steps = self.get_steps_per_epoch(base_path, training_subjects)
 
         print("Fitting")
         self._model.fit(

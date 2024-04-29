@@ -207,15 +207,6 @@ class InputAndLabelGenerator(Algorithm):
 
     @make_action_safe
     def generate_training_input(self, dataset: D02Dataset, base_path: str = "Data"):
-        """Generate the input data for the BiLSTM model
-
-        Args:
-            raw_radar (np.array): Raw radar signal
-            sampling_rate (float): Sampling frequency of the radar signal
-
-        Returns:
-            np.ndarray: Input data for the BiLSTM model
-        """
         segmentation_clone = self.segmentation.clone()
         pre_processor_clone = self.pre_processor.clone()
         base_path = base_path
@@ -474,10 +465,12 @@ class CnnPipeline(OptimizablePipeline):
         self.feature_extractor = self.feature_extractor.clone()
         self.cnn = self.cnn.clone()
         print("Optimizing CNN")
-        self.cnn.self_optimize(path, image_based)
+        training_subjects = dataset.subjects
+        validation_subjects = validation.subjects
+        self.cnn.self_optimize(path, image_based, training_subjects, validation_subjects)
         return self
 
-    def run(self, datapoint: D02Dataset) -> Self:
+    def run(self, testing_subjects: list = None) -> Self:
         print("Run")
-        self.cnn.predict("/home/woody/iwso/iwso116h/Testing")
+        self.cnn.predict("/home/woody/iwso/iwso116h/Data", testing_subjects)
         return self

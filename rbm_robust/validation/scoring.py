@@ -65,16 +65,20 @@ def cnnPipelineScoring(pipeline: CnnPipeline, dataset: D02Dataset):
     pipeline = pipeline.clone()
 
     time_stamps = {}
+    data_path = pathlib.Path("/home/woody/iwso/iwso116h/Data")
+    possible_subjects = [path.name for path in data_path.iterdir() if path.is_dir()]
+
+    dataset = dataset.get_subset(participant=possible_subjects)
 
     # Split Data
-    train_data, val_data = train_test_split(dataset.subjects, test_size=0.2, random_state=42)
+    train_data, test_data = train_test_split(dataset.subjects, test_size=0.2, random_state=42)
     training_dataset = dataset.get_subset(participant=train_data)
     training_dataset, validation_dataset = train_test_split(training_dataset, test_size=0.2, random_state=42)
-    testing_dataset = dataset.get_subset(participant=val_data)
+    testing_dataset = dataset.get_subset(participant=test_data)
 
     time_stamps["Start"] = datetime.now().isoformat(sep="-", timespec="seconds")
-    print("Prepare Data")
-    pipeline.prepare_data(training_dataset, validation_dataset, testing_dataset)
+    # print("Prepare Data")
+    # pipeline.prepare_data(training_dataset, validation_dataset, testing_dataset)
 
     print("Start Training")
     pipeline.self_optimize(training_dataset, validation_dataset)
@@ -84,7 +88,7 @@ def cnnPipelineScoring(pipeline: CnnPipeline, dataset: D02Dataset):
     pipeline.run(testing_dataset)
     time_stamps["AfterTestRun"] = datetime.now().isoformat(sep="-", timespec="seconds")
 
-    label_base_path = pathlib.Path("/home/woody/iwso/iwso116h/Testing")
+    label_base_path = pathlib.Path("/home/woody/iwso/iwso116h/Data")
     time_stamps["AfterTestingLabelGeneration"] = datetime.now().isoformat(sep="-", timespec="seconds")
 
     true_positives = 0
@@ -93,6 +97,8 @@ def cnnPipelineScoring(pipeline: CnnPipeline, dataset: D02Dataset):
 
     for subject in label_base_path.iterdir():
         if not subject.is_dir():
+            continue
+        if subject.name not in testing_dataset.subjects:
             continue
         print(f"subject {subject}")
         for phase in subject.iterdir():
