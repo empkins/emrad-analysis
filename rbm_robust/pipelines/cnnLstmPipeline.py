@@ -262,8 +262,27 @@ class InputAndLabelGenerator(Algorithm):
         pre_processor_clone = self.pre_processor.clone()
         label_processor_clone = self.labelProcessor.clone()
         segmentation_clone = self.segmentation.clone()
+        already_done = [
+            "004",
+            "008",
+            "038",
+            "077",
+            "139",
+            "142",
+            "143",
+            "146",
+            "162",
+            "213",
+            "284",
+            "338",
+            "416",
+            "471",
+        ]
         for i in range(len(dataset.subjects)):
             subject = dataset.get_subset(participant=dataset.subjects[i])
+            if subject.subjects[0] in already_done:
+                continue
+            print(f"Subject {subject.subjects[0]}")
             try:
                 radar_data = subject.synced_radar
                 ecg_data = subject.synced_ecg
