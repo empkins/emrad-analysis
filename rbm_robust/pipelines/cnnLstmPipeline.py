@@ -264,8 +264,11 @@ class InputAndLabelGenerator(Algorithm):
         segmentation_clone = self.segmentation.clone()
         for i in range(len(dataset.subjects)):
             subject = dataset.get_subset(participant=dataset.subjects[i])
-            radar_data = subject.synced_radar
-            ecg_data = subject.synced_ecg
+            try:
+                radar_data = subject.synced_radar
+                ecg_data = subject.synced_ecg
+            except Exception:
+                continue
             phases = subject.phases
             sampling_rate = subject.SAMPLING_RATE_DOWNSAMPLED
             for phase in phases.keys():
