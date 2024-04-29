@@ -55,7 +55,7 @@ class CNN(Algorithm):
         kernel_initializer: str = "glorot_uniform",
         bias_initializer: str = "zeros",
         learning_rate: float = 0.001,
-        num_epochs: int = 20,
+        num_epochs: int = 1,
         batch_size: int = 1,
         _model=None,
     ):
