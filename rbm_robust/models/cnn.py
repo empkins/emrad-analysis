@@ -101,9 +101,18 @@ class CNN(Algorithm):
                             padded = np.zeros((1, 1000, 255, 5))
                             padded[:, : inputs.shape[1], : inputs.shape[2], : inputs.shape[3]] = inputs
                             inputs = padded
+                        inputs = self._normalize_array(inputs)
                         yield inputs, label
                         del inputs, label
                         gc.collect()
+
+    def _normalize_array(array):
+        min_val = np.min(array)
+        max_val = np.max(array)
+        array -= min_val
+        array /= max_val - min_val
+        array *= 255
+        return array
 
     def validation_generator(self, base_path, validation_subjects: list = None):
         base_path = Path(base_path)
@@ -131,6 +140,7 @@ class CNN(Algorithm):
                         padded = np.zeros((1, 1000, 255, 5))
                         padded[:, : inputs.shape[1], : inputs.shape[2], : inputs.shape[3]] = inputs
                         inputs = padded
+                    inputs = self._normalize_array(inputs)
                     yield inputs, label
 
     def _load_input(self, path):
@@ -184,6 +194,7 @@ class CNN(Algorithm):
                         padded = np.zeros((1, 1000, 255, 5))
                         padded[:, : inputs.shape[1], : inputs.shape[2], : inputs.shape[3]] = inputs
                         inputs = padded
+                    inputs = self._normalize_array(inputs)
                     if self._model is None:
                         print("Model not trained yet")
                     else:
