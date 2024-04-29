@@ -268,6 +268,7 @@ class InputAndLabelGenerator(Algorithm):
                 radar_data = subject.synced_radar
                 ecg_data = subject.synced_ecg
             except Exception:
+                print(f"Exclude Subject {subject}")
                 continue
             phases = subject.phases
             sampling_rate = subject.SAMPLING_RATE_DOWNSAMPLED
