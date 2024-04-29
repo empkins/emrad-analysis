@@ -271,12 +271,19 @@ class InputAndLabelGenerator(Algorithm):
             "142",
             "143",
             "146",
+            "160",
             "162",
+            "199",
             "213",
+            "230",
+            "249",
+            "254",
             "284",
             "338",
             "416",
             "471",
+            "482",
+            "559",
         ]
         for i in range(len(dataset.subjects)):
             subject = dataset.get_subset(participant=dataset.subjects[i])
