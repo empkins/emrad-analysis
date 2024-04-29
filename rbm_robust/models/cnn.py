@@ -106,7 +106,7 @@ class CNN(Algorithm):
                         del inputs, label
                         gc.collect()
 
-    def _normalize_array(array):
+    def _normalize_array(self, array):
         min_val = np.min(array)
         max_val = np.max(array)
         array -= min_val
