@@ -97,6 +97,10 @@ class CNN(Algorithm):
                         inputs = np.stack(inputs, axis=0)
                         inputs = np.transpose(inputs)
                         inputs = np.array([inputs])
+                        if inputs.shape != (1, 1000, 255, 5):
+                            padded = np.zeros((1, 1000, 255, 5))
+                            padded[:, : inputs.shape[1], : inputs.shape[2], : inputs.shape[3]] = inputs
+                            inputs = padded
                         yield inputs, label
                         del inputs, label
                         gc.collect()
@@ -123,6 +127,10 @@ class CNN(Algorithm):
                     inputs = np.stack(inputs, axis=0)
                     inputs = np.transpose(inputs)
                     inputs = np.array([inputs])
+                    if inputs.shape != (1, 1000, 255, 5):
+                        padded = np.zeros((1, 1000, 255, 5))
+                        padded[:, : inputs.shape[1], : inputs.shape[2], : inputs.shape[3]] = inputs
+                        inputs = padded
                     yield inputs, label
 
     def _load_input(self, path):
@@ -172,6 +180,10 @@ class CNN(Algorithm):
                     inputs = np.stack(inputs, axis=0)
                     inputs = np.transpose(inputs)
                     inputs = np.array([inputs])
+                    if inputs.shape != (1, 1000, 255, 5):
+                        padded = np.zeros((1, 1000, 255, 5))
+                        padded[:, : inputs.shape[1], : inputs.shape[2], : inputs.shape[3]] = inputs
+                        inputs = padded
                     if self._model is None:
                         print("Model not trained yet")
                     else:
