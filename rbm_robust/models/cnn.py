@@ -155,7 +155,12 @@ class CNN(Algorithm):
         if path.suffix == ".png":
             return img_to_array(load_img(path, target_size=(1000, 255)))
         elif path.suffix == ".npy":
-            return np.load(path)
+            arr = np.load(path)
+            if arr.shape != (1000, 255):
+                padded = np.zeros((1000, 255))
+                padded[: arr.shape[0], : arr.shape[1]] = arr
+                arr = padded
+            return arr
 
     def get_steps_per_epoch(self, base_path, training_subjects: list = None):
         base_path = Path(base_path)
