@@ -112,6 +112,8 @@ class CNN(Algorithm):
     def _normalize_array(self, array):
         min_val = np.min(array)
         max_val = np.max(array)
+        if min_val == max_val or (max_val == 0 and min_val == 0):
+            return array
         array -= min_val
         array /= max_val - min_val
         array *= 255
