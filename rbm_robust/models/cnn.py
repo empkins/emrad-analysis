@@ -106,8 +106,8 @@ class CNN(Algorithm):
                             inputs = padded
                         inputs = self._normalize_array(inputs)
                         yield inputs, label
-                        del inputs, label
-                        gc.collect()
+                        # del inputs, label
+                        # gc.collect()
 
     def _normalize_array(self, array):
         min_val = np.min(array)
@@ -138,7 +138,6 @@ class CNN(Algorithm):
                         label = np.zeros(1000)
                     else:
                         label = np.load(label_path / f"{key}.npy")
-                    label = np.load(label_path / f"{key}.npy")
                     inputs = [self._load_input(input_path / name) for name in group]
                     inputs = np.stack(inputs, axis=0)
                     inputs = np.transpose(inputs)
