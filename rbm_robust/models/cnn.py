@@ -155,7 +155,10 @@ class CNN(Algorithm):
         if path.suffix == ".png":
             return img_to_array(load_img(path, target_size=(1000, 255)))
         elif path.suffix == ".npy":
-            arr = np.load(path)
+            try:
+                arr = np.load(path)
+            except Exception:
+                arr = np.zeros((255, 1000))
             if arr.shape != (255, 1000):
                 padded = np.zeros((255, 1000))
                 padded[: arr.shape[0], : arr.shape[1]] = arr
