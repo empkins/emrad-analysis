@@ -234,7 +234,9 @@ class CNN(Algorithm):
 
         batch_generator = self.batch_generator(base_path, training_subjects)
         validation_generator = self.validation_generator("/home/woody/iwso/iwso116h/Data", validation_subjects)
+        print("Getting steps per epoch")
         steps = self.get_steps_per_epoch(base_path, training_subjects)
+        print("Got the step count")
 
         print("Fitting")
         self._model.fit(
