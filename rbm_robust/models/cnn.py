@@ -92,6 +92,8 @@ class CNN(Algorithm):
                     input_names = sorted(path.name for path in input_path.iterdir() if path.is_file())
                     grouped_inputs = {k: list(g) for k, g in groupby(input_names, key=lambda s: s.split("_")[0])}
                     for key, group in grouped_inputs.items():
+                        if not (label_path / f"{key}.npy").exists():
+                            continue
                         label = np.load(label_path / f"{key}.npy")
                         inputs = [self._load_input(input_path / name) for name in group]
                         inputs = np.stack(inputs, axis=0)
@@ -131,6 +133,8 @@ class CNN(Algorithm):
                 input_names = sorted(path.name for path in input_path.iterdir() if path.is_file())
                 grouped_inputs = {k: list(g) for k, g in groupby(input_names, key=lambda s: s.split("_")[0])}
                 for key, group in grouped_inputs.items():
+                    if not (label_path / f"{key}.npy").exists():
+                        continue
                     label = np.load(label_path / f"{key}.npy")
                     inputs = [self._load_input(input_path / name) for name in group]
                     inputs = np.stack(inputs, axis=0)
