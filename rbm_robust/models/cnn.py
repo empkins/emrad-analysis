@@ -93,8 +93,9 @@ class CNN(Algorithm):
                     grouped_inputs = {k: list(g) for k, g in groupby(input_names, key=lambda s: s.split("_")[0])}
                     for key, group in grouped_inputs.items():
                         if not (label_path / f"{key}.npy").exists():
-                            continue
-                        label = np.load(label_path / f"{key}.npy")
+                            label = np.zeros(1000)
+                        else:
+                            label = np.load(label_path / f"{key}.npy")
                         inputs = [self._load_input(input_path / name) for name in group]
                         inputs = np.stack(inputs, axis=0)
                         inputs = np.transpose(inputs)
@@ -134,7 +135,9 @@ class CNN(Algorithm):
                 grouped_inputs = {k: list(g) for k, g in groupby(input_names, key=lambda s: s.split("_")[0])}
                 for key, group in grouped_inputs.items():
                     if not (label_path / f"{key}.npy").exists():
-                        continue
+                        label = np.zeros(1000)
+                    else:
+                        label = np.load(label_path / f"{key}.npy")
                     label = np.load(label_path / f"{key}.npy")
                     inputs = [self._load_input(input_path / name) for name in group]
                     inputs = np.stack(inputs, axis=0)
