@@ -253,43 +253,20 @@ class InputAndLabelGenerator(Algorithm):
         pre_processor_clone = self.pre_processor.clone()
         label_processor_clone = self.labelProcessor.clone()
         segmentation_clone = self.segmentation.clone()
-        already_done = [
-            "004",
-            "008",
-            "038",
-            "077",
-            "139",
-            "142",
-            "143",
-            "146",
-            "160",
-            "162",
-            "199",
-            "213",
-            "230",
-            "249",
-            "254",
-            "284",
-            "338",
-            "416",
-            "471",
-            "482",
-            "559",
-        ]
         for i in range(len(dataset.subjects)):
             subject = dataset.get_subset(participant=dataset.subjects[i])
-            if subject.subjects[0] in already_done:
-                continue
             print(f"Subject {subject.subjects[0]}")
             try:
                 radar_data = subject.synced_radar
                 ecg_data = subject.synced_ecg
-            except Exception:
-                print(f"Exclude Subject {subject}")
+            except Exception as e:
+                print(f"Exclude Subject {subject} due to error {e}")
                 continue
             phases = subject.phases
             sampling_rate = subject.SAMPLING_RATE_DOWNSAMPLED
             for phase in phases.keys():
+                if "ei" not in phase:
+                    continue
                 print(f"Starting phase {phase}")
                 timezone = pytz.timezone("Europe/Berlin")
                 phase_start = timezone.localize(phases[phase]["start"])
@@ -352,8 +329,6 @@ class InputAndLabelGenerator(Algorithm):
             phases = subject.phases
             sampling_rate = subject.SAMPLING_RATE_DOWNSAMPLED
             for phase in phases.keys():
-                if "ei" not in phase:
-                    continue
                 print(f"Starting phase {phase}")
                 timezone = pytz.timezone("Europe/Berlin")
                 phase_start = timezone.localize(phases[phase]["start"])

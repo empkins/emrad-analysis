@@ -247,7 +247,7 @@ class Normalizer(Algorithm):
     # Results
     normalized_signal_: pd.Series
 
-    def __init__(self, method: str = "zscore"):
+    def __init__(self, method: str = "minmax"):
         self.method = method
 
     @make_action_safe
