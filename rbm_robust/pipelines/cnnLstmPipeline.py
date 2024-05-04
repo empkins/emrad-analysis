@@ -221,8 +221,6 @@ class InputAndLabelGenerator(Algorithm):
             phases = subject.phases
             sampling_rate = subject.SAMPLING_RATE_DOWNSAMPLED
             for phase in phases.keys():
-                if "ei" not in phase:
-                    continue
                 print(f"Starting phase {phase}")
                 # Get the data for the current phase
                 timezone = pytz.timezone("Europe/Berlin")
@@ -265,8 +263,6 @@ class InputAndLabelGenerator(Algorithm):
             phases = subject.phases
             sampling_rate = subject.SAMPLING_RATE_DOWNSAMPLED
             for phase in phases.keys():
-                if "ei" not in phase:
-                    continue
                 print(f"Starting phase {phase}")
                 timezone = pytz.timezone("Europe/Berlin")
                 phase_start = timezone.localize(phases[phase]["start"])
@@ -371,8 +367,6 @@ class InputAndLabelGenerator(Algorithm):
             phases = subject.phases
             sampling_rate = subject.SAMPLING_RATE_DOWNSAMPLED
             for phase in phases.keys():
-                if "ei" not in phase:
-                    continue
                 phase_data = ecg_data[phases[phase]["start"] : phases[phase]["end"]]
                 phase_radar = radar_data[phases[phase]["start"] : phases[phase]["end"]]
                 if len(phase_data) == 0 or len(phase_radar) == 0:
