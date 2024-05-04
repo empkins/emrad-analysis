@@ -104,7 +104,6 @@ class CNN(Algorithm):
                             padded = np.zeros((1, 1000, 255, 5))
                             padded[:, : inputs.shape[1], : inputs.shape[2], : inputs.shape[3]] = inputs
                             inputs = padded
-                        inputs = self._normalize_array(inputs)
                         yield inputs, label
                         # del inputs, label
                         # gc.collect()
@@ -148,7 +147,7 @@ class CNN(Algorithm):
                         padded = np.zeros((1, 1000, 255, 5))
                         padded[:, : inputs.shape[1], : inputs.shape[2], : inputs.shape[3]] = inputs
                         inputs = padded
-                    inputs = self._normalize_array(inputs)
+                    # inputs = self._normalize_array(inputs)
                     yield inputs, label
 
     def _load_input(self, path):
@@ -210,7 +209,6 @@ class CNN(Algorithm):
                         padded = np.zeros((1, 1000, 255, 5))
                         padded[:, : inputs.shape[1], : inputs.shape[2], : inputs.shape[3]] = inputs
                         inputs = padded
-                    inputs = self._normalize_array(inputs)
                     if self._model is None:
                         print("Model not trained yet")
                     else:
@@ -242,7 +240,7 @@ class CNN(Algorithm):
         # print_shape_callback = PrintShapeCallback()
 
         batch_generator = self.batch_generator(base_path, training_subjects)
-        validation_generator = self.validation_generator("/home/woody/iwso/iwso116h/Data", validation_subjects)
+        validation_generator = self.validation_generator(base_path, validation_subjects)
         print("Getting steps per epoch")
         steps = self.get_steps_per_epoch(base_path, training_subjects)
         print("Got the step count")
@@ -251,7 +249,7 @@ class CNN(Algorithm):
         self._model.fit(
             batch_generator,
             epochs=self.num_epochs,
-            steps_per_epoch=steps,
+            steps_per_epoch=10,
             batch_size=self.batch_size,
             shuffle=False,
             validation_data=validation_generator,
@@ -293,8 +291,8 @@ class CNN(Algorithm):
         self._model.add(
             keras.layers.Conv2D(3, (1, 1), padding="same", input_shape=(1000, 255, 5), batch_size=self.batch_size)
         )
-        self._model.add(keras.applications.ResNet50V2(include_top=False, weights="Weights/resNet50V2.h5"))
-        self._model.add(keras.layers.TimeDistributed(keras.layers.Dense(1000)))
+        self._model.add(keras.applications.ResNet50V2(include_top=False, weights="imagenet"))
+        self._model.add(keras.layers.TimeDistributed(keras.layers.Dense(1000, activation="softmax")))
         self._model.add(keras.layers.Flatten())
         self._model.add(keras.layers.Dense(1000))
         self._model.compile(optimizer="adam", loss="mse")

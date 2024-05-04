@@ -421,13 +421,9 @@ class CnnPipeline(OptimizablePipeline):
         print("Extracting features and Labels")
         self.feature_extractor.generate_training_inputs_and_labels(training_data, path, image_based)
         print("Generating Validation Set")
-        self.feature_extractor.generate_training_inputs_and_labels(
-            validation_data, "/home/woody/iwso/iwso116h/Validation", image_based
-        )
+        self.feature_extractor.generate_training_inputs_and_labels(validation_data, path, image_based)
         print("Generating Testing Set")
-        self.feature_extractor.generate_training_inputs_and_labels(
-            testing_data, "/home/woody/iwso/iwso116h/Testing", image_based
-        )
+        self.feature_extractor.generate_training_inputs_and_labels(testing_data, path, image_based)
         return self
 
     def self_optimize(
@@ -445,7 +441,7 @@ class CnnPipeline(OptimizablePipeline):
         self.cnn.self_optimize(path, image_based, training_subjects, validation_subjects)
         return self
 
-    def run(self, testing_subjects: list = None) -> Self:
+    def run(self, testing_subjects: list = None, path: str = "/home/woody/iwso/iwso116h/Data") -> Self:
         print("Run")
-        self.cnn.predict("/home/woody/iwso/iwso116h/Data", testing_subjects)
+        self.cnn.predict(path, testing_subjects)
         return self

@@ -61,15 +61,14 @@ class Scoring:
             return pickle.load(f)
 
 
-def cnnPipelineScoring(pipeline: CnnPipeline, dataset: D02Dataset):
+def cnnPipelineScoring(pipeline: CnnPipeline, dataset: D02Dataset, path: str = "/home/woody/iwso/iwso116h/Data"):
     pipeline = pipeline.clone()
 
     time_stamps = {}
-    data_path = pathlib.Path("/home/woody/iwso/iwso116h/Data")
+    data_path = pathlib.Path(path)
     possible_subjects = [path.name for path in data_path.iterdir() if path.is_dir()]
 
-    dataset = dataset.get_subset(participant=possible_subjects)
-
+    # dataset = dataset.get_subset(participant=possible_subjects)
     # Split Data
     train_data, test_data = train_test_split(dataset.subjects, test_size=0.2, random_state=42)
     training_dataset = dataset.get_subset(participant=train_data)
@@ -77,18 +76,18 @@ def cnnPipelineScoring(pipeline: CnnPipeline, dataset: D02Dataset):
     testing_dataset = dataset.get_subset(participant=test_data)
 
     time_stamps["Start"] = datetime.now().isoformat(sep="-", timespec="seconds")
-    # print("Prepare Data")
-    # pipeline.prepare_data(training_dataset, validation_dataset, testing_dataset)
+    print("Prepare Data")
+    # pipeline.prepare_data(training_dataset, validation_dataset, testing_dataset, path)
 
     print("Start Training")
-    pipeline.self_optimize(training_dataset, validation_dataset)
+    pipeline.self_optimize(training_dataset, validation_dataset, path)
 
     time_stamps["AfterTraining"] = datetime.now().isoformat(sep="-", timespec="seconds")
     print("Training done")
-    pipeline.run(testing_dataset)
+    pipeline.run(testing_dataset.subjects, path)
     time_stamps["AfterTestRun"] = datetime.now().isoformat(sep="-", timespec="seconds")
 
-    label_base_path = pathlib.Path("/home/woody/iwso/iwso116h/Data")
+    label_base_path = pathlib.Path(path)
     time_stamps["AfterTestingLabelGeneration"] = datetime.now().isoformat(sep="-", timespec="seconds")
 
     true_positives = 0
@@ -106,7 +105,9 @@ def cnnPipelineScoring(pipeline: CnnPipeline, dataset: D02Dataset):
                 continue
             print(f"phase {phase}")
             prediction_path = phase / "predictions"
+            prediction_path.mkdir(exist_ok=True, parents=True)
             label_path = phase / "labels"
+            label_path.mkdir(exist_ok=True, parents=True)
             prediction_files = sorted(path.name for path in prediction_path.iterdir() if path.is_file())
             f1RPeakScore = RPeakF1Score(max_deviation_ms=100)
             for prediction_file in prediction_files:

@@ -2,13 +2,13 @@ import os.path
 from typing import Tuple, List
 
 import emrad_toolbox
-import numpy as np
+import numpy
 import pywt
 import resampy
 from PyEMD import EMD
 from matplotlib import pyplot as plt
 from scipy.signal import filtfilt, butter
-from tpcp import Algorithm, Parameter, make_action_safe
+from tpcp import Algorithm, Parameter, make_action_safe, cf
 
 import pandas as pd
 
@@ -63,7 +63,7 @@ class Downsampling(Algorithm):
     target_sample_frequency_hz: Parameter[float]
 
     # Results
-    downsampled_signal_: np.ndarray
+    downsampled_signal_: numpy.ndarray
 
     def __init__(self, target_sample_frequency_hz: float = 200):
         self.target_sample_frequency_hz = target_sample_frequency_hz
@@ -99,14 +99,14 @@ class EmpiricalModeDecomposer(Algorithm):
     n_imfs: Parameter[int]
 
     # Results
-    imfs_: np.ndarray
+    imfs_: numpy.ndarray
 
     def __init__(self, n_imfs: int = 4, sampling_rate: float = 200):
         self.n_imfs = n_imfs
         self.sampling_rate = sampling_rate
 
     @make_action_safe
-    def decompose(self, signal: np.array):
+    def decompose(self, signal: numpy.array):
         """Decompose the input signal into IMFs
 
         Args:
@@ -117,78 +117,12 @@ class EmpiricalModeDecomposer(Algorithm):
         """
         # Hier kann manchmal ein leeres array zurückgegeben werden
         emd = EMD()
-        self.imfs_ = emd.emd(signal, np.arange(len(signal)) / self.sampling_rate, max_imf=self.n_imfs)
+        self.imfs_ = emd.emd(signal, numpy.arange(len(signal)) / self.sampling_rate, max_imf=self.n_imfs)
         if len(self.imfs_) != 5:
-            filled_array = np.zeros((5, 1000))
+            filled_array = numpy.zeros((5, 1000))
             filled_array[: self.imfs_.shape[0], : self.imfs_.shape[1]] = self.imfs_
             self.imfs_ = filled_array
         return self
-
-
-class WaveletTransformer(Algorithm):
-    _action_methods = "transform"
-
-    # Input Parameters
-    wavelet_coefficients: Parameter[Tuple[int, int]]
-    wavelet_type: Parameter[str]
-    sampling_rate: Parameter[float]
-
-    # Results
-    transformed_signal_: np.array
-
-    def __init__(
-        self, wavelet_coefficients: Tuple[int, int] = (1, 256), wavelet_type="morl", sampling_rate: float = 200
-    ):
-        self.wavelet_coefficients = wavelet_coefficients
-        self.wavelet_type = wavelet_type
-        self.sampling_rate = sampling_rate
-
-    @make_action_safe
-    def transform(
-        self,
-        signal: np.array,
-        subject_id: str,
-        phase: str,
-        segment: int,
-        base_path: str = "Data",
-        img_based: bool = False,
-    ):
-        """Transform the input signal using a wavelet transform
-
-        Args:
-            signal (pd.Series): Input signal to be transformed
-
-        Returns:
-            _type_: Transformed signal
-        """
-
-        path = self.get_path(base_path, subject_id, phase, segment)
-        for i in range(len(signal)):
-            imf = signal[i]
-            scales = range(self.wavelet_coefficients[0], self.wavelet_coefficients[1])
-            coefficients, frequencies = pywt.cwt(imf, scales, self.wavelet_type)
-            if img_based:
-                fig, ax = plt.subplots()
-                time = np.arange(0, len(imf) / self.sampling_rate, 1 / self.sampling_rate)
-                ax.imshow(
-                    np.abs(coefficients),
-                    aspect="auto",
-                    cmap="jet",
-                    extent=[time.min(), time.max(), frequencies.min(), frequencies.max()],
-                )
-                ax.set_xticks([])
-                ax.set_yticks([])
-                plt.savefig(os.path.join(path, f"{segment}_{i}.png"), bbox_inches="tight", pad_inches=0)
-            else:
-                np.save(os.path.join(path, f"{segment}_{i}.npy"), coefficients)
-        self.transformed_signal_ = []
-        return self
-
-    def get_path(self, base_path: str, subject_id: str, phase: str, segment: int):
-        path = f"{base_path}/{subject_id}/{phase}/inputs"
-        if not os.path.exists(path):
-            os.makedirs(path)
-        return path
 
 
 class Segmentation(Algorithm):
@@ -225,7 +159,9 @@ class Segmentation(Algorithm):
             if len(data_segment) < self.window_size_in_seconds * sampling_rate:
                 rows_needed = int((pd.Timedelta(seconds=self.window_size_in_seconds) - time_diff) / time_step)
                 # rows_needed = int((pd.Timedelta(seconds=4) - time_diff) / time_step)
-                zero_df = pd.DataFrame(np.zeros((rows_needed, len(data_segment.columns))), columns=data_segment.columns)
+                zero_df = pd.DataFrame(
+                    numpy.zeros((rows_needed, len(data_segment.columns))), columns=data_segment.columns
+                )
                 data_segment = data_segment.append(zero_df, ignore_index=True)
                 data_segment.index = pd.date_range(
                     start=data_segment.index[0], periods=len(data_segment), freq=time_step
@@ -265,6 +201,85 @@ class Normalizer(Algorithm):
         elif self.method == "minmax":
             self.normalized_signal_ = (signal - signal.min()) / (signal.max() - signal.min())
         return self
+
+
+class WaveletTransformer(Algorithm):
+    _action_methods = "transform"
+
+    # Input Parameters
+    wavelet_coefficients: Parameter[Tuple[int, int]]
+    wavelet_type: Parameter[str]
+    sampling_rate: Parameter[float]
+    normalizer: Normalizer
+
+    # Results
+    transformed_signal_: numpy.array
+
+    def __init__(
+        self,
+        wavelet_coefficients: Tuple[int, int] = (1, 256),
+        wavelet_type="morl",
+        sampling_rate: float = 200,
+        normalizer: Normalizer = cf(Normalizer()),
+    ):
+        self.wavelet_coefficients = wavelet_coefficients
+        self.wavelet_type = wavelet_type
+        self.sampling_rate = sampling_rate
+        self.normalizer = normalizer
+
+    @make_action_safe
+    def transform(
+        self,
+        signal: numpy.array,
+        subject_id: str,
+        phase: str,
+        segment: int,
+        base_path: str = "Data",
+        img_based: bool = False,
+        normalize: bool = True,
+    ):
+        """Transform the input signal using a wavelet transform
+
+        Args:
+            signal (pd.Series): Input signal to be transformed
+
+        Returns:
+            _type_: Transformed signal
+        """
+
+        path = self.get_path(base_path, subject_id, phase, segment)
+        normalizer_clone = self.normalizer.clone()
+        for i in range(len(signal)):
+            imf = signal[i]
+            scales = range(self.wavelet_coefficients[0], self.wavelet_coefficients[1])
+            coefficients, frequencies = pywt.cwt(imf, scales, self.wavelet_type)
+            if img_based:
+                fig, ax = plt.subplots()
+                time = numpy.arange(0, len(imf) / self.sampling_rate, 1 / self.sampling_rate)
+                ax.imshow(
+                    numpy.abs(coefficients),
+                    aspect="auto",
+                    cmap="jet",
+                    extent=[time.min(), time.max(), frequencies.min(), frequencies.max()],
+                )
+                ax.set_xticks([])
+                ax.set_yticks([])
+                plt.savefig(os.path.join(path, f"{segment}_{i}.png"), bbox_inches="tight", pad_inches=0)
+            else:
+                if normalize:
+                    normalizer_clone.normalize(pd.Series(coefficients.flatten()))
+                    coefficients = normalizer_clone.normalized_signal_.to_numpy().reshape(coefficients.shape)
+                save_path = os.path.join(path, f"{segment}_{i}.npy")
+                numpy.save(save_path, coefficients)
+
+        self.transformed_signal_ = []
+        return self
+
+    def get_path(self, base_path: str, subject_id: str, phase: str, segment: int):
+        path = f"{base_path}/{subject_id}/{phase}/inputs"
+        if not os.path.exists(path):
+            os.makedirs(path)
+        return path
 
 
 class ImageGenerator(Algorithm):
