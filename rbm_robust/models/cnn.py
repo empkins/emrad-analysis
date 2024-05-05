@@ -89,7 +89,6 @@ class CNN(Algorithm):
         for subject_id in subjects:
             subject_path = base_path / subject_id
             phases = [path.name for path in subject_path.iterdir() if path.is_dir()]
-            # print(f"Phases: {phases}")  # Debugging line
             for phase in phases:
                 if phase == "logs" or phase == "raw":
                     continue
@@ -227,9 +226,6 @@ class CNN(Algorithm):
         if not os.path.exists(log_dir):
             os.makedirs(log_dir)
 
-        # Commented out since the tensorboard callback leads to too much necessary memory
-        # tensorboard_callback = tf.keras.callbacks.TensorBoard(log_dir=log_dir, histogram_freq=1)
-        # print_shape_callback = PrintShapeCallback()
         print("Before Generators")
         batch_generator = self.batch_generator(base_path, training_subjects)
         validation_generator = self.validation_generator(base_path, validation_subjects)
@@ -245,7 +241,6 @@ class CNN(Algorithm):
             batch_size=self.batch_size,
             shuffle=False,
             validation_data=validation_generator,
-            # callbacks=[tensorboard_callback, print_shape_callback],
             verbose=1,
         )
         return self
