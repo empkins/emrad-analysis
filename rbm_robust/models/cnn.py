@@ -7,7 +7,7 @@ import keras
 import numpy as np
 from tpcp import Algorithm, OptimizableParameter
 from keras.preprocessing.image import load_img, img_to_array
-from itertools import groupby
+from itertools import groupby, zip_longest
 from tensorflow.keras.callbacks import Callback
 import gc
 
@@ -35,6 +35,7 @@ class CNN(Algorithm):
     learning_rate: OptimizableParameter[float]
     batch_size: OptimizableParameter[int]
     filters: OptimizableParameter[int]
+    overlap: int
 
     # Model
     _model = Optional[keras.Sequential]
@@ -56,8 +57,9 @@ class CNN(Algorithm):
         bias_initializer: str = "zeros",
         learning_rate: float = 0.001,
         num_epochs: int = 1,
-        batch_size: int = 1,
+        batch_size: int = 6,
         _model=None,
+        overlap: int = 0.8,
     ):
         self.groups = groups
         self.filters = filters
@@ -72,6 +74,7 @@ class CNN(Algorithm):
         self.learning_rate = learning_rate
         self.num_epochs = num_epochs
         self.batch_size = batch_size
+        self.overlap = overlap
         self._model = _model
 
     def batch_generator(self, base_path, training_subjects: list = None):
@@ -80,53 +83,16 @@ class CNN(Algorithm):
         if training_subjects is not None:
             subjects = [subject for subject in subjects if subject in training_subjects]
         while True:
-            for subject_id in subjects:
-                subject_path = base_path / subject_id
-                phases = [path.name for path in subject_path.iterdir() if path.is_dir()]
-                for phase in phases:
-                    phase_path = subject_path / phase
-                    input_path = phase_path / "inputs"
-                    label_path = phase_path / "labels"
-                    if not input_path.exists() or not label_path.exists():
-                        continue
-                    input_names = sorted(path.name for path in input_path.iterdir() if path.is_file())
-                    grouped_inputs = {k: list(g) for k, g in groupby(input_names, key=lambda s: s.split("_")[0])}
-                    for key, group in grouped_inputs.items():
-                        if not (label_path / f"{key}.npy").exists():
-                            label = np.zeros(1000)
-                        else:
-                            label = np.load(label_path / f"{key}.npy")
-                        inputs = [self._load_input(input_path / name) for name in group]
-                        inputs = np.stack(inputs, axis=0)
-                        inputs = np.transpose(inputs)
-                        inputs = np.array([inputs])
-                        if inputs.shape != (1, 1000, 255, 5):
-                            padded = np.zeros((1, 1000, 255, 5))
-                            padded[:, : inputs.shape[1], : inputs.shape[2], : inputs.shape[3]] = inputs
-                            inputs = padded
-                        yield inputs, label
-                        # del inputs, label
-                        # gc.collect()
+            yield from self._get_inputs_and_labels_for_subjects(base_path, subjects)
 
-    def _normalize_array(self, array):
-        min_val = np.min(array)
-        max_val = np.max(array)
-        if min_val == max_val or (max_val == 0 and min_val == 0):
-            return array
-        array -= min_val
-        array /= max_val - min_val
-        array *= 255
-        return array
-
-    def validation_generator(self, base_path, validation_subjects: list = None):
-        base_path = Path(base_path)
-        subjects = [path.name for path in base_path.iterdir() if path.is_dir()]
-        if validation_subjects is not None:
-            subjects = [subject for subject in subjects if subject in validation_subjects]
+    def _get_inputs_and_labels_for_subjects(self, base_path, subjects):
         for subject_id in subjects:
             subject_path = base_path / subject_id
             phases = [path.name for path in subject_path.iterdir() if path.is_dir()]
+            # print(f"Phases: {phases}")  # Debugging line
             for phase in phases:
+                if phase == "logs" or phase == "raw":
+                    continue
                 phase_path = subject_path / phase
                 input_path = phase_path / "inputs"
                 label_path = phase_path / "labels"
@@ -134,21 +100,50 @@ class CNN(Algorithm):
                     continue
                 input_names = sorted(path.name for path in input_path.iterdir() if path.is_file())
                 grouped_inputs = {k: list(g) for k, g in groupby(input_names, key=lambda s: s.split("_")[0])}
-                for key, group in grouped_inputs.items():
-                    if not (label_path / f"{key}.npy").exists():
-                        label = np.zeros(1000)
-                    else:
-                        label = np.load(label_path / f"{key}.npy")
-                    inputs = [self._load_input(input_path / name) for name in group]
-                    inputs = np.stack(inputs, axis=0)
-                    inputs = np.transpose(inputs)
-                    inputs = np.array([inputs])
-                    if inputs.shape != (1, 1000, 255, 5):
-                        padded = np.zeros((1, 1000, 255, 5))
-                        padded[:, : inputs.shape[1], : inputs.shape[2], : inputs.shape[3]] = inputs
-                        inputs = padded
-                    # inputs = self._normalize_array(inputs)
-                    yield inputs, label
+                inputs = list(grouped_inputs.keys())
+                inputs.sort()
+                groups = self.grouper(inputs, self.batch_size)
+                for group in groups:
+                    inputs = np.stack(
+                        [
+                            self.get_input(input_path, grouped_inputs[number])
+                            if number is not None
+                            else self.get_input(input_path, None)
+                            for number in group
+                        ],
+                        axis=0,
+                    )
+                    labels = np.stack([self.get_labels(label_path, number) for number in group], axis=0)
+                    yield inputs, labels
+
+    def grouper(self, iterable, n):
+        iterators = [iter(iterable)] * n
+        return zip_longest(*iterators)
+
+    def get_input(self, base_path, imfs):
+        if imfs is not None:
+            return np.transpose(np.stack([self._load_input(base_path / imf) for imf in imfs], axis=0))
+        else:
+            return np.transpose(np.stack([np.zeros((255, 1000)) for _ in range(5)], axis=0))
+
+    def get_labels(self, base_path, number):
+        if number is not None:
+            return np.load(base_path / f"{number}.npy")
+        else:
+            return np.zeros((1000))
+
+    def _get_middle(self, array):
+        percentile = (1 - self.overlap) / 2
+        start = int(len(array) / 2 - percentile)
+        end = int(len(array) / 2 + percentile)
+        return array[start:end]
+
+    def validation_generator(self, base_path, validation_subjects: list = None):
+        base_path = Path(base_path)
+        subjects = [path.name for path in base_path.iterdir() if path.is_dir()]
+        if validation_subjects is not None:
+            subjects = [subject for subject in subjects if subject in validation_subjects]
+        yield from self._get_inputs_and_labels_for_subjects(base_path, subjects)
 
     def _load_input(self, path):
         if path.suffix == ".png":
@@ -182,7 +177,7 @@ class CNN(Algorithm):
                 input_names = sorted(path.name for path in input_path.iterdir() if path.is_file())
                 grouped_inputs = {k: list(g) for k, g in groupby(input_names, key=lambda s: s.split("_")[0])}
                 steps += len(grouped_inputs.keys())
-        return steps
+        return int(steps / self.batch_size)
 
     def predict(self, data_path: str, testing_subjects: list = None):
         print("Prediction started")
@@ -209,12 +204,9 @@ class CNN(Algorithm):
                         padded = np.zeros((1, 1000, 255, 5))
                         padded[:, : inputs.shape[1], : inputs.shape[2], : inputs.shape[3]] = inputs
                         inputs = padded
-                    if self._model is None:
-                        print("Model not trained yet")
-                    else:
-                        print("Model found")
                     pred = self._model.predict(inputs)
                     pred = pred.flatten()
+                    # pred = self._get_middle(pred)
                     np.save(prediction_path / f"{key}.npy", pred)
         return self
 
@@ -238,7 +230,7 @@ class CNN(Algorithm):
         # Commented out since the tensorboard callback leads to too much necessary memory
         # tensorboard_callback = tf.keras.callbacks.TensorBoard(log_dir=log_dir, histogram_freq=1)
         # print_shape_callback = PrintShapeCallback()
-
+        print("Before Generators")
         batch_generator = self.batch_generator(base_path, training_subjects)
         validation_generator = self.validation_generator(base_path, validation_subjects)
         print("Getting steps per epoch")
@@ -249,7 +241,7 @@ class CNN(Algorithm):
         self._model.fit(
             batch_generator,
             epochs=self.num_epochs,
-            steps_per_epoch=10,
+            steps_per_epoch=steps,
             batch_size=self.batch_size,
             shuffle=False,
             validation_data=validation_generator,

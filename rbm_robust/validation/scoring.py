@@ -103,6 +103,8 @@ def cnnPipelineScoring(pipeline: CnnPipeline, dataset: D02Dataset, path: str = "
         for phase in subject.iterdir():
             if not phase.is_dir():
                 continue
+            if phase == "logs" or phase == "raw":
+                continue
             print(f"phase {phase}")
             prediction_path = phase / "predictions"
             prediction_path.mkdir(exist_ok=True, parents=True)
