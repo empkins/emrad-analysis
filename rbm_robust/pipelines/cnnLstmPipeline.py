@@ -1,5 +1,4 @@
 import os
-import pickle
 
 import pytz
 from typing_extensions import Self
@@ -263,6 +262,8 @@ class InputAndLabelGenerator(Algorithm):
             phases = subject.phases
             sampling_rate = subject.SAMPLING_RATE_DOWNSAMPLED
             for phase in phases.keys():
+                if "ei" not in phase:
+                    continue
                 print(f"Starting phase {phase}")
                 timezone = pytz.timezone("Europe/Berlin")
                 phase_start = timezone.localize(phases[phase]["start"])
@@ -315,7 +316,6 @@ class InputAndLabelGenerator(Algorithm):
             np.ndarray: Input labels for the BiLSTM model
         """
         print("Labels")
-        pre_processor_clone = self.pre_processor.clone()
         label_processor_clone = self.labelProcessor.clone()
         segmentation_clone = self.segmentation.clone()
         for i in range(len(dataset.subjects)):
@@ -410,7 +410,7 @@ class CnnPipeline(OptimizablePipeline):
         validation_data: D02Dataset,
         testing_data: D02Dataset,
         path: str = "/home/woody/iwso/iwso116h/Data",
-        image_based: bool = False,
+        image_based: bool = True,
     ):
         print("Extracting features and Labels")
         self.feature_extractor.generate_training_inputs_and_labels(training_data, path, image_based)

@@ -211,21 +211,24 @@ class WaveletTransformer(Algorithm):
     wavelet_type: Parameter[str]
     sampling_rate: Parameter[float]
     normalizer: Normalizer
+    window_size: Parameter[int]
 
     # Results
     transformed_signal_: numpy.array
 
     def __init__(
         self,
-        wavelet_coefficients: Tuple[int, int] = (1, 256),
+        wavelet_coefficients: Tuple[int, int] = (50, 200),
         wavelet_type="morl",
         sampling_rate: float = 200,
+        window_size: int = 5,
         normalizer: Normalizer = cf(Normalizer()),
     ):
         self.wavelet_coefficients = wavelet_coefficients
         self.wavelet_type = wavelet_type
         self.sampling_rate = sampling_rate
         self.normalizer = normalizer
+        self.window_size = window_size
 
     @make_action_safe
     def transform(
@@ -248,32 +251,42 @@ class WaveletTransformer(Algorithm):
         """
 
         path = self.get_path(base_path, subject_id, phase, segment)
-        normalizer_clone = self.normalizer.clone()
         for i in range(len(signal)):
             imf = signal[i]
             scales = range(self.wavelet_coefficients[0], self.wavelet_coefficients[1])
             coefficients, frequencies = pywt.cwt(imf, scales, self.wavelet_type)
             if img_based:
-                fig, ax = plt.subplots()
-                time = numpy.arange(0, len(imf) / self.sampling_rate, 1 / self.sampling_rate)
-                ax.imshow(
-                    numpy.abs(coefficients),
-                    aspect="auto",
-                    cmap="jet",
-                    extent=[time.min(), time.max(), frequencies.min(), frequencies.max()],
-                )
-                ax.set_xticks([])
-                ax.set_yticks([])
-                plt.savefig(os.path.join(path, f"{segment}_{i}.png"), bbox_inches="tight", pad_inches=0)
+                self._save_image(coefficients, frequencies, len(imf), segment, i, path)
             else:
-                if normalize:
-                    normalizer_clone.normalize(pd.Series(coefficients.flatten()))
-                    coefficients = normalizer_clone.normalized_signal_.to_numpy().reshape(coefficients.shape)
-                save_path = os.path.join(path, f"{segment}_{i}.npy")
-                numpy.save(save_path, coefficients)
-
+                self._save_array(coefficients, segment, i, normalize, path)
         self.transformed_signal_ = []
         return self
+
+    def _save_array(self, coefficients, segment_nr, imf_nr, normalize, path):
+        normalizer_clone = self.normalizer.clone()
+        shape = (self.wavelet_coefficients[1] - self.wavelet_coefficients[0], self.window_size * self.sampling_rate)
+        if normalize:
+            normalizer_clone.normalize(pd.Series(coefficients.flatten()))
+            coefficients = normalizer_clone.normalized_signal_.to_numpy().reshape(coefficients.shape)
+        if coefficients.shape != shape:
+            zero_padding = numpy.zeros((shape[0] - coefficients.shape[0], shape[1]))
+            zero_padding[: coefficients.shape[0], : coefficients.shape[1]] = coefficients
+            coefficients = zero_padding
+        save_path = os.path.join(path, f"{segment_nr}_{imf_nr}.npy")
+        numpy.save(save_path, coefficients)
+
+    def _save_image(self, coefficients, frequencies, num_of_imfs, segment_nr, imf_nr, path):
+        fig, ax = plt.subplots()
+        time = numpy.arange(0, len(num_of_imfs) / self.sampling_rate, 1 / self.sampling_rate)
+        ax.imshow(
+            numpy.abs(coefficients),
+            aspect="auto",
+            cmap="jet",
+            extent=[time.min(), time.max(), frequencies.min(), frequencies.max()],
+        )
+        ax.set_xticks([])
+        ax.set_yticks([])
+        plt.savefig(os.path.join(path, f"{segment_nr}_{imf_nr}.png"), bbox_inches="tight", pad_inches=0)
 
     def get_path(self, base_path: str, subject_id: str, phase: str, segment: int):
         path = f"{base_path}/{subject_id}/{phase}/inputs"

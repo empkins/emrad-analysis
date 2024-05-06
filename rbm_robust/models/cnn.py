@@ -12,13 +12,6 @@ from tensorflow.keras.callbacks import Callback
 import gc
 
 
-class PrintShapeCallback(Callback):
-    def on_epoch_end(self, epoch, logs=None):
-        for layer in self.model.layers:
-            print(f"Input shape of layer {layer.name}: {layer.input_shape}")
-            print(f"Output shape of layer {layer.name}: {layer.output_shape}")
-
-
 class CNN(Algorithm):
     _action_methods = "predict"
 
@@ -57,9 +50,10 @@ class CNN(Algorithm):
         bias_initializer: str = "zeros",
         learning_rate: float = 0.001,
         num_epochs: int = 1,
-        batch_size: int = 6,
+        batch_size: int = 32,
         _model=None,
         overlap: int = 0.8,
+        image_based: bool = True,
     ):
         self.groups = groups
         self.filters = filters
@@ -75,6 +69,7 @@ class CNN(Algorithm):
         self.num_epochs = num_epochs
         self.batch_size = batch_size
         self.overlap = overlap
+        self.image_based = image_based
         self._model = _model
 
     def batch_generator(self, base_path, training_subjects: list = None):
@@ -98,10 +93,10 @@ class CNN(Algorithm):
                 if not input_path.exists() or not label_path.exists():
                     continue
                 input_names = sorted(path.name for path in input_path.iterdir() if path.is_file())
-                grouped_inputs = {k: list(g) for k, g in groupby(input_names, key=lambda s: s.split("_")[0])}
-                inputs = list(grouped_inputs.keys())
-                inputs.sort()
-                groups = self.grouper(inputs, self.batch_size)
+                grouped_inputs = {int(k): list(g) for k, g in groupby(input_names, key=lambda s: s.split("_")[0])}
+                inputs_sorted = list(grouped_inputs.keys())
+                inputs_sorted.sort()
+                groups = self.grouper(inputs_sorted, self.batch_size)
                 for group in groups:
                     inputs = np.stack(
                         [
@@ -122,8 +117,10 @@ class CNN(Algorithm):
     def get_input(self, base_path, imfs):
         if imfs is not None:
             return np.transpose(np.stack([self._load_input(base_path / imf) for imf in imfs], axis=0))
-        else:
-            return np.transpose(np.stack([np.zeros((255, 1000)) for _ in range(5)], axis=0))
+        elif not self.image_based and imfs is None:
+            return np.transpose(np.stack([np.zeros((150, 1000)) for _ in range(5)], axis=0))
+        elif self.image_based and imfs is None:
+            return np.transpose(np.stack([np.zeros((150, 1000, 3)) for _ in range(5)], axis=0))
 
     def get_labels(self, base_path, number):
         if number is not None:
@@ -145,18 +142,18 @@ class CNN(Algorithm):
         yield from self._get_inputs_and_labels_for_subjects(base_path, subjects)
 
     def _load_input(self, path):
-        if path.suffix == ".png":
-            return img_to_array(load_img(path, target_size=(1000, 255)))
-        elif path.suffix == ".npy":
+        if path.suffix == ".png" and self.image_based:
+            arr = img_to_array(load_img(path, target_size=(150, 1000)))
+            if arr.shape != (150, 1000, 3):
+                padded = np.zeros((150, 1000, 3))
+                padded[: arr.shape[0], : arr.shape[1], : arr.shape[2]] = arr
+                arr = padded
+        elif path.suffix == ".npy" and not self.image_based:
             try:
                 arr = np.load(path)
             except Exception:
-                arr = np.zeros((255, 1000))
-            if arr.shape != (255, 1000):
-                padded = np.zeros((255, 1000))
-                padded[: arr.shape[0], : arr.shape[1]] = arr
-                arr = padded
-            return arr
+                arr = np.zeros((150, 1000))
+        return arr
 
     def get_steps_per_epoch(self, base_path, training_subjects: list = None):
         base_path = Path(base_path)
@@ -199,13 +196,12 @@ class CNN(Algorithm):
                     inputs = np.stack(inputs, axis=0)
                     inputs = np.transpose(inputs)
                     inputs = np.array([inputs])
-                    if inputs.shape != (1, 1000, 255, 5):
-                        padded = np.zeros((1, 1000, 255, 5))
+                    if inputs.shape != (1, 1000, 150, 5):
+                        padded = np.zeros((1, 1000, 150, 5))
                         padded[:, : inputs.shape[1], : inputs.shape[2], : inputs.shape[3]] = inputs
                         inputs = padded
                     pred = self._model.predict(inputs)
                     pred = pred.flatten()
-                    # pred = self._get_middle(pred)
                     np.save(prediction_path / f"{key}.npy", pred)
         return self
 
@@ -246,7 +242,7 @@ class CNN(Algorithm):
         return self
 
     def _image_model(self):
-        input_layer = keras.layers.Input(shape=(5, 1000, 255, 3))
+        input_layer = keras.layers.Input(shape=(5, 1000, 150, 3))
 
         processed_images = []
         for i in range(5):
@@ -276,7 +272,7 @@ class CNN(Algorithm):
     def _create_model(self):
         self._model = keras.Sequential()
         self._model.add(
-            keras.layers.Conv2D(3, (1, 1), padding="same", input_shape=(1000, 255, 5), batch_size=self.batch_size)
+            keras.layers.Conv2D(3, (1, 1), padding="same", input_shape=(1000, 150, 5), batch_size=self.batch_size)
         )
         self._model.add(keras.applications.ResNet50V2(include_top=False, weights="imagenet"))
         self._model.add(keras.layers.TimeDistributed(keras.layers.Dense(1000, activation="softmax")))

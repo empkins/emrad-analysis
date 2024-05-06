@@ -128,19 +128,6 @@ def cnnPipelineScoring(pipeline: CnnPipeline, dataset: D02Dataset, path: str = "
     # Save the Model
     pipeline.cnn.save_model()
 
-    # scoring = Scoring(
-    #    heart_rate_prediction=0,
-    #    heart_rate_ground_truth=0,
-    #    f1_score=f1_score,
-    #    mean_relative_error_hr=0,
-    #    mean_absolute_error=0,
-    #    abs_hr_error=0,
-    #    mean_instantaneous_abs_hr_diff=0,
-    #    model=pipeline.cnn,
-    #    time_stamps=time_stamps,
-    # )
-    # scoring.save_myself()
-
     # Scoring results
     return {
         "abs_hr_error": 0,
