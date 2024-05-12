@@ -410,7 +410,7 @@ class CnnPipeline(OptimizablePipeline):
         validation_data: D02Dataset,
         testing_data: D02Dataset,
         path: str = "/home/woody/iwso/iwso116h/Data",
-        image_based: bool = True,
+        image_based: bool = False,
     ):
         print("Extracting features and Labels")
         self.feature_extractor.generate_training_inputs_and_labels(training_data, path, image_based)

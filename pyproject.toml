@@ -21,6 +21,7 @@ mne = "1.4"
 empkins-io = {git = "https://github.com/empkins/empkins-io.git", rev = "dev_simon"}
 tensorflow = "2.15.0"
 keras = "2.15.0"
+keras-unet-collection = "^0.1.13"
 
 [tool.poetry.group.dev.dependencies]
 black = "^23.11.0"

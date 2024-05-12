@@ -16,10 +16,10 @@ def main():
     # tf.config.experimental.set_memory_growth(devices[0], True)
     path = os.environ.get("DATA_PATH")
     print(path)
-    dataset_path = Path("/Users/simonmeske/Desktop/TestOrdner/data_per_subject")
+    dataset_path = Path(path)
     dataset = D02Dataset(dataset_path)
     cnn_pipeline = CnnPipeline()
-    cnnPipelineScoring(cnn_pipeline, dataset, "/Users/simonmeske/Desktop/TestOrdner/data_per_subject")
+    cnnPipelineScoring(cnn_pipeline, dataset, path)
 
 
 def alt():

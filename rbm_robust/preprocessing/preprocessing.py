@@ -277,7 +277,7 @@ class WaveletTransformer(Algorithm):
 
     def _save_image(self, coefficients, frequencies, num_of_imfs, segment_nr, imf_nr, path):
         fig, ax = plt.subplots()
-        time = numpy.arange(0, len(num_of_imfs) / self.sampling_rate, 1 / self.sampling_rate)
+        time = numpy.arange(0, len(coefficients) / self.sampling_rate, 1 / self.sampling_rate)
         ax.imshow(
             numpy.abs(coefficients),
             aspect="auto",

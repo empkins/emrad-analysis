@@ -240,6 +240,9 @@ develop = false
 [package.dependencies]
 bioread = "^3"
 fau-colors = "^1.1"
+ipympl = {version = "^0.9", optional = true}
+IPython = {version = "^7", optional = true}
+ipywidgets = {version = "^8", optional = true}
 joblib = "^1"
 matplotlib = "^3.4"
 neurokit2 = "^0"
@@ -252,7 +255,7 @@ scikit-learn = "^1.0"
 scipy = "^1"
 seaborn = "<0.13"
 statannot = "^0.2.3"
-statsmodels = "^0.13"
+statsmodels = "^0"
 tqdm = "^4"
 xlrd = "^2"
 XlsxWriter = "^1"
@@ -265,7 +268,7 @@ mne = ["mne (>=1.2.1,<2.0.0)"]
 type = "git"
 url = "https://github.com/mad-lab-fau/BioPsyKit.git"
 reference = "main"
-resolved_reference = "8e2bdf55ba572661469515ccaf1d4904c4cb8083"
+resolved_reference = "2ad99fba5f55328109c72bd3cbb72ba2444da078"
 
 [[package]]
 name = "bioread"
@@ -1901,6 +1904,17 @@ python-versions = ">=3.8"
 files = [
     {file = "keras-2.15.0-py3-none-any.whl", hash = "sha256:2dcc6d2e30cf9c951064b63c1f4c404b966c59caf09e01f3549138ec8ee0dd1f"},
     {file = "keras-2.15.0.tar.gz", hash = "sha256:81871d298c064dc4ac6b58440fdae67bfcf47c8d7ad28580fab401834c06a575"},
+]
+
+[[package]]
+name = "keras-unet-collection"
+version = "0.1.13"
+description = "The Tensorflow, Keras implementation of U-net, V-net, U-net++, UNET 3+, Attention U-net, R2U-net, ResUnet-a, U^2-Net, TransUNET, and Swin-UNET with optional ImageNet-trained backbones."
+optional = false
+python-versions = ">=3.6"
+files = [
+    {file = "keras-unet-collection-0.1.13.tar.gz", hash = "sha256:d7c0291944f198f990309987fd1108f1463acb8aa20ed1d800b8d3bbfb73061d"},
+    {file = "keras_unet_collection-0.1.13-py3-none-any.whl", hash = "sha256:12ce8457c0eb99ca987633a58954ed62459bcf4c13f4450764df6462cdcc5186"},
 ]
 
 [[package]]
@@ -4729,4 +4743,4 @@ testing = ["big-O", "jaraco.functools", "jaraco.itertools", "more-itertools", "p
 [metadata]
 lock-version = "2.0"
 python-versions = ">=3.9,<3.11"
-content-hash = "0b82b2f11fcf238b28d710c7b373f75dfadf5312367f8e45c4806e31a7b256b6"
+content-hash = "b8d4403853e824696fe6afba6937b47eee75e445f862c7c3c047e42746882f20"
