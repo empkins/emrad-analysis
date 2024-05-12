@@ -120,13 +120,13 @@ def cnnPipelineScoring(pipeline: CnnPipeline, dataset: D02Dataset, path: str = "
                 total_gt_peaks += f1RPeakScore.total_peaks_
                 total_pred_peaks += f1RPeakScore.pred_peaks_
 
+    # Save the Model
+    pipeline.cnn.save_model()
+
     precision = true_positives / total_pred_peaks
     recall = true_positives / total_gt_peaks
     f1_score = 2 * (precision * recall) / (precision + recall)
     print(f"f1 Score {f1_score}")
-
-    # Save the Model
-    pipeline.cnn.save_model()
 
     # Scoring results
     return {
