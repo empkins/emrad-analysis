@@ -47,9 +47,9 @@ class CNN(Algorithm):
         groups: int = 1,
         activation: str = "relu",
         use_bias: bool = True,
-        kernel_initializer: str = "glorot_uniform",
+        kernel_initializer: str = "he_normal",
         bias_initializer: str = "zeros",
-        learning_rate: float = 0.001,
+        learning_rate: float = 0.0001,
         num_epochs: int = 1,
         batch_size: int = 32,
         _model=None,
@@ -329,6 +329,7 @@ class CNN(Algorithm):
         time_layers = Sequential()
         time_layers.add(layers.Flatten())
         time_layers.add(layers.Dense(1))
+        time_layers.add(layers.BatchNormalization())
         self._model.add(layers.TimeDistributed(time_layers))
         self._model.compile(optimizer="adam", loss="mse")
         return self
