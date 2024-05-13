@@ -1,3 +1,4 @@
+import concurrent
 import os
 import pickle
 from datetime import datetime
@@ -78,7 +79,49 @@ class CNN(Algorithm):
         if training_subjects is not None:
             subjects = [subject for subject in subjects if subject in training_subjects]
         while True:
-            yield from self._get_inputs_and_labels_for_subjects(base_path, subjects)
+            # yield from self._get_inputs_and_labels_for_subjects(base_path, subjects)
+            yield from self._get_inputs_and_labels_for_subjects_improved(base_path, subjects)
+
+    def _get_inputs_and_labels_for_subjects_improved(self, base_path, subjects):
+        for subject_id in subjects:
+            subject_path = base_path / subject_id
+            phases = [path.name for path in subject_path.iterdir() if path.is_dir()]
+            for phase in phases:
+                if phase == "logs" or phase == "raw":
+                    continue
+                phase_path = subject_path / phase
+                input_path = phase_path / "inputs"
+                label_path = phase_path / "labels"
+                input_names = sorted(path.name for path in input_path.iterdir() if path.is_file())
+                grouped_inputs = {
+                    int(k): list(filter(lambda x: "png" in x if self.image_based else "npy" in x, list(g)))
+                    for k, g in groupby(input_names, key=lambda s: s.split("_")[0])
+                }
+                megabatches = self.grouper(grouped_inputs.keys(), 20 * self.batch_size)
+                for megabatch in megabatches:
+                    if all(v is None for v in megabatch):
+                        continue
+                    batch = self._read_parallel(input_path, label_path, grouped_inputs, megabatch)
+                    for i in range(0, len(batch), self.batch_size):
+                        inputs = np.stack([batch[i + j][0] for j in range(self.batch_size)], axis=0)
+                        labels = np.stack([batch[i + j][1] for j in range(self.batch_size)], axis=0)
+                        yield inputs, labels
+                    del batch
+                del megabatches
+
+    def _read_parallel(self, input_path, label_path, grouped_inputs, group):
+        with concurrent.futures.ThreadPoolExecutor() as executor:
+            futures = [
+                executor.submit(self._load_in_and_labels, input_path, label_path, grouped_inputs, number)
+                for number in group
+            ]
+            return [fut.result() for fut in futures]
+
+    def _load_in_and_labels(self, input_path, label_path, grouped_inputs, number):
+        in_files = grouped_inputs[number] if number is not None else None
+        inputs = self.get_input(input_path, in_files)
+        labels = self.get_labels(label_path, number)
+        return inputs, labels
 
     def _get_inputs_and_labels_for_subjects(self, base_path, subjects):
         for subject_id in subjects:
@@ -154,14 +197,15 @@ class CNN(Algorithm):
         elif path.suffix == ".npy" and not self.image_based:
             try:
                 arr = self._pad_array(np.load(path))
-            except Exception:
+            except Exception as e:
+                print(f"Exception: {e}")
                 arr = np.zeros((256, 1000))
         return arr
 
     def _pad_array(self, array):
-        if array.shape != (256, 1000, 5):
-            padded = np.zeros((256, 1000, 5))
-            padded[: array.shape[0], : array.shape[1], : array.shape[2]] = array
+        if array.shape != (256, 1000):
+            padded = np.zeros((256, 1000))
+            padded[: array.shape[0], : array.shape[1]] = array
             arr = padded
         return arr
 
