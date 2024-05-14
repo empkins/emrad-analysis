@@ -3,6 +3,7 @@ from typing import Tuple, List
 
 import emrad_toolbox
 import numpy
+import numpy as np
 import pywt
 import resampy
 from PyEMD import EMD
@@ -212,23 +213,29 @@ class WaveletTransformer(Algorithm):
     sampling_rate: Parameter[float]
     normalizer: Normalizer
     window_size: Parameter[int]
+    num_imfs: Parameter[int]
+    normalize: Parameter[bool]
 
     # Results
     transformed_signal_: numpy.array
 
     def __init__(
         self,
-        wavelet_coefficients: Tuple[int, int] = (50, 200),
+        wavelet_coefficients: Tuple[int, int] = (1, 257),
         wavelet_type="morl",
         sampling_rate: float = 200,
         window_size: int = 5,
         normalizer: Normalizer = cf(Normalizer()),
+        num_imfs: int = 5,
+        normalize: bool = True,
     ):
         self.wavelet_coefficients = wavelet_coefficients
         self.wavelet_type = wavelet_type
         self.sampling_rate = sampling_rate
         self.normalizer = normalizer
         self.window_size = window_size
+        self.num_imfs = num_imfs
+        self.normalize = normalize
 
     @make_action_safe
     def transform(
@@ -239,7 +246,6 @@ class WaveletTransformer(Algorithm):
         segment: int,
         base_path: str = "Data",
         img_based: bool = False,
-        normalize: bool = True,
     ):
         """Transform the input signal using a wavelet transform
 
@@ -250,17 +256,47 @@ class WaveletTransformer(Algorithm):
             _type_: Transformed signal
         """
 
-        path = self.get_path(base_path, subject_id, phase, segment)
-        for i in range(len(signal)):
+        path = self.get_path(base_path, subject_id, phase)
+        transformed_signals = []
+        for i in range(self.num_imfs):
+            if i > len(signal) and not img_based:
+                transformed_signals.append(self._get_empty_array())
+                continue
             imf = signal[i]
             scales = range(self.wavelet_coefficients[0], self.wavelet_coefficients[1])
             coefficients, frequencies = pywt.cwt(imf, scales, self.wavelet_type)
             if img_based:
                 self._save_image(coefficients, frequencies, len(imf), segment, i, path)
             else:
-                self._save_array(coefficients, segment, i, normalize, path)
+                transformed_signals.append(coefficients)
+        if self.normalize:
+            transformed_signals = [self._normalize(x) for x in transformed_signals]
+        if not img_based:
+            save_path = os.path.join(path, f"{segment}.npy")
+            transformed_signals = np.stack(transformed_signals, axis=2)
+            numpy.save(save_path, transformed_signals)
         self.transformed_signal_ = []
         return self
+
+    def _normalize(self, coefficients):
+        normalizer_clone = self.normalizer.clone()
+        normalizer_clone.normalize(pd.Series(coefficients.flatten()))
+        shape = (self.wavelet_coefficients[1] - self.wavelet_coefficients[0], self.window_size * self.sampling_rate)
+        if self.normalize:
+            normalizer_clone.normalize(pd.Series(coefficients.flatten()))
+            coefficients = normalizer_clone.normalized_signal_.to_numpy().reshape(coefficients.shape)
+        if coefficients.shape != shape:
+            zero_padding = numpy.zeros((shape[0] - coefficients.shape[0], shape[1]))
+            zero_padding[: coefficients.shape[0], : coefficients.shape[1]] = coefficients
+            coefficients = zero_padding
+        np.nan_to_num(coefficients, copy=False, nan=0.0, posinf=0.0, neginf=0.0)
+        coefficients = coefficients.transpose()
+        return coefficients
+
+    def _get_empty_array(self):
+        return numpy.zeros(
+            (self.wavelet_coefficients[1] - self.wavelet_coefficients[0], self.window_size * self.sampling_rate)
+        )
 
     def _save_array(self, coefficients, segment_nr, imf_nr, normalize, path):
         normalizer_clone = self.normalizer.clone()
@@ -288,7 +324,7 @@ class WaveletTransformer(Algorithm):
         ax.set_yticks([])
         plt.savefig(os.path.join(path, f"{segment_nr}_{imf_nr}.png"), bbox_inches="tight", pad_inches=0)
 
-    def get_path(self, base_path: str, subject_id: str, phase: str, segment: int):
+    def get_path(self, base_path: str, subject_id: str, phase: str):
         path = f"{base_path}/{subject_id}/{phase}/inputs"
         if not os.path.exists(path):
             os.makedirs(path)

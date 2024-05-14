@@ -49,7 +49,7 @@ class CNN(Algorithm):
         use_bias: bool = True,
         kernel_initializer: str = "he_normal",
         bias_initializer: str = "zeros",
-        learning_rate: float = 0.0001,
+        learning_rate: float = 0.001,
         num_epochs: int = 1,
         batch_size: int = 32,
         _model=None,
@@ -79,8 +79,9 @@ class CNN(Algorithm):
         if training_subjects is not None:
             subjects = [subject for subject in subjects if subject in training_subjects]
         while True:
-            # yield from self._get_inputs_and_labels_for_subjects(base_path, subjects)
-            yield from self._get_inputs_and_labels_for_subjects_improved(base_path, subjects)
+            # yield from self._get_inputs_and_labels_for_subjects_grouped(base_path, subjects)
+            # yield from self._get_inputs_and_labels_for_subjects_improved(base_path, subjects)
+            yield from self._get_inputs_and_labels_for_subjects(base_path, subjects)
 
     def _get_inputs_and_labels_for_subjects_improved(self, base_path, subjects):
         for subject_id in subjects:
@@ -105,6 +106,8 @@ class CNN(Algorithm):
                     for i in range(0, len(batch), self.batch_size):
                         inputs = np.stack([batch[i + j][0] for j in range(self.batch_size)], axis=0)
                         labels = np.stack([batch[i + j][1] for j in range(self.batch_size)], axis=0)
+                        np.nan_to_num(inputs, copy=False, nan=0.0, posinf=0.0, neginf=0.0)
+                        np.nan_to_num(labels, copy=False, nan=0.0, posinf=0.0, neginf=0.0)
                         yield inputs, labels
                     del batch
                 del megabatches
@@ -124,6 +127,38 @@ class CNN(Algorithm):
         return inputs, labels
 
     def _get_inputs_and_labels_for_subjects(self, base_path, subjects):
+        for subject_id in subjects:
+            subject_path = base_path / subject_id
+            phases = [path.name for path in subject_path.iterdir() if path.is_dir()]
+            for phase in phases:
+                if phase == "logs" or phase == "raw":
+                    continue
+                phase_path = subject_path / phase
+                input_path = phase_path / "inputs"
+                label_path = phase_path / "labels"
+                if not input_path.exists() or not label_path.exists():
+                    continue
+                input_names = sorted(path.name for path in input_path.iterdir() if path.is_file())
+                input_names = list(filter(lambda x: "png" in x if self.image_based else "npy" in x, input_names))
+                groups = self.grouper(input_names, self.batch_size)
+                for group in groups:
+                    inputs = np.stack(
+                        [
+                            np.load(input_path / number) if number is not None else self.get_input(input_path, None)
+                            for number in group
+                        ],
+                        axis=0,
+                    )
+                    labels = np.stack(
+                        [
+                            np.load(label_path / number) if number is not None else self.get_labels(input_path, None)
+                            for number in group
+                        ],
+                        axis=0,
+                    )
+                    yield inputs, labels
+
+    def _get_inputs_and_labels_for_subjects_grouped(self, base_path, subjects):
         for subject_id in subjects:
             subject_path = base_path / subject_id
             phases = [path.name for path in subject_path.iterdir() if path.is_dir()]
@@ -169,8 +204,10 @@ class CNN(Algorithm):
             return np.transpose(np.stack([np.zeros((256, 1000, 3)) for _ in range(5)], axis=0))
 
     def get_labels(self, base_path, number):
-        if number is not None:
+        if number is not None and "." not in number:
             return np.load(base_path / f"{number}.npy")
+        elif number is not None and ".npy" in number:
+            return np.load(base_path / f"{number}")
         else:
             return np.zeros((1000))
 
@@ -185,6 +222,7 @@ class CNN(Algorithm):
         subjects = [path.name for path in base_path.iterdir() if path.is_dir()]
         if validation_subjects is not None:
             subjects = [subject for subject in subjects if subject in validation_subjects]
+        # yield from self._get_inputs_and_labels_for_subjects_grouped(base_path, subjects)
         yield from self._get_inputs_and_labels_for_subjects(base_path, subjects)
 
     def _load_input(self, path):
@@ -229,7 +267,7 @@ class CNN(Algorithm):
                 steps += len(grouped_inputs.keys())
         return int(steps / self.batch_size)
 
-    def predict(self, data_path: str, testing_subjects: list = None):
+    def predict(self, data_path: str, testing_subjects: list = None, grouped: bool = False):
         print("Prediction started")
         data_path = Path(data_path)
         subjects = [path.name for path in data_path.iterdir() if path.is_dir()]
@@ -244,19 +282,31 @@ class CNN(Algorithm):
                 prediction_path = phase_path / "predictions"
                 prediction_path.mkdir(exist_ok=True)
                 input_files = sorted(input_path.glob("*.npy"))
-                grouped_inputs = {k: list(g) for k, g in groupby(input_files, key=lambda s: s.stem.split("_")[0])}
-                for key, group in grouped_inputs.items():
-                    inputs = [np.load(file) for file in group]
-                    inputs = np.stack(inputs, axis=0)
-                    inputs = np.transpose(inputs)
-                    inputs = np.array([inputs])
-                    if inputs.shape != (1, 1000, 256, 5):
-                        padded = np.zeros((1, 1000, 256, 5))
-                        padded[:, : inputs.shape[1], : inputs.shape[2], : inputs.shape[3]] = inputs
-                        inputs = padded
-                    pred = self._model.predict(inputs)
-                    pred = pred.flatten()
-                    np.save(prediction_path / f"{key}.npy", pred)
+                if grouped:
+                    grouped_inputs = {k: list(g) for k, g in groupby(input_files, key=lambda s: s.stem.split("_")[0])}
+                    for key, group in grouped_inputs.items():
+                        inputs = [np.load(file) for file in group]
+                        inputs = np.stack(inputs, axis=0)
+                        inputs = np.transpose(inputs)
+                        inputs = np.array([inputs])
+                        if inputs.shape != (1, 1000, 256, 5):
+                            padded = np.zeros((1, 1000, 256, 5))
+                            padded[:, : inputs.shape[1], : inputs.shape[2], : inputs.shape[3]] = inputs
+                            inputs = padded
+                        pred = self._model.predict(inputs)
+                        pred = pred.flatten()
+                        np.save(prediction_path / f"{key}.npy", pred)
+                else:
+                    for input_file in input_files:
+                        inputs = np.load(input_file)
+                        inputs = np.array([inputs])
+                        if inputs.shape != (1000, 256, 5):
+                            padded = np.zeros((1, 1000, 256, 5))
+                            padded[: inputs.shape[0], : inputs.shape[1], : inputs.shape[2], : inputs.shape[3]] = inputs
+                            inputs = padded
+                        pred = self._model.predict(inputs)
+                        pred = pred.flatten()
+                        np.save(prediction_path / input_file, pred)
         return self
 
     def self_optimize(
@@ -325,7 +375,7 @@ class CNN(Algorithm):
 
     def _create_model(self):
         self._model = Sequential()
-        self._model.add(models.unet_plus_2d((1000, 256, 5), filter_num=[16, 32, 64], n_labels=5, weights=None))
+        self._model.add(models.unet_plus_2d((1000, 256, 5), filter_num=[16, 32, 64], n_labels=40, weights=None))
         time_layers = Sequential()
         time_layers.add(layers.Flatten())
         time_layers.add(layers.Dense(1))
