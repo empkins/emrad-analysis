@@ -375,11 +375,10 @@ class CNN(Algorithm):
 
     def _create_model(self):
         self._model = Sequential()
-        self._model.add(models.unet_plus_2d((1000, 256, 5), filter_num=[16, 32, 64], n_labels=40, weights=None))
+        self._model.add(models.unet_plus_2d((1000, 256, 5), filter_num=[16, 32, 64], n_labels=5, weights=None))
         time_layers = Sequential()
         time_layers.add(layers.Flatten())
         time_layers.add(layers.Dense(1))
-        time_layers.add(layers.BatchNormalization())
         self._model.add(layers.TimeDistributed(time_layers))
         self._model.compile(optimizer="adam", loss="mse")
         return self
