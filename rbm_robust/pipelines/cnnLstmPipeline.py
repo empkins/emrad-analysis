@@ -6,7 +6,7 @@ from typing_extensions import Self
 import numpy as np
 from tpcp import Algorithm, make_action_safe, cf, OptimizablePipeline, OptimizableParameter
 from rbm_robust.data_loading.datasets import D02Dataset
-from rbm_robust.label_generation.label_generation_algorithm import ComputeEcgBlips
+from rbm_robust.label_generation.label_generation_algorithm import ComputeEcgBlips, ComputeEcgPeakGaussians
 from rbm_robust.models.cnn import CNN
 from rbm_robust.preprocessing.preprocessing import (
     ButterBandpassFilter,
@@ -98,6 +98,7 @@ class LabelProcessor(Algorithm):
     blip_algo: ComputeEcgBlips
     downsampling: Downsampling
     normalizer: Normalizer
+    gaussian: ComputeEcgPeakGaussians
 
     labels_: np.array
 
@@ -106,10 +107,12 @@ class LabelProcessor(Algorithm):
         blip_algo: ComputeEcgBlips = cf(ComputeEcgBlips()),
         downsampling: Downsampling = cf(Downsampling()),
         normalizer: Normalizer = cf(Normalizer()),
+        gaussian: ComputeEcgPeakGaussians = cf(ComputeEcgPeakGaussians()),
     ):
         self.blip_algo = blip_algo
         self.downsampling = downsampling
         self.normalizer = normalizer
+        self.gaussian = gaussian
 
     @make_action_safe
     def label_generation(
@@ -125,12 +128,19 @@ class LabelProcessor(Algorithm):
         blip_algo_clone = self.blip_algo.clone()
         downsampling_clone = self.downsampling.clone()
         normalization_clone = self.normalizer.clone()
-        # Compute the blips
-        processed_ecg = blip_algo_clone.compute(raw_ecg).blips_
+        gaussian_clone = self.gaussian.clone()
+
+        processed_ecg = raw_ecg
         # Downsample the segment
         processed_ecg = downsampling_clone.downsample(processed_ecg, downsample_hz, sampling_rate).downsampled_signal_
         # Normalize the segment
         processed_ecg = normalization_clone.normalize(processed_ecg).normalized_signal_
+        # Compute the gaussian
+        processed_ecg = gaussian_clone.compute(processed_ecg, downsample_hz).peak_gaussians_
+
+        # TODO: Test this after normalization
+        # # Compute the blips
+        # processed_ecg = blip_algo_clone.compute(raw_ecg).blips_
 
         # Save the labels
         path = self.get_path(subject_id, phase, base_path) + f"/{segment}.npy"
@@ -262,6 +272,8 @@ class InputAndLabelGenerator(Algorithm):
             phases = subject.phases
             sampling_rate = subject.SAMPLING_RATE_DOWNSAMPLED
             for phase in phases.keys():
+                if "ei" not in phase:
+                    continue
                 print(f"Starting phase {phase}")
                 timezone = pytz.timezone("Europe/Berlin")
                 phase_start = timezone.localize(phases[phase]["start"])

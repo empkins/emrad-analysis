@@ -5,6 +5,7 @@ from rbm_robust.data_loading.datasets import D02Dataset
 from rbm_robust.models.cnn import CNN
 from rbm_robust.pipelines.cnnLstmPipeline import CnnPipeline
 from rbm_robust.pipelines.preprocessing_pipeline import run
+from rbm_robust.validation.identityScoring import identityScoring
 from rbm_robust.validation.scoring import cnnPipelineScoring
 import os
 import tensorflow as tf
@@ -34,11 +35,17 @@ def preprocessing():
     run(base_path, target_path, process_inputs=True)
 
 
+def identity_check():
+    path_to_data = "/Users/simonmeske/Desktop/TestOrdner/data_per_subject"
+    identityScoring(D02Dataset(path_to_data), path_to_data)
+
+
 if __name__ == "__main__":
     # devices = tf.config.experimental.list_physical_devices("GPU")
     # tf.config.experimental.set_memory_growth(devices[0], True)
     # main()
-    preprocessing()
+    # preprocessing()
+    identity_check()
     # dataset_path = Path("/Users/simonmeske/Desktop/TestOrdner/data_per_subject")
     # dataset = D02Dataset(dataset_path)
     #

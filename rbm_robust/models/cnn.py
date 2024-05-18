@@ -11,6 +11,7 @@ from keras_unet_collection import models
 from tpcp import Algorithm, OptimizableParameter
 from keras.preprocessing.image import load_img, img_to_array
 from itertools import groupby, zip_longest
+import tensorflow as tf
 
 
 class CNN(Algorithm):
@@ -30,6 +31,9 @@ class CNN(Algorithm):
     batch_size: OptimizableParameter[int]
     filters: OptimizableParameter[int]
     overlap: int
+    training_subjects: list = None
+    validation_subjects: list = None
+    base_path: str = "/home/woody/iwso/iwso116h/Data"
 
     # Model
     _model = Optional[keras.Sequential]
@@ -73,11 +77,11 @@ class CNN(Algorithm):
         self.image_based = image_based
         self._model = _model
 
-    def batch_generator(self, base_path, training_subjects: list = None):
-        base_path = Path(base_path)
+    def batch_generator(self):
+        base_path = Path(self.base_path)
         subjects = [path.name for path in base_path.iterdir() if path.is_dir()]
-        if training_subjects is not None:
-            subjects = [subject for subject in subjects if subject in training_subjects]
+        if self.training_subjects is not None:
+            subjects = [subject for subject in subjects if subject in self.training_subjects]
         while True:
             # yield from self._get_inputs_and_labels_for_subjects_grouped(base_path, subjects)
             # yield from self._get_inputs_and_labels_for_subjects_improved(base_path, subjects)
@@ -217,11 +221,11 @@ class CNN(Algorithm):
         end = int(len(array) / 2 + percentile)
         return array[start:end]
 
-    def validation_generator(self, base_path, validation_subjects: list = None):
-        base_path = Path(base_path)
+    def validation_generator(self):
+        base_path = Path(self.base_path)
         subjects = [path.name for path in base_path.iterdir() if path.is_dir()]
-        if validation_subjects is not None:
-            subjects = [subject for subject in subjects if subject in validation_subjects]
+        if self.validation_subjects is not None:
+            subjects = [subject for subject in subjects if subject in self.validation_subjects]
         # yield from self._get_inputs_and_labels_for_subjects_grouped(base_path, subjects)
         yield from self._get_inputs_and_labels_for_subjects(base_path, subjects)
 
@@ -309,6 +313,31 @@ class CNN(Algorithm):
                         np.save(prediction_path / input_file, pred)
         return self
 
+    def _identity_batch_generator(self, base_path, subjects: list = None):
+        for subject_id in subjects:
+            subject_path = base_path / subject_id
+            phases = [path.name for path in subject_path.iterdir() if path.is_dir()]
+            for phase in phases:
+                if phase == "logs" or phase == "raw":
+                    continue
+                phase_path = subject_path / phase
+                input_path = phase_path / "inputs"
+                label_path = phase_path / "labels"
+                if not input_path.exists() or not label_path.exists():
+                    continue
+                input_names = sorted(path.name for path in input_path.iterdir() if path.is_file())
+                input_names = list(filter(lambda x: "png" in x if self.image_based else "npy" in x, input_names))
+                groups = self.grouper(input_names, self.batch_size)
+                for group in groups:
+                    inputs = np.stack(
+                        [
+                            np.load(input_path / number) if number is not None else self.get_input(input_path, None)
+                            for number in group
+                        ],
+                        axis=0,
+                    )
+                    yield inputs, inputs
+
     def self_optimize(
         self,
         base_path: str = "/home/woody/iwso/iwso116h/Data",
@@ -316,6 +345,10 @@ class CNN(Algorithm):
         training_subjects: list = None,
         validation_subjects: list = None,
     ):
+        self.base_path = base_path
+        self.training_subjects = training_subjects
+        self.validation_subjects = validation_subjects
+
         if not image_based:
             self._create_model()
         else:
@@ -327,20 +360,37 @@ class CNN(Algorithm):
             os.makedirs(log_dir)
 
         print("Before Generators")
-        batch_generator = self.batch_generator(base_path, training_subjects)
-        validation_generator = self.validation_generator(base_path, validation_subjects)
+        batch_generator = self.batch_generator
+        training_dataset = tf.data.Dataset.from_generator(
+            batch_generator,
+            output_signature=(
+                tf.TensorSpec(shape=(self.batch_size, 1000, 256, 5), dtype=tf.float64),
+                tf.TensorSpec(shape=(self.batch_size, 1000, 256, 5), dtype=tf.float64),
+            ),
+        )
+        training_dataset.batch(self.batch_size).repeat()
+        validation_generator = self.validation_generator
+        validation_dataset = tf.data.Dataset.from_generator(
+            validation_generator,
+            output_signature=(
+                tf.TensorSpec(shape=(self.batch_size, 1000, 256, 5), dtype=tf.float64),
+                tf.TensorSpec(shape=(self.batch_size, 1000, 256, 5), dtype=tf.float64),
+            ),
+        )
+        validation_dataset.batch(self.batch_size).repeat()
+
         print("Getting steps per epoch")
         steps = self.get_steps_per_epoch(base_path, training_subjects)
         print("Got the step count")
 
         print("Fitting")
         self._model.fit(
-            batch_generator,
+            training_dataset,
             epochs=self.num_epochs,
             steps_per_epoch=steps,
             batch_size=self.batch_size,
             shuffle=False,
-            validation_data=validation_generator,
+            validation_data=validation_dataset,
             verbose=1,
         )
         return self
