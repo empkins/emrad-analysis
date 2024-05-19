@@ -1,6 +1,6 @@
 #!/bin/bash -l
 #
-#SBATCH --job-name=IdentityCheckLonger
+#SBATCH --job-name=ModelTraining
 #SBATCH --nodes=1
 #SBATCH --time=7:00:00
 #SBATCH --gres=gpu:1
