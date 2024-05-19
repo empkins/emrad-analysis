@@ -286,7 +286,7 @@ class WaveletTransformer(Algorithm):
             normalizer_clone.normalize(pd.Series(coefficients.flatten()))
             coefficients = normalizer_clone.normalized_signal_.to_numpy().reshape(coefficients.shape)
         if coefficients.shape != shape:
-            zero_padding = numpy.zeros((shape[0] - coefficients.shape[0], shape[1]))
+            zero_padding = numpy.zeros((shape[0], shape[1]))
             zero_padding[: coefficients.shape[0], : coefficients.shape[1]] = coefficients
             coefficients = zero_padding
         np.nan_to_num(coefficients, copy=False, nan=0.0, posinf=0.0, neginf=0.0)

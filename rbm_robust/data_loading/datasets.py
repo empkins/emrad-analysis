@@ -78,6 +78,53 @@ class D02Dataset(Dataset):
         "537",
         "350",
     )
+    INCLUSION = (
+        "007",
+        "013",
+        "028",
+        "040",
+        "100",
+        "111",
+        "114",
+        "121",
+        "129",
+        "134",
+        "137",
+        "143",
+        "146",
+        "147",
+        "151",
+        "156",
+        "171",
+        "175",
+        "196",
+        "199",
+        "201",
+        "226",
+        "240",
+        "241",
+        "251",
+        "253",
+        "260",
+        "263",
+        "268",
+        "270",
+        "288",
+        "295",
+        "310",
+        "315",
+        "320",
+        "327",
+        "337",
+        "338",
+        "416",
+        "439",
+        "471",
+        "472",
+        "476",
+        "559",
+    )
+
     INCLUDE_SUBJECTS = ("338", "251", "310", "094")
 
     def __init__(
@@ -109,7 +156,8 @@ class D02Dataset(Dataset):
         """
         participant_ids = [item.name for item in Path(self.data_path).iterdir() if item.is_dir()]
         # participant_ids = [pid for pid in participant_ids if pid not in self.EXCLUDE_SUBJECTS]
-        participant_ids = [pid for pid in participant_ids if pid in self.INCLUDE_SUBJECTS]
+        participant_ids = [pid for pid in participant_ids if pid in self.INCLUSION]
+        # participant_ids = [pid for pid in participant_ids if pid in self.INCLUDE_SUBJECTS]
 
         df = pd.DataFrame({"participant": participant_ids})
         if df.empty:

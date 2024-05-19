@@ -272,8 +272,6 @@ class InputAndLabelGenerator(Algorithm):
             phases = subject.phases
             sampling_rate = subject.SAMPLING_RATE_DOWNSAMPLED
             for phase in phases.keys():
-                if "ei" not in phase:
-                    continue
                 print(f"Starting phase {phase}")
                 timezone = pytz.timezone("Europe/Berlin")
                 phase_start = timezone.localize(phases[phase]["start"])
@@ -328,8 +326,6 @@ class InputAndLabelGenerator(Algorithm):
             phases = subject.phases
             sampling_rate = subject.SAMPLING_RATE_DOWNSAMPLED
             for phase in phases.keys():
-                if "ei" not in phase:
-                    continue
                 print(f"Starting phase {phase}")
                 timezone = pytz.timezone("Europe/Berlin")
                 phase_start = timezone.localize(phases[phase]["start"])
