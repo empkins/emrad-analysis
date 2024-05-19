@@ -18,7 +18,7 @@ class ComputeEcgPeakGaussians(Algorithm):
     # Results
     peak_gaussians_: pd.Series
 
-    def __init__(self, gaussian_length: int = 400, gaussian_std: float = 6):
+    def __init__(self, gaussian_length: int = 400, gaussian_std: float = 8):
         self.gaussian_length = gaussian_length
         self.gaussian_std = gaussian_std
 

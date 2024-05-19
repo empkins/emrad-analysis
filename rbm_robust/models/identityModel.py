@@ -1,8 +1,8 @@
+import gc
 from datetime import datetime
 from itertools import zip_longest
 from pathlib import Path
 from typing import Optional
-from sklearn.metrics import root_mean_squared_error
 import keras
 import numpy as np
 from keras import Sequential
@@ -91,6 +91,8 @@ class IdentityModel(Algorithm):
                         axis=0,
                     )
                     yield inputs, inputs
+                    del inputs
+                    gc.collect()
 
     def get_input(self, base_path, imfs):
         if imfs is not None:
@@ -171,7 +173,8 @@ class IdentityModel(Algorithm):
         validation_dataset.batch(self.batch_size).repeat()
 
         print("Getting steps per epoch")
-        steps = self.get_steps_per_epoch(base_path, training_subjects)
+        training_steps = self.get_steps_per_epoch(base_path, training_subjects)
+        validation_steps = self.get_steps_per_epoch(base_path, validation_subjects)
         print("Got the step count")
 
         print("Fitting")
@@ -181,10 +184,11 @@ class IdentityModel(Algorithm):
         self._model.fit(
             dataset,
             epochs=self.num_epochs,
-            steps_per_epoch=steps,
+            steps_per_epoch=training_steps,
             batch_size=self.batch_size,
             shuffle=False,
             validation_data=validation_dataset,
+            validation_steps=validation_steps,
             verbose=1,
         )
         print("Fitting done")

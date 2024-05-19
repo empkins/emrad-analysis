@@ -32,7 +32,10 @@ def alt():
 def preprocessing():
     base_path = Path("/home/vault/empkins/tpD/D03/Data/MA_Simon_Meske/Data_D02/data_per_subject")
     target_path = "/home/woody/iwso/iwso116h/Data"
-    run(base_path, target_path, process_inputs=True)
+    # base_path = Path("/Users/simonmeske/Desktop/TestOrdner/data_per_subject")
+    # target_path = "/Users/simonmeske/Desktop/TestOrdner/data_per_subject"
+    # run(base_path, target_path, process_inputs=False, process_labels=True, process_images=False
+    run(base_path, target_path, process_inputs=False, process_labels=True, process_images=False)
 
 
 def identity_check():
@@ -44,8 +47,8 @@ if __name__ == "__main__":
     # devices = tf.config.experimental.list_physical_devices("GPU")
     # tf.config.experimental.set_memory_growth(devices[0], True)
     # main()
-    # preprocessing()
-    identity_check()
+    preprocessing()
+    # identity_check()
     # dataset_path = Path("/Users/simonmeske/Desktop/TestOrdner/data_per_subject")
     # dataset = D02Dataset(dataset_path)
     #

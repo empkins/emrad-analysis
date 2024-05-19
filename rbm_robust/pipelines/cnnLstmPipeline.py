@@ -313,25 +313,23 @@ class InputAndLabelGenerator(Algorithm):
 
     @make_action_safe
     def generate_training_labels(self, dataset: D02Dataset, base_path: str = "Data"):
-        """Generate the input labels for the BiLSTM model
-
-        Args:
-            raw_radar (np.array): Raw radar signal
-            sampling_rate (float): Sampling frequency of the radar signal
-
-        Returns:
-            np.ndarray: Input labels for the BiLSTM model
-        """
-        print("Labels")
+        # Init Clones
         label_processor_clone = self.labelProcessor.clone()
         segmentation_clone = self.segmentation.clone()
         for i in range(len(dataset.subjects)):
             subject = dataset.get_subset(participant=dataset.subjects[i])
-            radar_data = subject.synced_radar
-            ecg_data = subject.synced_ecg
+            print(f"Subject {subject.subjects[0]}")
+            try:
+                radar_data = subject.synced_radar
+                ecg_data = subject.synced_ecg
+            except Exception as e:
+                print(f"Exclude Subject {subject} due to error {e}")
+                continue
             phases = subject.phases
             sampling_rate = subject.SAMPLING_RATE_DOWNSAMPLED
             for phase in phases.keys():
+                if "ei" not in phase:
+                    continue
                 print(f"Starting phase {phase}")
                 timezone = pytz.timezone("Europe/Berlin")
                 phase_start = timezone.localize(phases[phase]["start"])
@@ -344,10 +342,10 @@ class InputAndLabelGenerator(Algorithm):
                 segments_radar = segmentation_clone.segment(phase_radar_data, sampling_rate).segmented_signal_
                 segments_ecg = segmentation_clone.segment(phase_ecg_data, sampling_rate).segmented_signal_
                 if len(segments_radar) != len(segments_ecg):
-                    print("Length of radar and ecg segments do not match")
                     continue
                 # Create Inputs
-                for j in range(len(segments_ecg)):
+                length = min(len(segments_radar), len(segments_ecg))
+                for j in range(length):
                     label_processor_clone.label_generation(
                         segments_ecg[j],
                         subject.SAMPLING_RATE_DOWNSAMPLED,
@@ -355,6 +353,7 @@ class InputAndLabelGenerator(Algorithm):
                         phase,
                         j,
                         self.downsampled_hz,
+                        base_path,
                     )
         self.input_data_path_ = base_path
         return self

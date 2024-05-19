@@ -1,4 +1,5 @@
 import concurrent
+import gc
 import os
 import pickle
 from datetime import datetime
@@ -161,6 +162,8 @@ class CNN(Algorithm):
                         axis=0,
                     )
                     yield inputs, labels
+                    del inputs, labels
+                    gc.collect()
 
     def _get_inputs_and_labels_for_subjects_grouped(self, base_path, subjects):
         for subject_id in subjects:
@@ -194,6 +197,8 @@ class CNN(Algorithm):
                     )
                     labels = np.stack([self.get_labels(label_path, number) for number in group], axis=0)
                     yield inputs, labels
+                    del inputs, labels
+                    gc.collect()
 
     def grouper(self, iterable, n):
         iterators = [iter(iterable)] * n
@@ -380,17 +385,19 @@ class CNN(Algorithm):
         validation_dataset.batch(self.batch_size).repeat()
 
         print("Getting steps per epoch")
-        steps = self.get_steps_per_epoch(base_path, training_subjects)
+        training_steps = self.get_steps_per_epoch(base_path, training_subjects)
+        validation_steps = self.get_steps_per_epoch(base_path, validation_subjects)
         print("Got the step count")
 
         print("Fitting")
         self._model.fit(
             training_dataset,
             epochs=self.num_epochs,
-            steps_per_epoch=steps,
+            steps_per_epoch=training_steps,
             batch_size=self.batch_size,
             shuffle=False,
             validation_data=validation_dataset,
+            validation_steps=validation_steps,
             verbose=1,
         )
         return self
