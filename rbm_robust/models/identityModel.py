@@ -28,7 +28,7 @@ class IdentityModel(Algorithm):
     # Results
     predictions_: np.ndarray
 
-    def __init__(self, num_epochs: int = 1, batch_size: int = 2):
+    def __init__(self, num_epochs: int = 3, batch_size: int = 8):
         self.num_epochs = num_epochs
         self.batch_size = batch_size
         self._model = None

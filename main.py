@@ -39,7 +39,8 @@ def preprocessing():
 
 
 def identity_check():
-    path_to_data = "/Users/simonmeske/Desktop/TestOrdner/data_per_subject"
+    # path_to_data = "/Users/simonmeske/Desktop/TestOrdner/data_per_subject"
+    path_to_data = os.environ("TMPDIR") + "/Data"
     identityScoring(D02Dataset(path_to_data), path_to_data)
 
 
@@ -47,8 +48,8 @@ if __name__ == "__main__":
     # devices = tf.config.experimental.list_physical_devices("GPU")
     # tf.config.experimental.set_memory_growth(devices[0], True)
     # main()
-    preprocessing()
-    # identity_check()
+    # preprocessing()
+    identity_check()
     # dataset_path = Path("/Users/simonmeske/Desktop/TestOrdner/data_per_subject")
     # dataset = D02Dataset(dataset_path)
     #

@@ -33,13 +33,16 @@ class ComputeEcgPeakGaussians(Algorithm):
         Returns:
             pd.Series: Signal with Gaussians located at the R-peaks of the ECG signal.
         """
-        signal, info = ecg_process(ecg_signal, sampling_freq)
-
-        self.peak_gaussians_ = np.convolve(
-            signal["ECG_R_Peaks"], gaussian(self.gaussian_length, self.gaussian_std), mode="same"
-        )
-
-        return self
+        try:
+            signal, info = ecg_process(ecg_signal, sampling_freq)
+            self.peak_gaussians_ = np.convolve(
+                signal["ECG_R_Peaks"], gaussian(self.gaussian_length, self.gaussian_std), mode="same"
+            )
+            return self
+        except Exception as e:
+            print(f"Error in ecg_process: {e}")
+            self.peak_gaussians_ = np.zeros(len(ecg_signal))
+            return self
 
 
 class ComputeEcgBlips(Algorithm):
