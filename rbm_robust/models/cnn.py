@@ -285,7 +285,7 @@ class CNN(Algorithm):
                 if not phase_path.is_dir():
                     continue
                 input_path = phase_path / "inputs"
-                prediction_path = phase_path / "predictions_unet"
+                prediction_path = phase_path / "predictions_unet_more_epochs"
                 prediction_path.mkdir(exist_ok=True)
                 input_files = sorted(input_path.glob("*.npy"))
                 if grouped:

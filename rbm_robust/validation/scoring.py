@@ -106,7 +106,7 @@ def cnnPipelineScoring(pipeline: CnnPipeline, dataset: D02Dataset, path: str = "
             if phase == "logs" or phase == "raw":
                 continue
             print(f"phase {phase}")
-            prediction_path = phase / "predictions"
+            prediction_path = phase / "predictions_unet_more_epochs"
             prediction_path.mkdir(exist_ok=True, parents=True)
             label_path = phase / "labels"
             label_path.mkdir(exist_ok=True, parents=True)
