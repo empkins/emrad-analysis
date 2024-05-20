@@ -17,10 +17,10 @@ def main():
     # tf.config.experimental.set_memory_growth(devices[0], True)
     # path = os.environ.get("DATA_PATH")
     # path = "/Users/simonmeske/Desktop/TestOrdner/data_per_subject"
-    path = os.getenv("TMPDIR") + "/Data"
+    path = os.getenv("WORK") + "/Data"
     print(path)
-    dataset_path = Path(path)
-    dataset = D02Dataset(dataset_path)
+    # dataset_path = Path(path)
+    dataset = D02Dataset(path)
     cnn_pipeline = CnnPipeline()
     cnnPipelineScoring(cnn_pipeline, dataset, path)
 
@@ -41,7 +41,7 @@ def preprocessing():
 
 def identity_check():
     # path_to_data = "/Users/simonmeske/Desktop/TestOrdner/data_per_subject"
-    path_to_data = os.environ("TMPDIR") + "/Data"
+    path_to_data = os.getenv("TMPDIR") + "/Data"
     identityScoring(D02Dataset(path_to_data), path_to_data)
 
 

@@ -55,8 +55,8 @@ class CNN(Algorithm):
         kernel_initializer: str = "he_normal",
         bias_initializer: str = "zeros",
         learning_rate: float = 0.001,
-        num_epochs: int = 1,
-        batch_size: int = 32,
+        num_epochs: int = 3,
+        batch_size: int = 8,
         _model=None,
         overlap: int = 0.8,
         image_based: bool = False,
@@ -84,8 +84,6 @@ class CNN(Algorithm):
         if self.training_subjects is not None:
             subjects = [subject for subject in subjects if subject in self.training_subjects]
         while True:
-            # yield from self._get_inputs_and_labels_for_subjects_grouped(base_path, subjects)
-            # yield from self._get_inputs_and_labels_for_subjects_improved(base_path, subjects)
             yield from self._get_inputs_and_labels_for_subjects(base_path, subjects)
 
     def _get_inputs_and_labels_for_subjects_improved(self, base_path, subjects):
@@ -231,7 +229,6 @@ class CNN(Algorithm):
         subjects = [path.name for path in base_path.iterdir() if path.is_dir()]
         if self.validation_subjects is not None:
             subjects = [subject for subject in subjects if subject in self.validation_subjects]
-        # yield from self._get_inputs_and_labels_for_subjects_grouped(base_path, subjects)
         yield from self._get_inputs_and_labels_for_subjects(base_path, subjects)
 
     def _load_input(self, path):
@@ -288,7 +285,7 @@ class CNN(Algorithm):
                 if not phase_path.is_dir():
                     continue
                 input_path = phase_path / "inputs"
-                prediction_path = phase_path / "predictions"
+                prediction_path = phase_path / "predictions_unet"
                 prediction_path.mkdir(exist_ok=True)
                 input_files = sorted(input_path.glob("*.npy"))
                 if grouped:
@@ -370,7 +367,7 @@ class CNN(Algorithm):
             batch_generator,
             output_signature=(
                 tf.TensorSpec(shape=(self.batch_size, 1000, 256, 5), dtype=tf.float64),
-                tf.TensorSpec(shape=(self.batch_size, 1000, 256, 5), dtype=tf.float64),
+                tf.TensorSpec(shape=(self.batch_size, 1000), dtype=tf.float64),
             ),
         )
         training_dataset.batch(self.batch_size).repeat()
@@ -379,7 +376,7 @@ class CNN(Algorithm):
             validation_generator,
             output_signature=(
                 tf.TensorSpec(shape=(self.batch_size, 1000, 256, 5), dtype=tf.float64),
-                tf.TensorSpec(shape=(self.batch_size, 1000, 256, 5), dtype=tf.float64),
+                tf.TensorSpec(shape=(self.batch_size, 1000), dtype=tf.float64),
             ),
         )
         validation_dataset.batch(self.batch_size).repeat()

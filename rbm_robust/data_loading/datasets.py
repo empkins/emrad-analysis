@@ -125,9 +125,8 @@ class D02Dataset(Dataset):
         "559",
     )
 
-    INCLUDE_SUBJECTS = "268"
+    INCLUDE_SUBJECTS = ("338", "251", "310", "094")
 
-    # "338", "251", "310", "094"
     def __init__(
         self,
         data_path: Path,

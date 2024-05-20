@@ -76,8 +76,8 @@ def cnnPipelineScoring(pipeline: CnnPipeline, dataset: D02Dataset, path: str = "
     testing_dataset = dataset.get_subset(participant=test_data)
 
     time_stamps["Start"] = datetime.now().isoformat(sep="-", timespec="seconds")
-    print("Prepare Data")
-    pipeline.prepare_data(training_dataset, validation_dataset, testing_dataset, path)
+    # print("Prepare Data")
+    # pipeline.prepare_data(training_dataset, validation_dataset, testing_dataset, path)
 
     print("Start Training")
     pipeline.self_optimize(training_dataset, validation_dataset, path)
