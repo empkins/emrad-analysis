@@ -55,7 +55,7 @@ class CNN(Algorithm):
         kernel_initializer: str = "he_normal",
         bias_initializer: str = "zeros",
         learning_rate: float = 0.001,
-        num_epochs: int = 3,
+        num_epochs: int = 1,
         batch_size: int = 8,
         _model=None,
         overlap: int = 0.8,
@@ -134,6 +134,8 @@ class CNN(Algorithm):
             subject_path = base_path / subject_id
             phases = [path.name for path in subject_path.iterdir() if path.is_dir()]
             for phase in phases:
+                if "ei" not in phase:
+                    continue
                 if phase == "logs" or phase == "raw":
                     continue
                 phase_path = subject_path / phase
@@ -282,6 +284,8 @@ class CNN(Algorithm):
         for subject_id in subjects:
             subject_path = data_path / subject_id
             for phase_path in subject_path.iterdir():
+                if "ei" not in phase_path.name:
+                    continue
                 if not phase_path.is_dir():
                     continue
                 input_path = phase_path / "inputs"
@@ -312,7 +316,7 @@ class CNN(Algorithm):
                             inputs = padded
                         pred = self._model.predict(inputs)
                         pred = pred.flatten()
-                        np.save(prediction_path / input_file, pred)
+                        np.save(prediction_path / input_file.name, pred)
         return self
 
     def _identity_batch_generator(self, base_path, subjects: list = None):

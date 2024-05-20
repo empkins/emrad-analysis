@@ -18,8 +18,8 @@ def main():
     # devices = tf.config.experimental.list_physical_devices("GPU")
     # tf.config.experimental.set_memory_growth(devices[0], True)
     # path = os.environ.get("DATA_PATH")
-    # path = "/Users/simonmeske/Desktop/TestOrdner/data_per_subject"
-    path = os.getenv("WORK") + "/Data"
+    path = "/Users/simonmeske/Desktop/TestOrdner/data_per_subject"
+    # path = os.getenv("WORK") + "/Data"
     print(path)
     # dataset_path = Path(path)
     dataset = D02Dataset(path)
@@ -38,7 +38,7 @@ def preprocessing():
     # base_path = Path("/Users/simonmeske/Desktop/TestOrdner/data_per_subject")
     # target_path = "/Users/simonmeske/Desktop/TestOrdner/data_per_subject"
     # run(base_path, target_path, process_inputs=False, process_labels=True, process_images=False
-    run(base_path, target_path, process_inputs=False, process_labels=True, process_images=False)
+    run(base_path, target_path, process_inputs=True, process_labels=True, process_images=False)
 
 
 def check_for_empty_arrays():
@@ -59,9 +59,12 @@ def check_for_empty_arrays():
             for label_file in label_files:
                 label = np.load(label_path / label_file)
                 if np.all(label == 0):
+                    label_to_remove = label_path / label_file
+                    input_to_remove = input_path / label_file
+                    if label_to_remove.exists() and input_to_remove.exists():
+                        label_to_remove.unlink()
+                        input_to_remove.unlink()
                     print(f"Empty array in {label_file} at {label_path}")
-
-    # for
 
 
 def identity_check():
@@ -73,9 +76,9 @@ def identity_check():
 if __name__ == "__main__":
     # devices = tf.config.experimental.list_physical_devices("GPU")
     # tf.config.experimental.set_memory_growth(devices[0], True)
-    check_for_empty_arrays()
+    # check_for_empty_arrays()
     # main()
-    # preprocessing()
+    preprocessing()
     # identity_check()
     # dataset_path = Path("/Users/simonmeske/Desktop/TestOrdner/data_per_subject")
     # dataset = D02Dataset(dataset_path)
