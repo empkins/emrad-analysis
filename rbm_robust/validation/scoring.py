@@ -106,10 +106,10 @@ def cnnPipelineScoring(pipeline: CnnPipeline, dataset: D02Dataset, path: str = "
             if phase == "logs" or phase == "raw":
                 continue
             print(f"phase {phase}")
-            prediction_path = phase / "predictions_unet_more_epochs"
-            prediction_path.mkdir(exist_ok=True, parents=True)
+            prediction_path = phase / "predictions_unet_more_epochs_and_learning"
+            # prediction_path.mkdir(exist_ok=True, parents=True)
             label_path = phase / "labels"
-            label_path.mkdir(exist_ok=True, parents=True)
+            # label_path.mkdir(exist_ok=True, parents=True)
             prediction_files = sorted(path.name for path in prediction_path.iterdir() if path.is_file())
             f1RPeakScore = RPeakF1Score(max_deviation_ms=100)
             for prediction_file in prediction_files:

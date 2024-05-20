@@ -54,8 +54,8 @@ class CNN(Algorithm):
         use_bias: bool = True,
         kernel_initializer: str = "he_normal",
         bias_initializer: str = "zeros",
-        learning_rate: float = 0.001,
-        num_epochs: int = 1,
+        learning_rate: float = 0.01,
+        num_epochs: int = 4,
         batch_size: int = 8,
         _model=None,
         overlap: int = 0.8,
@@ -134,8 +134,6 @@ class CNN(Algorithm):
             subject_path = base_path / subject_id
             phases = [path.name for path in subject_path.iterdir() if path.is_dir()]
             for phase in phases:
-                if "ei" not in phase:
-                    continue
                 if phase == "logs" or phase == "raw":
                     continue
                 phase_path = subject_path / phase
@@ -284,12 +282,10 @@ class CNN(Algorithm):
         for subject_id in subjects:
             subject_path = data_path / subject_id
             for phase_path in subject_path.iterdir():
-                if "ei" not in phase_path.name:
-                    continue
                 if not phase_path.is_dir():
                     continue
                 input_path = phase_path / "inputs"
-                prediction_path = phase_path / "predictions_unet_more_epochs"
+                prediction_path = phase_path / "predictions_unet_more_epochs_and_learning"
                 prediction_path.mkdir(exist_ok=True)
                 input_files = sorted(input_path.glob("*.npy"))
                 if grouped:

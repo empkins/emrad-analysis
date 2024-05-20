@@ -135,8 +135,6 @@ class IdentityModel(Algorithm):
                     truth = np.load(labels_path / input_file)
                     squares += (truth - pred) ** 2
                     count += 1
-                    truths.append(truth)
-                    preds.append(pred)
                     np.save(prediction_path / input_file.name, pred)
         mse = np.sum(squares) / (count * 1000 * 256 * 5)
         print(f"Mean Squared Error: {mse}")
