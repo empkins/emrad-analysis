@@ -134,8 +134,6 @@ class CNN(Algorithm):
             subject_path = base_path / subject_id
             phases = [path.name for path in subject_path.iterdir() if path.is_dir()]
             for phase in phases:
-                if "ei" not in phase:
-                    continue
                 if phase == "logs" or phase == "raw":
                     continue
                 phase_path = subject_path / phase
@@ -264,8 +262,6 @@ class CNN(Algorithm):
             if training_subjects is not None and subject_path.name not in training_subjects:
                 continue
             for phase_path in subject_path.iterdir():
-                if "ei" not in phase_path.name:
-                    continue
                 if not phase_path.is_dir():
                     continue
                 input_path = phase_path / "inputs"
@@ -286,8 +282,6 @@ class CNN(Algorithm):
         for subject_id in subjects:
             subject_path = data_path / subject_id
             for phase_path in subject_path.iterdir():
-                if "ei" not in phase_path.name:
-                    continue
                 if not phase_path.is_dir():
                     continue
                 input_path = phase_path / "inputs"
