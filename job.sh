@@ -1,6 +1,6 @@
 #!/bin/bash -l
 #
-#SBATCH --job-name=uNetMoreEpochsAndLearningRate
+#SBATCH --job-name=uNetConvFiveEpochs
 #SBATCH --nodes=1
 #SBATCH --time=10:00:00
 #SBATCH --gres=gpu:1

@@ -55,7 +55,7 @@ class CNN(Algorithm):
         kernel_initializer: str = "he_normal",
         bias_initializer: str = "zeros",
         learning_rate: float = 0.001,
-        num_epochs: int = 4,
+        num_epochs: int = 5,
         batch_size: int = 8,
         _model=None,
         overlap: int = 0.8,
@@ -285,7 +285,7 @@ class CNN(Algorithm):
                 if not phase_path.is_dir():
                     continue
                 input_path = phase_path / "inputs"
-                prediction_path = phase_path / "predictions_with_oneD_conv"
+                prediction_path = phase_path / "predictions_with_oneD_conv_four_epochs"
                 prediction_path.mkdir(exist_ok=True)
                 input_files = sorted(input_path.glob("*.npy"))
                 if grouped:

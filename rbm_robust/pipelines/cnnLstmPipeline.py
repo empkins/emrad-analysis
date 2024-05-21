@@ -136,7 +136,7 @@ class LabelProcessor(Algorithm):
         # Normalize the segment
         processed_ecg = normalization_clone.normalize(processed_ecg).normalized_signal_
         # Compute the gaussian
-        processed_ecg = gaussian_clone.compute(processed_ecg, downsample_hz).peak_gaussians_
+        # processed_ecg = gaussian_clone.compute(processed_ecg, downsample_hz).peak_gaussians_
 
         # TODO: Test this after normalization
         # # Compute the blips
@@ -149,7 +149,7 @@ class LabelProcessor(Algorithm):
         return self
 
     def get_path(self, subject_id: str, phase: str, base_path: str = "Data"):
-        path = f"{base_path}/{subject_id}/{phase}/labels"
+        path = f"{base_path}/{subject_id}/{phase}/labels_filtered_ecg"
         if not os.path.exists(path):
             os.makedirs(path)
         return path
@@ -163,7 +163,7 @@ class InputAndLabelGenerator(Algorithm):
         self.input_labels
     """
 
-    _action_methods = ("generate_training_input", "generate_training_labels", "generate_training_inputs_and_labels")
+    _action_methods = ("generate_training_inputs", "generate_training_labels", "generate_training_inputs_and_labels")
 
     # PreProcessing
     pre_processor: PreProcessor
@@ -311,7 +311,6 @@ class InputAndLabelGenerator(Algorithm):
 
     @make_action_safe
     def generate_training_labels(self, dataset: D02Dataset, base_path: str = "Data"):
-        # Init Clones
         label_processor_clone = self.labelProcessor.clone()
         segmentation_clone = self.segmentation.clone()
         for i in range(len(dataset.subjects)):
