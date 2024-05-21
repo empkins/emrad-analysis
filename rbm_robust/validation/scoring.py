@@ -70,7 +70,10 @@ def cnnPipelineScoring(pipeline: CnnPipeline, dataset: D02Dataset, path: str = "
 
     # dataset = dataset.get_subset(participant=possible_subjects)
     # Split Data
-    train_data, test_data = train_test_split(dataset.subjects, test_size=0.2, random_state=42)
+    # To always get the same subjects
+    subjects = dataset.subjects
+    subjects.sort()
+    train_data, test_data = train_test_split(subjects, test_size=0.2, random_state=42)
     training_dataset = dataset.get_subset(participant=train_data)
     training_dataset, validation_dataset = train_test_split(training_dataset, test_size=0.2, random_state=42)
     testing_dataset = dataset.get_subset(participant=test_data)
@@ -103,13 +106,11 @@ def cnnPipelineScoring(pipeline: CnnPipeline, dataset: D02Dataset, path: str = "
         for phase in subject.iterdir():
             if not phase.is_dir():
                 continue
-            if phase == "logs" or phase == "raw":
+            if phase.name == "logs" or phase.name == "raw":
                 continue
             print(f"phase {phase}")
-            prediction_path = phase / "predictions_unet_more_epochs_and_learning"
-            # prediction_path.mkdir(exist_ok=True, parents=True)
+            prediction_path = phase / "predictions_with_oneD_conv"
             label_path = phase / "labels"
-            # label_path.mkdir(exist_ok=True, parents=True)
             prediction_files = sorted(path.name for path in prediction_path.iterdir() if path.is_file())
             f1RPeakScore = RPeakF1Score(max_deviation_ms=100)
             for prediction_file in prediction_files:

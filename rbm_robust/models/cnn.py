@@ -54,7 +54,7 @@ class CNN(Algorithm):
         use_bias: bool = True,
         kernel_initializer: str = "he_normal",
         bias_initializer: str = "zeros",
-        learning_rate: float = 0.01,
+        learning_rate: float = 0.001,
         num_epochs: int = 4,
         batch_size: int = 8,
         _model=None,
@@ -134,6 +134,8 @@ class CNN(Algorithm):
             subject_path = base_path / subject_id
             phases = [path.name for path in subject_path.iterdir() if path.is_dir()]
             for phase in phases:
+                if "ei" not in phase:
+                    continue
                 if phase == "logs" or phase == "raw":
                     continue
                 phase_path = subject_path / phase
@@ -262,6 +264,8 @@ class CNN(Algorithm):
             if training_subjects is not None and subject_path.name not in training_subjects:
                 continue
             for phase_path in subject_path.iterdir():
+                if "ei" not in phase_path.name:
+                    continue
                 if not phase_path.is_dir():
                     continue
                 input_path = phase_path / "inputs"
@@ -282,10 +286,12 @@ class CNN(Algorithm):
         for subject_id in subjects:
             subject_path = data_path / subject_id
             for phase_path in subject_path.iterdir():
+                if "ei" not in phase_path.name:
+                    continue
                 if not phase_path.is_dir():
                     continue
                 input_path = phase_path / "inputs"
-                prediction_path = phase_path / "predictions_unet_more_epochs_and_learning"
+                prediction_path = phase_path / "predictions_with_oneD_conv"
                 prediction_path.mkdir(exist_ok=True)
                 input_files = sorted(input_path.glob("*.npy"))
                 if grouped:
@@ -430,10 +436,18 @@ class CNN(Algorithm):
     def _create_model(self):
         self._model = Sequential()
         self._model.add(models.unet_plus_2d((1000, 256, 5), filter_num=[16, 32, 64], n_labels=5, weights=None))
-        time_layers = Sequential()
-        time_layers.add(layers.Flatten())
-        time_layers.add(layers.Dense(1))
-        self._model.add(layers.TimeDistributed(time_layers))
+
+        # time_layers = Sequential()
+        # time_layers.add(layers.Flatten())
+        # time_layers.add(layers.Dense(1))
+        # self._model.add(layers.TimeDistributed(time_layers))
+
+        self._model.add(layers.TimeDistributed(layers.Conv1D(filters=128, kernel_size=(3,), activation="relu")))
+        self._model.add(layers.TimeDistributed(layers.Conv1D(filters=64, kernel_size=(3,), activation="relu")))
+        self._model.add(layers.TimeDistributed(layers.Flatten()))
+        self._model.add(layers.TimeDistributed(layers.Dropout(0.5)))
+        self._model.add(layers.TimeDistributed(layers.Dense(units=1)))
+
         self._model.compile(optimizer="adam", loss="mse")
         return self
 

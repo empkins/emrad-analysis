@@ -39,6 +39,7 @@ def preprocessing():
     # target_path = "/Users/simonmeske/Desktop/TestOrdner/data_per_subject"
     # run(base_path, target_path, process_inputs=False, process_labels=True, process_images=False
     run(base_path, target_path, process_inputs=True, process_labels=True, process_images=False)
+    check_for_empty_arrays()
 
 
 def check_for_empty_arrays():
@@ -76,7 +77,6 @@ def identity_check():
 if __name__ == "__main__":
     # devices = tf.config.experimental.list_physical_devices("GPU")
     # tf.config.experimental.set_memory_growth(devices[0], True)
-    # check_for_empty_arrays()
     main()
     # preprocessing()
     # identity_check()
