@@ -20,8 +20,8 @@ def main():
     # devices = tf.config.experimental.list_physical_devices("GPU")
     # tf.config.experimental.set_memory_growth(devices[0], True)
     # path = os.environ.get("DATA_PATH")
-    path = "/Users/simonmeske/Desktop/TestOrdner/data_per_subject"
-    # path = os.getenv("WORK") + "/Data"
+    # path = "/Users/simonmeske/Desktop/TestOrdner/data_per_subject"
+    path = os.getenv("WORK") + "/Data"
     print(path)
     # dataset_path = Path(path)
     dataset = D02Dataset(path)
@@ -189,9 +189,9 @@ if __name__ == "__main__":
     # devices = tf.config.experimental.list_physical_devices("GPU")
     # tf.config.experimental.set_memory_growth(devices[0], True)
     # input_loading()
-    # main()
+    main()
     # preprocessing()
-    identity_check()
+    # identity_check()
     # dataset_path = Path("/Users/simonmeske/Desktop/TestOrdner/data_per_subject")
     # dataset = D02Dataset(dataset_path)
     #
