@@ -221,9 +221,8 @@ class IdentityModel(Algorithm):
         #
         # self._model = Sequential()
         #
-        #
         self._model = keras_unet_collection.models.unet_2d(
-            (1000, 256, 3),
+            (1000, 256, 5),
             filter_num=[16, 32, 64],
             weights=None,
             freeze_backbone=False,
@@ -231,6 +230,7 @@ class IdentityModel(Algorithm):
             output_activation=None,
             n_labels=5,
         )
+        #
 
         self._model.compile(optimizer="adam", loss="mse")
         return self

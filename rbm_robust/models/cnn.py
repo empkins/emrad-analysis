@@ -435,13 +435,17 @@ class CNN(Algorithm):
 
     def _create_model(self):
         self._model = Sequential()
-        self._model.add(models.unet_plus_2d((1000, 256, 5), filter_num=[16, 32, 64], n_labels=5, weights=None))
-
-        # time_layers = Sequential()
-        # time_layers.add(layers.Flatten())
-        # time_layers.add(layers.Dense(1))
-        # self._model.add(layers.TimeDistributed(time_layers))
-
+        self._model.add(
+            models.unet_2d(
+                (1000, 256, 5),
+                filter_num=[16, 32, 64],
+                weights=None,
+                freeze_backbone=False,
+                freeze_batch_norm=False,
+                output_activation=None,
+                n_labels=5,
+            )
+        )
         self._model.add(layers.TimeDistributed(layers.Flatten()))
         self._model.add(layers.TimeDistributed(layers.Dense(units=1)))
 
