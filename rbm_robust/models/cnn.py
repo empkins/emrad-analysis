@@ -55,7 +55,7 @@ class CNN(Algorithm):
         kernel_initializer: str = "he_normal",
         bias_initializer: str = "zeros",
         learning_rate: float = 0.001,
-        num_epochs: int = 5,
+        num_epochs: int = 2,
         batch_size: int = 8,
         _model=None,
         overlap: int = 0.8,
@@ -134,6 +134,8 @@ class CNN(Algorithm):
             subject_path = base_path / subject_id
             phases = [path.name for path in subject_path.iterdir() if path.is_dir()]
             for phase in phases:
+                if "ei" not in phase:
+                    continue
                 if phase == "logs" or phase == "raw":
                     continue
                 phase_path = subject_path / phase
@@ -152,6 +154,7 @@ class CNN(Algorithm):
                         ],
                         axis=0,
                     )
+                    # inputs = inputs[:, 50:950, :, :]
                     labels = np.stack(
                         [
                             np.load(label_path / number) if number is not None else self.get_labels(input_path, None)
@@ -159,6 +162,7 @@ class CNN(Algorithm):
                         ],
                         axis=0,
                     )
+                    # labels = labels[:, 50:950]
                     yield inputs, labels
                     del inputs, labels
                     gc.collect()
@@ -262,6 +266,8 @@ class CNN(Algorithm):
             if training_subjects is not None and subject_path.name not in training_subjects:
                 continue
             for phase_path in subject_path.iterdir():
+                if "ei" not in phase_path.name:
+                    continue
                 if not phase_path.is_dir():
                     continue
                 input_path = phase_path / "inputs"
@@ -436,10 +442,7 @@ class CNN(Algorithm):
         # time_layers.add(layers.Dense(1))
         # self._model.add(layers.TimeDistributed(time_layers))
 
-        self._model.add(layers.TimeDistributed(layers.Conv1D(filters=128, kernel_size=(3,), activation="relu")))
-        self._model.add(layers.TimeDistributed(layers.Conv1D(filters=64, kernel_size=(3,), activation="relu")))
         self._model.add(layers.TimeDistributed(layers.Flatten()))
-        self._model.add(layers.TimeDistributed(layers.Dropout(0.5)))
         self._model.add(layers.TimeDistributed(layers.Dense(units=1)))
 
         self._model.compile(optimizer="adam", loss="mse")

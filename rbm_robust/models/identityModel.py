@@ -4,6 +4,7 @@ from itertools import zip_longest
 from pathlib import Path
 from typing import Optional
 import keras
+import keras_unet_collection.base
 import numpy as np
 from keras import Sequential
 from tpcp import Algorithm
@@ -199,7 +200,37 @@ class IdentityModel(Algorithm):
         return self
 
     def create_model(self):
-        self._model = Sequential()
-        self._model.add(models.unet_plus_2d((1000, 256, 5), filter_num=[16, 32, 64], n_labels=5, weights=None))
+        IN = keras.layers.Input((1000, 256, 5))
+        #
+        # OUT = keras_unet_collection.models.unet_2d(
+        #     IN,
+        #     filter_num=[16, 32, 64],
+        #     weights=None,
+        #     freeze_backbone=False,
+        #     freeze_batch_norm=False,
+        # )
+        # self._model = keras.Model(
+        #     inputs=[
+        #         IN,
+        #     ],
+        #     outputs=[
+        #         OUT,
+        #     ],
+        # )
+        #
+        #
+        # self._model = Sequential()
+        #
+        #
+        self._model = keras_unet_collection.models.unet_2d(
+            (1000, 256, 3),
+            filter_num=[16, 32, 64],
+            weights=None,
+            freeze_backbone=False,
+            freeze_batch_norm=False,
+            output_activation=None,
+            n_labels=5,
+        )
+
         self._model.compile(optimizer="adam", loss="mse")
         return self

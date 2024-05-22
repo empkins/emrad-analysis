@@ -104,6 +104,8 @@ def cnnPipelineScoring(pipeline: CnnPipeline, dataset: D02Dataset, path: str = "
             continue
         print(f"subject {subject}")
         for phase in subject.iterdir():
+            if "ei" not in phase.name:
+                continue
             if not phase.is_dir():
                 continue
             if phase.name == "logs" or phase.name == "raw":
