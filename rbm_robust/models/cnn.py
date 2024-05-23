@@ -331,7 +331,7 @@ class CNN(Algorithm):
                 if not phase_path.is_dir():
                     continue
                 input_path = phase_path / "inputs"
-                prediction_path = phase_path / "predictions_speedup"
+                prediction_path = phase_path / "predictions_speedupInterleave"
                 prediction_path.mkdir(exist_ok=True)
                 input_files = sorted(input_path.glob("*.npy"))
                 if grouped:
@@ -360,6 +360,21 @@ class CNN(Algorithm):
                         pred = pred.flatten()
                         np.save(prediction_path / input_file.name, pred)
         return self
+
+    def get_training_dataset(self):
+        batch_generator = self.batch_generator
+        training_dataset = (
+            tf.data.Dataset.from_generator(
+                batch_generator,
+                output_signature=(
+                    tf.TensorSpec(shape=(self.batch_size, 1000, 256, 5), dtype=tf.float64),
+                    tf.TensorSpec(shape=(self.batch_size, 1000), dtype=tf.float64),
+                ),
+            )
+            .prefetch(tf.data.AUTOTUNE)
+            .repeat()
+        )
+        return training_dataset
 
     def self_optimize(
         self,
@@ -394,6 +409,10 @@ class CNN(Algorithm):
             )
             .prefetch(tf.data.AUTOTUNE)
             .repeat()
+        )
+
+        training_dataset = tf.data.Dataset.range(2).interleave(
+            lambda _: self.get_training_dataset(), num_parallel_calls=tf.data.AUTOTUNE
         )
 
         validation_generator = self.validation_generator

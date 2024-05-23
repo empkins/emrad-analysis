@@ -1,11 +1,11 @@
 #!/bin/bash -l
 #
-#SBATCH --job-name=uNetConvFiveEpochs
+#SBATCH --job-name=uNetFourEpochsInterleave
 #SBATCH --nodes=1
-#SBATCH --time=10:00:00
+#SBATCH --time=9:00:00
 #SBATCH --gres=gpu:1
 
-cd "$HOME"/emrad-analysis || exit
+cd "$HOME"/otherVersion/emrad-analysis || exit
 
 module unload python
 module load python/3.10-anaconda
