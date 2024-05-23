@@ -331,7 +331,7 @@ class CNN(Algorithm):
                 if not phase_path.is_dir():
                     continue
                 input_path = phase_path / "inputs"
-                prediction_path = phase_path / "predictions_learning_enabled"
+                prediction_path = phase_path / "predictions_speedup"
                 prediction_path.mkdir(exist_ok=True)
                 input_files = sorted(input_path.glob("*.npy"))
                 if grouped:
@@ -404,7 +404,7 @@ class CNN(Algorithm):
                 tf.TensorSpec(shape=(self.batch_size, 1000), dtype=tf.float64),
             ),
         )
-        validation_dataset.batch(self.batch_size).repeat()
+        validation_dataset.batch(self.batch_size).repeat().prefetch(tf.data.AUTOTUNE)
 
         print("Getting steps per epoch")
         training_steps = self.get_steps_per_epoch(base_path, training_subjects)

@@ -44,30 +44,6 @@ class D02Dataset(Dataset):
         },  # hier kann es auch training_trial_end sein
     }
     EXCLUDE_SUBJECTS = (
-        "013",
-        "028",
-        "040",
-        "100",
-        "111",
-        "114",
-        "129",
-        "137",
-        "143",
-        "146",
-        "147",
-        "156",
-        "196",
-        "199",
-        "201",
-        "241",
-        "251",
-        "253",
-        "270",
-        "295",
-        "320",
-        "337",
-        "476",
-        "559",
         "115",
         "Radar_DB",
         "418",
@@ -157,8 +133,8 @@ class D02Dataset(Dataset):
         """
         participant_ids = [item.name for item in Path(self.data_path).iterdir() if item.is_dir()]
         # participant_ids = [pid for pid in participant_ids if pid not in self.EXCLUDE_SUBJECTS]
-        # participant_ids = [pid for pid in participant_ids if pid in self.INCLUSION]
-        participant_ids = [pid for pid in participant_ids if pid in self.INCLUDE_SUBJECTS]
+        participant_ids = [pid for pid in participant_ids if pid in self.INCLUSION]
+        # participant_ids = [pid for pid in participant_ids if pid in self.INCLUDE_SUBJECTS]
         # participant_ids = [pid for pid in participant_ids if pid in self.RECALCULATE]
 
         df = pd.DataFrame({"participant": participant_ids})

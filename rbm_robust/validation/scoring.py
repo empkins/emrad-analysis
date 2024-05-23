@@ -104,14 +104,12 @@ def cnnPipelineScoring(pipeline: CnnPipeline, dataset: D02Dataset, path: str = "
             continue
         print(f"subject {subject}")
         for phase in subject.iterdir():
-            if "ei" not in phase.name:
-                continue
             if not phase.is_dir():
                 continue
             if phase.name == "logs" or phase.name == "raw":
                 continue
             print(f"phase {phase}")
-            prediction_path = phase / "predictions_learning_enabled"
+            prediction_path = phase / "predictions_speedup"
             label_path = phase / "labels"
             prediction_files = sorted(path.name for path in prediction_path.iterdir() if path.is_file())
             f1RPeakScore = RPeakF1Score(max_deviation_ms=100)
