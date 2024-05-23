@@ -11,5 +11,6 @@ module unload python
 module load python/3.10-anaconda
 
 export OUTDATED_IGNORE=1
+export PATH="/home/hpc/iwso/iwso116h/.local/bin:$PATH"
 
 poetry run python main.py

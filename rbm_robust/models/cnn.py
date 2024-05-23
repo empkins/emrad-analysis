@@ -15,6 +15,50 @@ from itertools import groupby, zip_longest
 import tensorflow as tf
 
 
+def read_file(input_path, label_path):
+    # TODO: Throw Exception if it is not the correct label path for the input path
+    try:
+        input_file = np.load(input_path)
+        label_file = np.load(label_path)
+        return input_file, label_file
+    except Exception as e:
+        print(f"Exception: {e}")
+        return np.zeros((1000, 256, 5)), np.zeros((1000))
+
+
+def get_dataset(base_path, batch_size):
+    all_inputs_paths = tf.data.Dataset.list_files(str(base_path + "/*/*/inputs/*.npy"), shuffle=False)
+    all_labels_paths = tf.data.Dataset.list_files(str(base_path + "/*/*/labels/*.npy"), shuffle=False)
+    all_data = tf.data.Dataset.zip((all_inputs_paths, all_labels_paths))
+
+    all_data = (
+        all_data.map(
+            lambda input_path, label_path: tf.numpy_function(
+                read_file, [input_path, label_path], [tf.float64, tf.float64]
+            ),
+            num_parallel_calls=tf.data.AUTOTUNE,
+        )
+        .batch(batch_size, drop_remainder=True)
+        .repeat()
+        .prefetch(tf.data.AUTOTUNE)
+    )
+    return all_data
+
+
+def grouper(self, iterable, n):
+    iterators = [iter(iterable)] * n
+    return zip_longest(*iterators)
+
+
+def get_input(self, base_path, imfs):
+    if imfs is not None:
+        return np.transpose(np.stack([self._load_input(base_path / imf) for imf in imfs], axis=0))
+    elif not self.image_based and imfs is None:
+        return np.transpose(np.stack([np.zeros((256, 1000)) for _ in range(5)], axis=0))
+    elif self.image_based and imfs is None:
+        return np.transpose(np.stack([np.zeros((256, 1000, 3)) for _ in range(5)], axis=0))
+
+
 class CNN(Algorithm):
     _action_methods = "predict"
 
@@ -56,7 +100,7 @@ class CNN(Algorithm):
         bias_initializer: str = "zeros",
         learning_rate: float = 0.001,
         num_epochs: int = 2,
-        batch_size: int = 8,
+        batch_size: int = 16,
         _model=None,
         overlap: int = 0.8,
         image_based: bool = False,
@@ -134,8 +178,6 @@ class CNN(Algorithm):
             subject_path = base_path / subject_id
             phases = [path.name for path in subject_path.iterdir() if path.is_dir()]
             for phase in phases:
-                if "ei" not in phase:
-                    continue
                 if phase == "logs" or phase == "raw":
                     continue
                 phase_path = subject_path / phase
@@ -266,8 +308,6 @@ class CNN(Algorithm):
             if training_subjects is not None and subject_path.name not in training_subjects:
                 continue
             for phase_path in subject_path.iterdir():
-                if "ei" not in phase_path.name:
-                    continue
                 if not phase_path.is_dir():
                     continue
                 input_path = phase_path / "inputs"
@@ -321,31 +361,6 @@ class CNN(Algorithm):
                         np.save(prediction_path / input_file.name, pred)
         return self
 
-    def _identity_batch_generator(self, base_path, subjects: list = None):
-        for subject_id in subjects:
-            subject_path = base_path / subject_id
-            phases = [path.name for path in subject_path.iterdir() if path.is_dir()]
-            for phase in phases:
-                if phase == "logs" or phase == "raw":
-                    continue
-                phase_path = subject_path / phase
-                input_path = phase_path / "inputs"
-                label_path = phase_path / "labels"
-                if not input_path.exists() or not label_path.exists():
-                    continue
-                input_names = sorted(path.name for path in input_path.iterdir() if path.is_file())
-                input_names = list(filter(lambda x: "png" in x if self.image_based else "npy" in x, input_names))
-                groups = self.grouper(input_names, self.batch_size)
-                for group in groups:
-                    inputs = np.stack(
-                        [
-                            np.load(input_path / number) if number is not None else self.get_input(input_path, None)
-                            for number in group
-                        ],
-                        axis=0,
-                    )
-                    yield inputs, inputs
-
     def self_optimize(
         self,
         base_path: str = "/home/woody/iwso/iwso116h/Data",
@@ -369,14 +384,18 @@ class CNN(Algorithm):
 
         print("Before Generators")
         batch_generator = self.batch_generator
-        training_dataset = tf.data.Dataset.from_generator(
-            batch_generator,
-            output_signature=(
-                tf.TensorSpec(shape=(self.batch_size, 1000, 256, 5), dtype=tf.float64),
-                tf.TensorSpec(shape=(self.batch_size, 1000), dtype=tf.float64),
-            ),
+        training_dataset = (
+            tf.data.Dataset.from_generator(
+                batch_generator,
+                output_signature=(
+                    tf.TensorSpec(shape=(self.batch_size, 1000, 256, 5), dtype=tf.float64),
+                    tf.TensorSpec(shape=(self.batch_size, 1000), dtype=tf.float64),
+                ),
+            )
+            .prefetch(tf.data.AUTOTUNE)
+            .repeat()
         )
-        training_dataset.batch(self.batch_size).repeat()
+
         validation_generator = self.validation_generator
         validation_dataset = tf.data.Dataset.from_generator(
             validation_generator,

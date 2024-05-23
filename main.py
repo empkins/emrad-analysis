@@ -93,8 +93,6 @@ def _get_inputs_and_labels_for_subjects(base_path, subjects, batch_size=8, image
         subject_path = base_path / subject_id
         phases = [path.name for path in subject_path.iterdir() if path.is_dir()]
         for phase in phases:
-            if "ei" not in phase:
-                continue
             if phase == "logs" or phase == "raw":
                 continue
             phase_path = subject_path / phase
