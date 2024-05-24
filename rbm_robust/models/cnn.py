@@ -347,7 +347,7 @@ class CNN(Algorithm):
                             inputs = padded
                         pred = self._model.predict(inputs)
                         pred = pred.flatten()
-                        np.save(prediction_path / f"{key}.npy", pred)
+                        # np.save(prediction_path / f"{key}.npy", pred)
                 else:
                     for input_file in input_files:
                         inputs = np.load(input_file)
@@ -360,6 +360,65 @@ class CNN(Algorithm):
                         pred = pred.flatten()
                         np.save(prediction_path / input_file.name, pred)
         return self
+
+    @staticmethod
+    def _get_all_input_and_label_paths(base_path, subject_list):
+        base_path = Path(base_path)
+        input_paths = []
+        label_paths = []
+        for subject in subject_list:
+            subject_path = base_path / subject
+            for phase in subject_path.iterdir():
+                if not phase.is_dir():
+                    continue
+                input_path = phase / "inputs"
+                label_path = phase / "labels"
+                if not input_path.exists() or not label_path.exists():
+                    continue
+                input_files = sorted(input_path.glob("*.npy"))
+                label_files = sorted(label_path.glob("*.npy"))
+                label_filenames = set([label_file.name for label_file in label_files])
+                input_filenames = set([input_file.name for input_file in input_files])
+                filename_intersection = label_filenames.intersection(input_filenames)
+                input_files = [
+                    str(input_file) for input_file in input_files if input_file.name in filename_intersection
+                ]
+                label_files = [
+                    str(label_file) for label_file in label_files if label_file.name in filename_intersection
+                ]
+                input_paths += input_files
+                label_paths += label_files
+        # Sanity Check
+        all_paths = list(zip(input_paths, label_paths))
+        for input_path, label_path in all_paths:
+            modified_input_path = input_path.replace("inputs", "labels")
+            assert modified_input_path == label_path
+        return input_paths, label_paths
+
+    def _get_training_dataset(self):
+        input_paths, label_paths = self._get_all_input_and_label_paths(self.base_path, self.training_subjects)
+        dataset = self._get_dataset(input_paths, label_paths)
+        return dataset
+
+    def _get_validation_dataset(self):
+        input_paths, label_paths = self._get_all_input_and_label_paths(self.base_path, self.validation_subjects)
+        dataset = self._get_dataset(input_paths, label_paths)
+        return dataset
+
+    def _get_dataset(self, input_paths, label_paths):
+        dataset = tf.data.Dataset.from_tensor_slices((input_paths, label_paths))
+        dataset = (
+            dataset.map(
+                lambda input_path, label_path: tf.numpy_function(
+                    read_file, [input_path, label_path], [tf.float64, tf.float64]
+                ),
+                num_parallel_calls=tf.data.AUTOTUNE,
+            )
+            .batch(self.batch_size, drop_remainder=True)
+            .prefetch(tf.data.AUTOTUNE)
+            .repeat()
+        )
+        return dataset
 
     def get_training_dataset(self):
         batch_generator = self.batch_generator
@@ -375,6 +434,22 @@ class CNN(Algorithm):
             .repeat()
         )
         return training_dataset
+
+    def get_validation_dataset(self):
+        validation_generator = self.validation_generator
+        validation_dataset = (
+            tf.data.Dataset.from_generator(
+                validation_generator,
+                output_signature=(
+                    tf.TensorSpec(shape=(self.batch_size, 1000, 256, 5), dtype=tf.float64),
+                    tf.TensorSpec(shape=(self.batch_size, 1000), dtype=tf.float64),
+                ),
+            )
+            .batch(self.batch_size)
+            .repeat()
+            .prefetch(tf.data.AUTOTUNE)
+        )
+        return validation_dataset
 
     def self_optimize(
         self,
@@ -397,33 +472,23 @@ class CNN(Algorithm):
         if not os.path.exists(log_dir):
             os.makedirs(log_dir)
 
+        # tensorboard_callback = keras.callbacks.TensorBoard(
+        #     log_dir=log_dir, profile_batch=8, write_graph=False, update_freq="batch"
+        # )
+
         print("Before Generators")
-        batch_generator = self.batch_generator
-        training_dataset = (
-            tf.data.Dataset.from_generator(
-                batch_generator,
-                output_signature=(
-                    tf.TensorSpec(shape=(self.batch_size, 1000, 256, 5), dtype=tf.float64),
-                    tf.TensorSpec(shape=(self.batch_size, 1000), dtype=tf.float64),
-                ),
-            )
-            .prefetch(tf.data.AUTOTUNE)
-            .repeat()
-        )
-
+        # training_dataset = tf.data.Dataset.range(2).interleave(
+        #     lambda _: self.get_training_dataset(), num_parallel_calls=tf.data.AUTOTUNE
+        # )
+        # validation_dataset = tf.data.Dataset.range(2).interleave(
+        #     lambda _: self.get_validation_dataset(), num_parallel_calls=tf.data.AUTOTUNE
+        # )
         training_dataset = tf.data.Dataset.range(2).interleave(
-            lambda _: self.get_training_dataset(), num_parallel_calls=tf.data.AUTOTUNE
+            lambda _: self._get_training_dataset(), num_parallel_calls=tf.data.AUTOTUNE
         )
-
-        validation_generator = self.validation_generator
-        validation_dataset = tf.data.Dataset.from_generator(
-            validation_generator,
-            output_signature=(
-                tf.TensorSpec(shape=(self.batch_size, 1000, 256, 5), dtype=tf.float64),
-                tf.TensorSpec(shape=(self.batch_size, 1000), dtype=tf.float64),
-            ),
+        validation_dataset = tf.data.Dataset.range(2).interleave(
+            lambda _: self._get_validation_dataset(), num_parallel_calls=tf.data.AUTOTUNE
         )
-        validation_dataset.batch(self.batch_size).repeat().prefetch(tf.data.AUTOTUNE)
 
         print("Getting steps per epoch")
         training_steps = self.get_steps_per_epoch(base_path, training_subjects)
@@ -440,7 +505,9 @@ class CNN(Algorithm):
             validation_data=validation_dataset,
             validation_steps=validation_steps,
             verbose=1,
+            # callbacks=[tensorboard_callback],
         )
+
         return self
 
     def _image_model(self):
