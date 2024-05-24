@@ -1,6 +1,6 @@
 #!/bin/bash -l
 #
-#SBATCH --job-name=uNetFourEpochsInterleave
+#SBATCH --job-name=uNetEightEpochs
 #SBATCH --nodes=1
 #SBATCH --time=9:00:00
 #SBATCH --gres=gpu:1

@@ -16,7 +16,6 @@ import tensorflow as tf
 
 
 def read_file(input_path, label_path):
-    # TODO: Throw Exception if it is not the correct label path for the input path
     try:
         input_file = np.load(input_path)
         label_file = np.load(label_path)
@@ -24,39 +23,6 @@ def read_file(input_path, label_path):
     except Exception as e:
         print(f"Exception: {e}")
         return np.zeros((1000, 256, 5)), np.zeros((1000))
-
-
-def get_dataset(base_path, batch_size):
-    all_inputs_paths = tf.data.Dataset.list_files(str(base_path + "/*/*/inputs/*.npy"), shuffle=False)
-    all_labels_paths = tf.data.Dataset.list_files(str(base_path + "/*/*/labels/*.npy"), shuffle=False)
-    all_data = tf.data.Dataset.zip((all_inputs_paths, all_labels_paths))
-
-    all_data = (
-        all_data.map(
-            lambda input_path, label_path: tf.numpy_function(
-                read_file, [input_path, label_path], [tf.float64, tf.float64]
-            ),
-            num_parallel_calls=tf.data.AUTOTUNE,
-        )
-        .batch(batch_size, drop_remainder=True)
-        .repeat()
-        .prefetch(tf.data.AUTOTUNE)
-    )
-    return all_data
-
-
-def grouper(self, iterable, n):
-    iterators = [iter(iterable)] * n
-    return zip_longest(*iterators)
-
-
-def get_input(self, base_path, imfs):
-    if imfs is not None:
-        return np.transpose(np.stack([self._load_input(base_path / imf) for imf in imfs], axis=0))
-    elif not self.image_based and imfs is None:
-        return np.transpose(np.stack([np.zeros((256, 1000)) for _ in range(5)], axis=0))
-    elif self.image_based and imfs is None:
-        return np.transpose(np.stack([np.zeros((256, 1000, 3)) for _ in range(5)], axis=0))
 
 
 class CNN(Algorithm):
@@ -99,7 +65,7 @@ class CNN(Algorithm):
         kernel_initializer: str = "he_normal",
         bias_initializer: str = "zeros",
         learning_rate: float = 0.001,
-        num_epochs: int = 2,
+        num_epochs: int = 8,
         batch_size: int = 16,
         _model=None,
         overlap: int = 0.8,
@@ -331,7 +297,7 @@ class CNN(Algorithm):
                 if not phase_path.is_dir():
                     continue
                 input_path = phase_path / "inputs"
-                prediction_path = phase_path / "predictions_speedupInterleave"
+                prediction_path = phase_path / "predictions_eightEpochs"
                 prediction_path.mkdir(exist_ok=True)
                 input_files = sorted(input_path.glob("*.npy"))
                 if grouped:
@@ -477,12 +443,6 @@ class CNN(Algorithm):
         # )
 
         print("Before Generators")
-        # training_dataset = tf.data.Dataset.range(2).interleave(
-        #     lambda _: self.get_training_dataset(), num_parallel_calls=tf.data.AUTOTUNE
-        # )
-        # validation_dataset = tf.data.Dataset.range(2).interleave(
-        #     lambda _: self.get_validation_dataset(), num_parallel_calls=tf.data.AUTOTUNE
-        # )
         training_dataset = tf.data.Dataset.range(2).interleave(
             lambda _: self._get_training_dataset(), num_parallel_calls=tf.data.AUTOTUNE
         )

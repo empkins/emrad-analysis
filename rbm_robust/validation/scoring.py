@@ -109,7 +109,7 @@ def cnnPipelineScoring(pipeline: CnnPipeline, dataset: D02Dataset, path: str = "
             if phase.name == "logs" or phase.name == "raw":
                 continue
             print(f"phase {phase}")
-            prediction_path = phase / "predictions_speedupInterleave"
+            prediction_path = phase / "predictions_eightEpochs"
             label_path = phase / "labels"
             prediction_files = sorted(path.name for path in prediction_path.iterdir() if path.is_file())
             f1RPeakScore = RPeakF1Score(max_deviation_ms=100)
@@ -123,6 +123,16 @@ def cnnPipelineScoring(pipeline: CnnPipeline, dataset: D02Dataset, path: str = "
 
     # Save the Model
     pipeline.cnn.save_model()
+
+    if total_pred_peaks == 0:
+        print("No Peaks detected")
+        return {
+            "abs_hr_error": 0,
+            "mean_instantaneous_error": 0,
+            "f1_score": 0,
+            "mean_relative_error_hr": 0,
+            "mean_absolute_error": 0,
+        }
 
     precision = true_positives / total_pred_peaks
     recall = true_positives / total_gt_peaks
