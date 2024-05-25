@@ -1,3 +1,4 @@
+import os
 from datetime import datetime
 
 import numpy as np
@@ -109,7 +110,10 @@ def cnnPipelineScoring(pipeline: CnnPipeline, dataset: D02Dataset, path: str = "
             if phase.name == "logs" or phase.name == "raw":
                 continue
             print(f"phase {phase}")
-            prediction_path = phase / "predictions_eightEpochs"
+            work_path = os.environ.get("WORK")
+            tmp_dir = os.environ.get("TMPDIR")
+            prediction_path = phase / "predictions_refactoring_test"
+            prediction_path = pathlib.Path(str(prediction_path).replace(tmp_dir, work_path))
             label_path = phase / "labels"
             prediction_files = sorted(path.name for path in prediction_path.iterdir() if path.is_file())
             f1RPeakScore = RPeakF1Score(max_deviation_ms=100)

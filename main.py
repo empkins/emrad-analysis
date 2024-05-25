@@ -21,7 +21,7 @@ def main():
     # tf.config.experimental.set_memory_growth(devices[0], True)
     # path = os.environ.get("DATA_PATH")
     # path = "/Users/simonmeske/Desktop/TestOrdner/data_per_subject"
-    path = os.getenv("WORK") + "/Data"
+    path = os.getenv("TMPDIR") + "/Data"
     print(path)
     # dataset_path = Path(path)
     dataset = D02Dataset(path)
