@@ -163,27 +163,16 @@ class CNN(Algorithm):
         else:
             self._image_model()
 
-        log_dir = "Runs/logs/fit/"
-        log_dir += datetime.now().strftime("%Y%m%d-%H%M%S")
+        log_dir = os.getenv("WORK") + "/Runs/logs/fit/"
+        time = datetime.now().strftime("%Y%m%d-%H%M%S")
+        log_dir += time
         if not os.path.exists(log_dir):
             os.makedirs(log_dir)
 
-        # tensorboard_callback = keras.callbacks.TensorBoard(
-        #     log_dir=log_dir, profile_batch=8, write_graph=False, update_freq="batch"
-        # )
-
-        dataset_factory = DatasetFactory()
+        tensorboard_callback = keras.callbacks.TensorBoard(log_dir=log_dir, write_graph=False, update_freq="epoch")
 
         print("Before Generators")
-        # training_dataset = tf.data.Dataset.range(2).interleave(
-        #     lambda _: dataset_factory.get_dataset_for_subjects(base_path, training_subjects),
-        #     num_parallel_calls=tf.data.AUTOTUNE,
-        # )
-        # validation_dataset = tf.data.Dataset.range(2).interleave(
-        #     lambda _: dataset_factory.get_dataset_for_subjects(base_path, validation_subjects),
-        #     num_parallel_calls=tf.data.AUTOTUNE,
-        # )
-
+        dataset_factory = DatasetFactory()
         training_dataset = dataset_factory.get_dataset_for_subjects(base_path, training_subjects)
         validation_dataset = dataset_factory.get_dataset_for_subjects(base_path, validation_subjects)
 
@@ -193,7 +182,7 @@ class CNN(Algorithm):
         print("Got the step count")
 
         print("Fitting")
-        self._model.fit(
+        history = self._model.fit(
             training_dataset,
             epochs=self.num_epochs,
             steps_per_epoch=training_steps,
@@ -202,8 +191,14 @@ class CNN(Algorithm):
             validation_data=validation_dataset,
             validation_steps=validation_steps,
             verbose=1,
-            # callbacks=[tensorboard_callback],
+            callbacks=[tensorboard_callback],
         )
+
+        history_path = os.getenv("WORK") + "/Runs/History/"
+        if not os.path.exists(history_path):
+            os.makedirs(history_path)
+        history_path += time + "_history.pkl"
+        pickle.dump(history.history, open(history_path, "wb"))
 
         return self
 
