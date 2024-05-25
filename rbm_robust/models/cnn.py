@@ -175,14 +175,17 @@ class CNN(Algorithm):
         dataset_factory = DatasetFactory()
 
         print("Before Generators")
-        training_dataset = tf.data.Dataset.range(2).interleave(
-            lambda _: dataset_factory.get_dataset_for_subjects(base_path, training_subjects),
-            num_parallel_calls=tf.data.AUTOTUNE,
-        )
-        validation_dataset = tf.data.Dataset.range(2).interleave(
-            lambda _: dataset_factory.get_dataset_for_subjects(base_path, validation_subjects),
-            num_parallel_calls=tf.data.AUTOTUNE,
-        )
+        # training_dataset = tf.data.Dataset.range(2).interleave(
+        #     lambda _: dataset_factory.get_dataset_for_subjects(base_path, training_subjects),
+        #     num_parallel_calls=tf.data.AUTOTUNE,
+        # )
+        # validation_dataset = tf.data.Dataset.range(2).interleave(
+        #     lambda _: dataset_factory.get_dataset_for_subjects(base_path, validation_subjects),
+        #     num_parallel_calls=tf.data.AUTOTUNE,
+        # )
+
+        training_dataset = dataset_factory.get_dataset_for_subjects(base_path, training_subjects)
+        validation_dataset = dataset_factory.get_dataset_for_subjects(base_path, validation_subjects)
 
         print("Getting steps per epoch")
         training_steps = self.get_steps_per_epoch(base_path, training_subjects)
