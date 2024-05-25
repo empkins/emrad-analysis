@@ -1,8 +1,8 @@
 #!/bin/bash -l
 #
-#SBATCH --job-name=uNetEightEpochs
+#SBATCH --job-name=uNetFiftyEpochs
 #SBATCH --nodes=1
-#SBATCH --time=9:00:00
+#SBATCH --time=8:00:00
 #SBATCH --gres=gpu:1
 
 cd "$HOME"/otherVersion/emrad-analysis || exit

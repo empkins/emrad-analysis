@@ -53,7 +53,7 @@ class CNN(Algorithm):
         kernel_initializer: str = "he_normal",
         bias_initializer: str = "zeros",
         learning_rate: float = 0.001,
-        num_epochs: int = 1,
+        num_epochs: int = 50,
         batch_size: int = 16,
         _model=None,
         overlap: int = 0.8,
@@ -118,7 +118,7 @@ class CNN(Algorithm):
                 tmp_dir = os.environ.get("TMPDIR")
                 prediction_path = phase_path
                 prediction_path = Path(str(prediction_path).replace(tmp_dir, work_path))
-                prediction_path = Path(str(prediction_path).replace("Data", "Predictions/predictions_refactoring_test"))
+                prediction_path = Path(str(prediction_path).replace("Data", "Predictions/predictions_fifty_epochs"))
                 prediction_path.mkdir(parents=True, exist_ok=True)
                 input_files = sorted(input_path.glob("*.npy"))
                 if grouped:
