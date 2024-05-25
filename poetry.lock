@@ -1207,6 +1207,20 @@ files = [
 protobuf = ["grpcio-tools (>=1.62.2)"]
 
 [[package]]
+name = "gviz-api"
+version = "1.10.0"
+description = "Python API for Google Visualization"
+optional = false
+python-versions = "*"
+files = [
+    {file = "gviz_api-1.10.0-py2.py3-none-any.whl", hash = "sha256:a05055fed8c279f34f4b496eace7648c7fe9c1b06851e8a36e748541f1adbb05"},
+    {file = "gviz_api-1.10.0.tar.gz", hash = "sha256:846692dd8cc73224fc31b18e41589bd934e1cc05090c6576af4b4b26c2e71b90"},
+]
+
+[package.dependencies]
+six = "*"
+
+[[package]]
 name = "h11"
 version = "0.14.0"
 description = "A pure-Python, bring-your-own-I/O implementation of HTTP/1.1"
@@ -4173,6 +4187,24 @@ files = [
 ]
 
 [[package]]
+name = "tensorboard-plugin-profile"
+version = "2.15.1"
+description = "Profile Tensorboard Plugin"
+optional = false
+python-versions = ">= 2.7, != 3.0.*, != 3.1.*"
+files = [
+    {file = "tensorboard_plugin_profile-2.15.1-py3-none-any.whl", hash = "sha256:93231c3330d19c0647279eb296b7a1f20ea70dfd366a9fe837b016aa2cc4190c"},
+    {file = "tensorboard_plugin_profile-2.15.1.tar.gz", hash = "sha256:84bb33e446eb4a9c0616f669fc6a42cdd40eadd9ae1d74bf756f4f0479993273"},
+]
+
+[package.dependencies]
+gviz-api = ">=1.9.0"
+protobuf = ">=3.19.6,<5.0.0dev"
+setuptools = ">=41.0.0"
+six = ">=1.10.0"
+werkzeug = ">=0.11.15"
+
+[[package]]
 name = "tensorflow"
 version = "2.15.0"
 description = "TensorFlow is an open source machine learning framework for everyone."
@@ -4743,4 +4775,4 @@ testing = ["big-O", "jaraco.functools", "jaraco.itertools", "more-itertools", "p
 [metadata]
 lock-version = "2.0"
 python-versions = ">=3.9,<3.11"
-content-hash = "b8d4403853e824696fe6afba6937b47eee75e445f862c7c3c047e42746882f20"
+content-hash = "2ca60167c2154e517064e3af247106c97cb8c51d826adb5eec20017a810ed73a"

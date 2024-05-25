@@ -116,10 +116,10 @@ class CNN(Algorithm):
                 input_path = phase_path / "inputs"
                 work_path = os.environ.get("WORK")
                 tmp_dir = os.environ.get("TMPDIR")
-                prediction_path = phase_path / "predictions_refactoring_test"
+                prediction_path = phase_path
                 prediction_path = Path(str(prediction_path).replace(tmp_dir, work_path))
-                prediction_path = Path(str(prediction_path).replace("Data", "Predictions"))
-                prediction_path.mkdir(exist_ok=True)
+                prediction_path = Path(str(prediction_path).replace("Data", "Predictions/predictions_refactoring_test"))
+                prediction_path.mkdir(parents=True, exist_ok=True)
                 input_files = sorted(input_path.glob("*.npy"))
                 if grouped:
                     grouped_inputs = {k: list(g) for k, g in groupby(input_files, key=lambda s: s.stem.split("_")[0])}

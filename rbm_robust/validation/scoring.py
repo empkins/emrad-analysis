@@ -112,9 +112,11 @@ def cnnPipelineScoring(pipeline: CnnPipeline, dataset: D02Dataset, path: str = "
             print(f"phase {phase}")
             work_path = os.environ.get("WORK")
             tmp_dir = os.environ.get("TMPDIR")
-            prediction_path = phase / "predictions_refactoring_test"
+            prediction_path = phase
             prediction_path = pathlib.Path(str(prediction_path).replace(tmp_dir, work_path))
-            prediction_path = pathlib.Path(str(prediction_path).replace("Data", "Predictions"))
+            prediction_path = pathlib.Path(
+                str(prediction_path).replace("Data", "Predictions/predictions_refactoring_test")
+            )
             label_path = phase / "labels"
             prediction_files = sorted(path.name for path in prediction_path.iterdir() if path.is_file())
             f1RPeakScore = RPeakF1Score(max_deviation_ms=100)
