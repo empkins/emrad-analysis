@@ -53,7 +53,7 @@ class CNN(Algorithm):
         kernel_initializer: str = "he_normal",
         bias_initializer: str = "zeros",
         learning_rate: float = 0.001,
-        num_epochs: int = 30,
+        num_epochs: int = 1,
         batch_size: int = 16,
         _model=None,
         overlap: int = 0.8,
