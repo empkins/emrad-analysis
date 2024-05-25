@@ -48,6 +48,7 @@ class RPeakF1Score(Algorithm):
             self.total_peaks_ = 0
             self.pred_peaks_ = 0
             return self
+        print(f"Length of pred_peaks array (in F1 scoring function) is {len(pred_peaks)}")
 
         while next_gt < len(gt_peaks):
             current_distance = abs(gt_peaks[next_gt] - pred_peaks[next_pred])
