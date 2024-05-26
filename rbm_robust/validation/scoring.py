@@ -66,7 +66,7 @@ def cnnPipelineScoring(
     pipeline: CnnPipeline,
     dataset: D02Dataset,
     training_and_validation_path: str = "/home/woody/iwso/iwso116h/Data",
-    testing_path: str = "/home/woody/iwso/iwso116h/TestingData",
+    testing_path: str = "/home/woody/iwso/iwso116h/TestData",
 ):
     pipeline = pipeline.clone()
 
@@ -84,6 +84,10 @@ def cnnPipelineScoring(
     training_dataset = dataset.get_subset(participant=train_data)
     validation_dataset = dataset.get_subset(participant=validation_data)
     testing_dataset = dataset.get_subset(participant=testing_subjects)
+
+    print(f"Training Subjects: {training_dataset.subjects}")
+    print(f"Validation Subjects: {validation_dataset.subjects}")
+    print(f"Testing Subjects: {testing_dataset.subjects}")
 
     time_stamps["Start"] = datetime.now().isoformat(sep="-", timespec="seconds")
     print("Start Training")
@@ -113,11 +117,10 @@ def cnnPipelineScoring(
             if phase.name == "logs" or phase.name == "raw":
                 continue
             print(f"phase {phase}")
-            work_path = os.environ.get("WORK")
-            tmp_dir = os.environ.get("TMPDIR")
             prediction_path = phase
-            prediction_path = pathlib.Path(str(prediction_path).replace(tmp_dir, work_path))
-            prediction_path = pathlib.Path(str(prediction_path).replace("Data", "Predictions/predictions_fifty_epochs"))
+            prediction_path = Path(
+                str(prediction_path).replace("TestData", "Predictions/predictions_complete_dataset_fifty_epochs")
+            )
             label_path = phase / "labels"
             prediction_files = sorted(path.name for path in prediction_path.iterdir() if path.is_file())
             f1RPeakScore = RPeakF1Score(max_deviation_ms=100)

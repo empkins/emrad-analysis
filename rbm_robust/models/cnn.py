@@ -104,13 +104,11 @@ class CNN(Algorithm):
 
     def predict(
         self,
-        data_path: str = "/home/woody/iwso/iwso116h/TestingData",
+        data_path: str = "/home/woody/iwso/iwso116h/TestData",
         testing_subjects: list = None,
         grouped: bool = False,
     ):
         print("Prediction started")
-        work_path = os.environ.get("WORK")
-        tmp_dir = os.environ.get("TMPDIR")
         data_path = Path(data_path)
         subjects = [path.name for path in data_path.iterdir() if path.is_dir()]
         if testing_subjects is not None:
@@ -123,7 +121,7 @@ class CNN(Algorithm):
                 input_path = phase_path / "inputs"
                 prediction_path = phase_path
                 prediction_path = Path(
-                    str(prediction_path).replace("TestingData", "Predictions/predictions_fifty_epochs")
+                    str(prediction_path).replace("TestData", "Predictions/predictions_complete_dataset_fifty_epochs")
                 )
                 prediction_path.mkdir(parents=True, exist_ok=True)
                 input_files = sorted(input_path.glob("*.npy"))

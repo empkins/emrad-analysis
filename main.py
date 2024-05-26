@@ -69,158 +69,26 @@ def check_for_empty_arrays():
                     print(f"Empty array in {label_file} at {label_path}")
 
 
-def input_loading():
-    base_path = "/Users/simonmeske/Desktop/TestOrdner/data_per_subject"
-    dataset = D02Dataset(base_path)
-    subjects = dataset.subjects
-    while True:
-        batch_generator(base_path, subjects)
-
-
-def batch_generator(base_path, training_subjects):
-    base_path = Path(base_path)
-    subjects = [path.name for path in base_path.iterdir() if path.is_dir()]
-    if training_subjects is not None:
-        subjects = [subject for subject in subjects if subject in training_subjects]
-    while True:
-        _get_inputs_and_labels_for_subjects(base_path, subjects)
-
-
-def _get_inputs_and_labels_for_subjects(base_path, subjects, batch_size=8, image_based=False):
-    for subject_id in subjects:
-        print(f"Subject: {subject_id}")
-        subject_path = base_path / subject_id
-        phases = [path.name for path in subject_path.iterdir() if path.is_dir()]
-        for phase in phases:
-            if phase == "logs" or phase == "raw":
-                continue
-            phase_path = subject_path / phase
-            input_path = phase_path / "inputs"
-            label_path = phase_path / "labels"
-            if not input_path.exists() or not label_path.exists():
-                continue
-            input_names = sorted(path.name for path in input_path.iterdir() if path.is_file())
-            input_names = list(filter(lambda x: "png" in x if image_based else "npy" in x, input_names))
-            groups = grouper(input_names, batch_size)
-            for group in groups:
-                inputs = np.stack(
-                    [
-                        np.load(input_path / number) if number is not None else get_input(input_path, None)
-                        for number in group
-                    ],
-                    axis=0,
-                )
-                inputs = inputs[:, 50:950, :, :]
-                labels = np.stack(
-                    [
-                        np.load(label_path / number) if number is not None else get_labels(input_path, None)
-                        for number in group
-                    ],
-                    axis=0,
-                )
-                labels = labels[:, 50:950]
-                if inputs.shape != (8, 900, 256, 5):
-                    print(f"Inputs shape: {inputs.shape}")
-                if labels.shape != (8, 900):
-                    print(f"Labels shape: {labels.shape}")
-
-
-def _reduce_input_array(array):
-    arr = array[50:950, :, :]
-    return arr
-
-
-def _reduce_label_array(array):
-    arr = array[50:950]
-    return arr
-
-
-def grouper(iterable, n):
-    iterators = [iter(iterable)] * n
-    return zip_longest(*iterators)
-
-
-def get_input(base_path, imfs, image_based=False):
-    if imfs is not None:
-        return np.transpose(np.stack([_load_input(base_path / imf) for imf in imfs], axis=0))
-    elif not image_based and imfs is None:
-        return np.transpose(np.stack([np.zeros((256, 1000)) for _ in range(5)], axis=0))
-    elif image_based and imfs is None:
-        return np.transpose(np.stack([np.zeros((256, 1000, 3)) for _ in range(5)], axis=0))
-
-
-def get_labels(base_path, number):
-    if number is not None and "." not in number:
-        return np.load(base_path / f"{number}.npy")
-    elif number is not None and ".npy" in number:
-        return np.load(base_path / f"{number}")
-    else:
-        return np.zeros((1000))
-
-
-def _load_input(path, image_based=False):
-    if path.suffix == ".npy" and not image_based:
-        try:
-            arr = _pad_array(np.load(path))
-        except Exception as e:
-            print(f"Exception: {e}")
-            arr = np.zeros((256, 1000))
-    return arr
-
-
-def _pad_array(array):
-    if array.shape != (256, 1000):
-        padded = np.zeros((256, 1000))
-        padded[: array.shape[0], : array.shape[1]] = array
-        arr = padded
-    return arr
-
-
-def _get_all_input_and_label_paths():
-    base_path = os.getenv("WORK") + "/Data"
-    subject_list = [path.name for path in base_path.iterdir() if path.is_dir()]
-    base_path = Path(base_path)
-    input_paths = []
-    label_paths = []
-    for subject in subject_list:
-        subject_path = base_path / subject
-        for phase in subject_path.iterdir():
-            if not phase.is_dir():
-                continue
-            input_path = phase / "inputs"
-            label_path = phase / "labels"
-            if not input_path.exists() or not label_path.exists():
-                continue
-            input_files = sorted(input_path.glob("*.npy"))
-            label_files = sorted(label_path.glob("*.npy"))
-            label_filenames = set([label_file.name for label_file in label_files])
-            input_filenames = set([input_file.name for input_file in input_files])
-            filename_intersection = label_filenames.intersection(input_filenames)
-            input_files = [str(input_file) for input_file in input_files if input_file.name in filename_intersection]
-            label_files = [str(label_file) for label_file in label_files if label_file.name in filename_intersection]
-            input_paths += input_files
-            label_paths += label_files
-    # Sanity Check
-    all_paths = list(zip(input_paths, label_paths))
-    for input_path, label_path in all_paths:
-        modified_input_path = input_path.replace("inputs", "labels")
-        if modified_input_path != label_path:
-            raise ValueError(f"Input path: {input_path} does not match label path: {label_path}")
-        if not Path(input_path).exists():
-            raise FileNotFoundError(f"Input path: {input_path} does not exist")
-        if not Path(label_path).exists():
-            raise FileNotFoundError(f"Label path: {label_path} does not exist")
-    print("All paths are valid")
-
-
-def sanity_check():
-    _get_all_input_and_label_paths()
-
-
 def identity_check():
     # path_to_data = "/Users/simonmeske/Desktop/TestOrdner/data_per_subject"
     path_to_data = os.getenv("TMPDIR") + "/Data"
     identityScoring(D02Dataset(path_to_data), path_to_data)
+
+
+def check_testing_and_training_paths():
+    training_path = "/home/woody/iwso/iwso116h/Data"
+    testing_path = "/home/woody/iwso/iwso116h/TestData"
+    training_path = pathlib.Path(training_path)
+    testing_path = pathlib.Path(testing_path)
+    training_subjects = [path.name for path in training_path.iterdir() if path.is_dir()]
+    testing_subjects = [path.name for path in testing_path.iterdir() if path.is_dir()]
+    print(f"Training subjects: {training_subjects}")
+    print(f"Testing subjects: {testing_subjects}")
+    phase_path = Path("/home/woody/iwso/iwso116h/TestData/004/ei_1")
+    prediction_path = phase_path
+    prediction_path = Path(
+        str(prediction_path).replace("TestData", "Predictions/predictions_complete_dataset_fifty_epochs")
+    )
 
 
 if __name__ == "__main__":
@@ -229,7 +97,8 @@ if __name__ == "__main__":
     # input_loading()
     # main()
     # preprocessing()
-    sanity_check()
+    # sanity_check()
+    check_testing_and_training_paths()
     # identity_check()
     # dataset_path = Path("/Users/simonmeske/Desktop/TestOrdner/data_per_subject")
     # dataset = D02Dataset(dataset_path)
