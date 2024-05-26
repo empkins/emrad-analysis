@@ -89,6 +89,7 @@ def check_testing_and_training_paths():
     prediction_path = Path(
         str(prediction_path).replace("TestData", "Predictions/predictions_complete_dataset_fifty_epochs")
     )
+    print(prediction_path)
 
 
 if __name__ == "__main__":
