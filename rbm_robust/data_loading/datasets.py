@@ -132,8 +132,9 @@ class D02Dataset(Dataset):
         :return: DataFrame containing the index.
         """
         participant_ids = [item.name for item in Path(self.data_path).iterdir() if item.is_dir()]
-        # participant_ids = [pid for pid in participant_ids if pid not in self.EXCLUDE_SUBJECTS]
-        participant_ids = [pid for pid in participant_ids if pid in self.INCLUSION]
+        participant_ids = [pid for pid in participant_ids if pid not in self.EXCLUDE_SUBJECTS]
+        participant_ids = [pid for pid in participant_ids if pid not in self.INCLUSION]
+        # participant_ids = [pid for pid in participant_ids if pid in self.INCLUSION]
         # participant_ids = [pid for pid in participant_ids if pid in self.INCLUDE_SUBJECTS]
         # participant_ids = [pid for pid in participant_ids if pid in self.RECALCULATE]
 
