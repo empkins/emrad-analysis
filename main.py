@@ -176,6 +176,47 @@ def _pad_array(array):
     return arr
 
 
+def _get_all_input_and_label_paths():
+    base_path = os.getenv("WORK") + "/Data"
+    subject_list = [path.name for path in base_path.iterdir() if path.is_dir()]
+    base_path = Path(base_path)
+    input_paths = []
+    label_paths = []
+    for subject in subject_list:
+        subject_path = base_path / subject
+        for phase in subject_path.iterdir():
+            if not phase.is_dir():
+                continue
+            input_path = phase / "inputs"
+            label_path = phase / "labels"
+            if not input_path.exists() or not label_path.exists():
+                continue
+            input_files = sorted(input_path.glob("*.npy"))
+            label_files = sorted(label_path.glob("*.npy"))
+            label_filenames = set([label_file.name for label_file in label_files])
+            input_filenames = set([input_file.name for input_file in input_files])
+            filename_intersection = label_filenames.intersection(input_filenames)
+            input_files = [str(input_file) for input_file in input_files if input_file.name in filename_intersection]
+            label_files = [str(label_file) for label_file in label_files if label_file.name in filename_intersection]
+            input_paths += input_files
+            label_paths += label_files
+    # Sanity Check
+    all_paths = list(zip(input_paths, label_paths))
+    for input_path, label_path in all_paths:
+        modified_input_path = input_path.replace("inputs", "labels")
+        if modified_input_path != label_path:
+            raise ValueError(f"Input path: {input_path} does not match label path: {label_path}")
+        if not Path(input_path).exists():
+            raise FileNotFoundError(f"Input path: {input_path} does not exist")
+        if not Path(label_path).exists():
+            raise FileNotFoundError(f"Label path: {label_path} does not exist")
+    print("All paths are valid")
+
+
+def sanity_check():
+    _get_all_input_and_label_paths()
+
+
 def identity_check():
     # path_to_data = "/Users/simonmeske/Desktop/TestOrdner/data_per_subject"
     path_to_data = os.getenv("TMPDIR") + "/Data"
@@ -187,7 +228,8 @@ if __name__ == "__main__":
     # tf.config.experimental.set_memory_growth(devices[0], True)
     # input_loading()
     # main()
-    preprocessing()
+    # preprocessing()
+    sanity_check()
     # identity_check()
     # dataset_path = Path("/Users/simonmeske/Desktop/TestOrdner/data_per_subject")
     # dataset = D02Dataset(dataset_path)
