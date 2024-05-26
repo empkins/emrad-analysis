@@ -75,7 +75,7 @@ def cnnPipelineScoring(
     possible_subjects = [path.name for path in data_path.iterdir() if path.is_dir()]
     testing_subjects = [path.name for path in pathlib.Path(testing_path).iterdir() if path.is_dir()]
 
-    # dataset = dataset.get_subset(participant=possible_subjects)
+    dataset = dataset.get_subset(participant=possible_subjects)
     # Split Data
     # To always get the same subjects
     subjects = dataset.subjects
