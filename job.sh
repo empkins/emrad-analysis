@@ -2,7 +2,7 @@
 #
 #SBATCH --job-name=uNetCompleteDatasetFiftyEpochs
 #SBATCH --nodes=1
-#SBATCH --time=8:00:00
+#SBATCH --time=15:30:00
 #SBATCH --gres=gpu:1
 
 cd "$HOME"/emrad-analysis || exit
