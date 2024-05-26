@@ -94,7 +94,7 @@ class CNN(Algorithm):
                 if not phase_path.is_dir():
                     continue
                 input_path = phase_path / "inputs"
-                label_path = phase_path / "labels"
+                label_path = phase_path / "labels_gaussian"
                 if not input_path.exists() or not label_path.exists():
                     continue
                 input_names = sorted(path.name for path in input_path.iterdir() if path.is_file())

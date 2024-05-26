@@ -46,7 +46,7 @@ class DatasetFactory:
                 if not phase.is_dir():
                     continue
                 input_path = phase / "inputs"
-                label_path = phase / "labels"
+                label_path = phase / "labels_gaussian"
                 if not input_path.exists() or not label_path.exists():
                     continue
                 input_files = sorted(input_path.glob("*.npy"))
@@ -65,7 +65,7 @@ class DatasetFactory:
         # Sanity Check
         all_paths = list(zip(input_paths, label_paths))
         for input_path, label_path in all_paths:
-            modified_input_path = input_path.replace("inputs", "labels")
+            modified_input_path = input_path.replace("inputs", "labels_gaussian")
             if modified_input_path != label_path:
                 raise ValueError(f"Input path: {input_path} does not match label path: {label_path}")
             if not Path(input_path).exists():
@@ -128,7 +128,7 @@ class DeprecatedDatasetFactory:
                     continue
                 phase_path = subject_path / phase
                 input_path = phase_path / "inputs"
-                label_path = phase_path / "labels"
+                label_path = phase_path / "labels_gaussian"
                 input_names = sorted(path.name for path in input_path.iterdir() if path.is_file())
                 grouped_inputs = {
                     int(k): list(filter(lambda x: "png" in x if self.image_based else "npy" in x, list(g)))
@@ -163,7 +163,7 @@ class DeprecatedDatasetFactory:
                     continue
                 phase_path = subject_path / phase
                 input_path = phase_path / "inputs"
-                label_path = phase_path / "labels"
+                label_path = phase_path / "labels_gaussian"
                 if not input_path.exists() or not label_path.exists():
                     continue
                 input_names = sorted(path.name for path in input_path.iterdir() if path.is_file())
@@ -199,7 +199,7 @@ class DeprecatedDatasetFactory:
                     continue
                 phase_path = subject_path / phase
                 input_path = phase_path / "inputs"
-                label_path = phase_path / "labels"
+                label_path = phase_path / "labels_gaussian"
                 if not input_path.exists() or not label_path.exists():
                     continue
                 input_names = sorted(path.name for path in input_path.iterdir() if path.is_file())

@@ -83,11 +83,10 @@ def cnnPipelineScoring(
     train_data, validation_data = train_test_split(subjects, test_size=0.2, random_state=42)
     training_dataset = dataset.get_subset(participant=train_data)
     validation_dataset = dataset.get_subset(participant=validation_data)
-    testing_dataset = dataset.get_subset(participant=testing_subjects)
 
     print(f"Training Subjects: {training_dataset.subjects}")
     print(f"Validation Subjects: {validation_dataset.subjects}")
-    print(f"Testing Subjects: {testing_dataset.subjects}")
+    print(f"Testing Subjects: {testing_subjects}")
 
     time_stamps["Start"] = datetime.now().isoformat(sep="-", timespec="seconds")
     print("Start Training")
@@ -108,7 +107,7 @@ def cnnPipelineScoring(
     for subject in label_base_path.iterdir():
         if not subject.is_dir():
             continue
-        if subject.name not in testing_dataset.subjects:
+        if subject.name not in testing_subjects:
             continue
         print(f"subject {subject}")
         for phase in subject.iterdir():
@@ -121,7 +120,7 @@ def cnnPipelineScoring(
             prediction_path = Path(
                 str(prediction_path).replace("TestData", "Predictions/predictions_complete_dataset_fifty_epochs")
             )
-            label_path = phase / "labels"
+            label_path = phase / "labels_gaussian"
             prediction_files = sorted(path.name for path in prediction_path.iterdir() if path.is_file())
             f1RPeakScore = RPeakF1Score(max_deviation_ms=100)
             for prediction_file in prediction_files:

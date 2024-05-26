@@ -54,7 +54,7 @@ def check_for_empty_arrays():
             if not phase_path.is_dir():
                 continue
             input_path = phase_path / "inputs"
-            label_path = phase_path / "labels"
+            label_path = phase_path / "labels_gaussian"
             if not input_path.exists() or not label_path.exists():
                 continue
             label_files = sorted(path.name for path in label_path.iterdir() if path.is_file())
@@ -67,6 +67,27 @@ def check_for_empty_arrays():
                         label_to_remove.unlink()
                         input_to_remove.unlink()
                     print(f"Empty array in {label_file} at {label_path}")
+
+
+def rename_folders():
+    base_path = os.getenv("TMPDIR") + "/Data"
+    base_path = pathlib.Path(base_path)
+    for subject_path in base_path.iterdir():
+        if not subject_path.is_dir():
+            continue
+        for phase_path in subject_path.iterdir():
+            if not phase_path.is_dir():
+                continue
+            for dirs in phase_path.iterdir():
+                if not dirs.is_dir():
+                    continue
+                if "labels" not in dirs.name or "labels_gaussian" in dirs.name:
+                    continue
+                new_name = dirs.name.replace("labels", "labels_gaussian")
+                new_path = phase_path / new_name
+                print(f"Oldname is {dirs} new name is {new_path}")
+                dirs.rename(new_path)
+                return 0
 
 
 def identity_check():
