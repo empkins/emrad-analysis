@@ -94,7 +94,7 @@ def cnnPipelineScoring(
 
     time_stamps["AfterTraining"] = datetime.now().isoformat(sep="-", timespec="seconds")
     print("Training done")
-    pipeline.run(testing_dataset.subjects, testing_path)
+    pipeline.run(testing_subjects, testing_path)
     time_stamps["AfterTestRun"] = datetime.now().isoformat(sep="-", timespec="seconds")
 
     label_base_path = pathlib.Path(testing_path)
