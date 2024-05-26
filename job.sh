@@ -1,6 +1,6 @@
 #!/bin/bash -l
 #
-#SBATCH --job-name=uNetFiftyEpochs
+#SBATCH --job-name=uNetCompleteDatasetFiftyEpochs
 #SBATCH --nodes=1
 #SBATCH --time=8:00:00
 #SBATCH --gres=gpu:1

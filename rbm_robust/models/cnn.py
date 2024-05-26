@@ -102,8 +102,15 @@ class CNN(Algorithm):
                 steps += len(grouped_inputs.keys())
         return int(steps / self.batch_size)
 
-    def predict(self, data_path: str, testing_subjects: list = None, grouped: bool = False):
+    def predict(
+        self,
+        data_path: str = "/home/woody/iwso/iwso116h/TestingData",
+        testing_subjects: list = None,
+        grouped: bool = False,
+    ):
         print("Prediction started")
+        work_path = os.environ.get("WORK")
+        tmp_dir = os.environ.get("TMPDIR")
         data_path = Path(data_path)
         subjects = [path.name for path in data_path.iterdir() if path.is_dir()]
         if testing_subjects is not None:
@@ -114,11 +121,10 @@ class CNN(Algorithm):
                 if not phase_path.is_dir():
                     continue
                 input_path = phase_path / "inputs"
-                work_path = os.environ.get("WORK")
-                tmp_dir = os.environ.get("TMPDIR")
                 prediction_path = phase_path
-                prediction_path = Path(str(prediction_path).replace(tmp_dir, work_path))
-                prediction_path = Path(str(prediction_path).replace("Data", "Predictions/predictions_fifty_epochs"))
+                prediction_path = Path(
+                    str(prediction_path).replace("TestingData", "Predictions/predictions_fifty_epochs")
+                )
                 prediction_path.mkdir(parents=True, exist_ok=True)
                 input_files = sorted(input_path.glob("*.npy"))
                 if grouped:
@@ -143,7 +149,7 @@ class CNN(Algorithm):
                             padded = np.zeros((1, 1000, 256, 5))
                             padded[: inputs.shape[0], : inputs.shape[1], : inputs.shape[2], : inputs.shape[3]] = inputs
                             inputs = padded
-                        pred = self._model.predict(inputs)
+                        pred = self._model.predict(inputs, verbose=0)
                         pred = pred.flatten()
                         np.save(prediction_path / input_file.name, pred)
         return self

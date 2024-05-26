@@ -436,7 +436,7 @@ class CnnPipeline(OptimizablePipeline):
         self.cnn.self_optimize(path, image_based, training_subjects, validation_subjects)
         return self
 
-    def run(self, testing_subjects: list = None, path: str = "/home/woody/iwso/iwso116h/Data") -> Self:
+    def run(self, testing_subjects: list = None, path: str = "/home/woody/iwso/iwso116h/Testing") -> Self:
         print("Run")
-        self.cnn.predict(path, testing_subjects)
+        self.cnn.predict(testing_subjects=testing_subjects)
         return self

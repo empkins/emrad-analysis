@@ -62,36 +62,39 @@ class Scoring:
             return pickle.load(f)
 
 
-def cnnPipelineScoring(pipeline: CnnPipeline, dataset: D02Dataset, path: str = "/home/woody/iwso/iwso116h/Data"):
+def cnnPipelineScoring(
+    pipeline: CnnPipeline,
+    dataset: D02Dataset,
+    training_and_validation_path: str = "/home/woody/iwso/iwso116h/Data",
+    testing_path: str = "/home/woody/iwso/iwso116h/TestingData",
+):
     pipeline = pipeline.clone()
 
     time_stamps = {}
-    data_path = pathlib.Path(path)
+    data_path = pathlib.Path(training_and_validation_path)
     possible_subjects = [path.name for path in data_path.iterdir() if path.is_dir()]
+    testing_subjects = [path.name for path in pathlib.Path(testing_path).iterdir() if path.is_dir()]
 
     # dataset = dataset.get_subset(participant=possible_subjects)
     # Split Data
     # To always get the same subjects
     subjects = dataset.subjects
     subjects.sort()
-    train_data, test_data = train_test_split(subjects, test_size=0.2, random_state=42)
+    train_data, validation_data = train_test_split(subjects, test_size=0.2, random_state=42)
     training_dataset = dataset.get_subset(participant=train_data)
-    training_dataset, validation_dataset = train_test_split(training_dataset, test_size=0.2, random_state=42)
-    testing_dataset = dataset.get_subset(participant=test_data)
+    validation_dataset = dataset.get_subset(participant=validation_data)
+    testing_dataset = dataset.get_subset(participant=testing_subjects)
 
     time_stamps["Start"] = datetime.now().isoformat(sep="-", timespec="seconds")
-    # print("Prepare Data")
-    # pipeline.prepare_data(training_dataset, validation_dataset, testing_dataset, path)
-
     print("Start Training")
-    pipeline.self_optimize(training_dataset, validation_dataset, path)
+    pipeline.self_optimize(training_dataset, validation_dataset, training_and_validation_path)
 
     time_stamps["AfterTraining"] = datetime.now().isoformat(sep="-", timespec="seconds")
     print("Training done")
-    pipeline.run(testing_dataset.subjects, path)
+    pipeline.run(testing_dataset.subjects, testing_path)
     time_stamps["AfterTestRun"] = datetime.now().isoformat(sep="-", timespec="seconds")
 
-    label_base_path = pathlib.Path(path)
+    label_base_path = pathlib.Path(testing_path)
     time_stamps["AfterTestingLabelGeneration"] = datetime.now().isoformat(sep="-", timespec="seconds")
 
     true_positives = 0
