@@ -44,7 +44,7 @@ class D02Dataset(Dataset):
         },  # hier kann es auch training_trial_end sein
     }
     EXCLUDE_SUBJECTS = (
-        "115",
+        "044" "115",
         "Radar_DB",
         "418",
         "569",

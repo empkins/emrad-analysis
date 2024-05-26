@@ -136,7 +136,7 @@ class LabelProcessor(Algorithm):
         # Normalize the segment
         processed_ecg = normalization_clone.normalize(processed_ecg).normalized_signal_
         # Compute the gaussian
-        # processed_ecg = gaussian_clone.compute(processed_ecg, downsample_hz).peak_gaussians_
+        processed_ecg = gaussian_clone.compute(processed_ecg, downsample_hz).peak_gaussians_
 
         # TODO: Test this after normalization
         # # Compute the blips
@@ -149,7 +149,7 @@ class LabelProcessor(Algorithm):
         return self
 
     def get_path(self, subject_id: str, phase: str, base_path: str = "Data"):
-        path = f"{base_path}/{subject_id}/{phase}/labels_filtered_ecg"
+        path = f"{base_path}/{subject_id}/{phase}/labels_gaussian"
         if not os.path.exists(path):
             os.makedirs(path)
         return path
