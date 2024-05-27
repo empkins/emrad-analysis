@@ -5,6 +5,7 @@ import numpy as np
 import pickle
 from sklearn.model_selection import train_test_split
 import pathlib
+from pathlib import Path
 from rbm_robust.validation.RPeakF1Score import RPeakF1Score
 from rbm_robust.data_loading.datasets import D02Dataset
 from rbm_robust.models.cnn import CNN
@@ -49,7 +50,7 @@ class Scoring:
         self.time_stamps = time_stamps
 
     def save_myself(self):
-        path = pathlib.Path("~/Dumps")
+        path = Path("~/Dumps")
         path.mkdir(parents=True, exist_ok=True)
         filename = datetime.now().isoformat(sep="-", timespec="seconds") + "_scoring.pkl"
         file_path = path.joinpath(filename)
@@ -71,9 +72,9 @@ def cnnPipelineScoring(
     pipeline = pipeline.clone()
 
     time_stamps = {}
-    data_path = pathlib.Path(training_and_validation_path)
+    data_path = Path(training_and_validation_path)
     possible_subjects = [path.name for path in data_path.iterdir() if path.is_dir()]
-    testing_subjects = [path.name for path in pathlib.Path(testing_path).iterdir() if path.is_dir()]
+    testing_subjects = [path.name for path in Path(testing_path).iterdir() if path.is_dir()]
 
     dataset = dataset.get_subset(participant=possible_subjects)
     # Split Data
@@ -97,7 +98,7 @@ def cnnPipelineScoring(
     pipeline.run(testing_subjects, testing_path)
     time_stamps["AfterTestRun"] = datetime.now().isoformat(sep="-", timespec="seconds")
 
-    label_base_path = pathlib.Path(testing_path)
+    label_base_path = Path(testing_path)
     time_stamps["AfterTestingLabelGeneration"] = datetime.now().isoformat(sep="-", timespec="seconds")
 
     true_positives = 0
