@@ -251,7 +251,7 @@ class CNN(Algorithm):
         self._model.add(layers.TimeDistributed(layers.Flatten()))
         self._model.add(layers.TimeDistributed(layers.Dense(units=1)))
 
-        self._model.compile(optimizer="adam", loss="mse")
+        self._model.compile(optimizer="adam", loss="binary_crossentropy", metrics=["accuracy"])
         return self
 
     def save_model(self):
