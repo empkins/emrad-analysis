@@ -24,12 +24,7 @@ class InterbeatInterval(ValidationBase):
 
     def _calculate_interbeat_interval(self, path: Path, peak_height: float = 0.5):
         # Get all files in the path
-        peak_files = self._get_ordered_file_paths(path)
-        beats = np.array([])
-        for peak_file in peak_files:
-            beat = np.load(peak_file)
-            middle = self._get_middle_of_interval(beat)
-            beats = np.append(beats, middle)
+        beats = self._get_collected_array(path)
         # Calculate the interbeat interval
         r_peaks = find_peaks(beats, height=peak_height)[0]
         if len(r_peaks) == 0:

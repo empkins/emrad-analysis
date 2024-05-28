@@ -25,14 +25,7 @@ class HeartRate(ValidationBase):
 
     def _calculate_heart_rate(self, path: Path, peak_height: float = 0.8):
         # Get all files in the path
-        peak_files = self._get_ordered_file_paths(path)
-        beats = np.array([])
-        for peak_file in peak_files:
-            beat = np.load(peak_file)
-            middle = self._get_middle_of_interval(beat)
-            # beats.append(middle)
-            beats = np.append(beats, middle)
-        # beats = np.stack(beats)
+        beats = self._get_collected_array(path)
         # Calculate the heart rate
         r_peaks = find_peaks(beats, height=peak_height)
         total_time = len(beats) / self.fs
