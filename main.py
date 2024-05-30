@@ -2,7 +2,7 @@ import gc
 import pathlib
 from itertools import zip_longest
 from pathlib import Path
-
+import shutil
 import numpy as np
 
 from rbm_robust.data_loading.datasets import D02Dataset
@@ -41,6 +41,38 @@ def preprocessing():
     # target_path = "/Users/simonmeske/Desktop/TestOrdner/data_per_subject"
     run(base_path, target_path, process_inputs=True, process_labels=True, process_images=False)
     check_for_empty_arrays()
+
+
+def remove_testing_subjects():
+    testing_subjects = [
+        "146",
+        "257",
+        "254",
+        "228",
+        "201",
+        "385",
+        "338",
+        "212",
+        "077",
+        "004",
+        "120",
+        "147",
+        "320",
+        "417",
+        "286",
+        "028",
+        "292",
+        "155",
+        "096",
+        "140",
+        "447",
+    ]
+    base_path = Path("/home/woody/iwso/iwso116h/Data")
+    for subject in testing_subjects:
+        subject_path = base_path / subject
+        if subject_path.exists():
+            # shutil.rmtree(subject_path)
+            print(f"Removed {subject_path}")
 
 
 def check_for_empty_arrays():
