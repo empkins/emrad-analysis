@@ -9,10 +9,11 @@ from pathlib import Path
 from keras.src.utils import img_to_array, load_img
 
 
-def set_shapes(input, label):
+def set_shapes(input, label, weights):
     input.set_shape([None, 1000, 256, 5])
     label.set_shape([None, 1000])
-    return image, label
+    weights.set_shape([None])
+    return image, label, weights
 
 
 class DatasetFactory:
@@ -35,7 +36,7 @@ class DatasetFactory:
                 ),
                 num_parallel_calls=tf.data.AUTOTUNE,
             )
-            .batch(batch_size, drop_remainder=True)
+            .batch(1, drop_remainder=True)
             .map(set_shapes)
             .prefetch(tf.data.AUTOTUNE)
             .repeat()
