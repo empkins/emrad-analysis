@@ -118,9 +118,7 @@ def cnnPipelineScoring(
                 continue
             print(f"phase {phase}")
             prediction_path = phase
-            prediction_path = Path(
-                str(prediction_path).replace("TestData", "Predictions/predictions_complete_dataset_fifty_epochs")
-            )
+            prediction_path = Path(str(prediction_path).replace("TestData", "Predictions/predictions_bce_25_epochs"))
             label_path = phase / "labels_gaussian"
             prediction_files = sorted(path.name for path in prediction_path.iterdir() if path.is_file())
             f1RPeakScore = RPeakF1Score(max_deviation_ms=100)

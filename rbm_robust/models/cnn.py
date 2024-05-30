@@ -52,8 +52,8 @@ class CNN(Algorithm):
         use_bias: bool = True,
         kernel_initializer: str = "he_normal",
         bias_initializer: str = "zeros",
-        learning_rate: float = 0.001,
-        num_epochs: int = 50,
+        learning_rate: float = 0.0001,
+        num_epochs: int = 25,
         batch_size: int = 16,
         _model=None,
         overlap: int = 0.8,
@@ -121,7 +121,7 @@ class CNN(Algorithm):
                 input_path = phase_path / "inputs"
                 prediction_path = phase_path
                 prediction_path = Path(
-                    str(prediction_path).replace("TestData", "Predictions/predictions_complete_dataset_fifty_epochs")
+                    str(prediction_path).replace("TestData", "Predictions/predictions_bce_25_epochs")
                 )
                 prediction_path.mkdir(parents=True, exist_ok=True)
                 input_files = sorted(input_path.glob("*.npy"))
@@ -248,10 +248,12 @@ class CNN(Algorithm):
                 n_labels=5,
             )
         )
-        self._model.add(layers.TimeDistributed(layers.Flatten()))
-        self._model.add(layers.TimeDistributed(layers.Dense(units=1)))
-        loss_func = keras.losses.BinaryCrossentropy(from_logits=True)
+        # self._model.add(layers.TimeDistributed(layers.Flatten()))
+        # self._model.add(layers.TimeDistributed(layers.Dense(units=1)))
+        self._model.add(layers.Conv2D(filters=1, kernel_size=(1, 256), activation="linear"))
+        loss_func = keras.losses.BinaryCrossentropy(from_logits=True, label_smoothing=0, reduction=None)
         self._model.compile(optimizer="adam", loss=loss_func, metrics=["accuracy"])
+        # self._model.compile(optimizer="adam", loss="mse")
         return self
 
     def save_model(self):

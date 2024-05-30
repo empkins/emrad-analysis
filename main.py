@@ -43,36 +43,51 @@ def preprocessing():
     check_for_empty_arrays()
 
 
-def remove_testing_subjects():
-    testing_subjects = [
-        "146",
-        "257",
-        "254",
-        "228",
-        "201",
-        "385",
-        "338",
-        "212",
-        "077",
-        "004",
-        "120",
-        "147",
-        "320",
-        "417",
-        "286",
-        "028",
-        "292",
-        "155",
-        "096",
-        "140",
-        "447",
+def input_loading():
+    test_validation_subjects = [
+        "231",
+        "134",
+        "284",
+        "199",
+        "269",
+        "114",
+        "196",
+        "175",
+        "071",
+        "310",
+        "094",
+        "559",
+        "287",
+        "142",
+        "288",
+        "038",
+        "251",
+        "232",
+        "173",
+        "159",
+        "117",
+        "259",
+        "156",
+        "052",
+        "198",
+        "261",
+        "263",
+        "141",
+        "121",
+        "308",
+        "139",
+        "270",
+        "216",
+        "100",
+        "137",
     ]
-    base_path = Path("/home/woody/iwso/iwso116h/Data")
-    for subject in testing_subjects:
-        subject_path = base_path / subject
-        if subject_path.exists():
-            # shutil.rmtree(subject_path)
-            print(f"Removed {subject_path}")
+    base_path = os.getenv("WORK") + "/Data"
+    target_path = os.getenv("TMPDIR") + "/Data"
+    for subject in test_validation_subjects:
+        subject_path = Path(base_path) / subject
+        target_subject_path = Path(target_path) / subject
+        print(f"Copied {subject} to {target_subject_path} from {subject_path}")
+        shutil.copytree(subject_path, target_subject_path)
 
 
 def check_for_empty_arrays():
@@ -139,9 +154,7 @@ def check_testing_and_training_paths():
     print(f"Testing subjects: {testing_subjects}")
     phase_path = Path("/home/woody/iwso/iwso116h/TestData/004/ei_1")
     prediction_path = phase_path
-    prediction_path = Path(
-        str(prediction_path).replace("TestData", "Predictions/predictions_complete_dataset_fifty_epochs")
-    )
+    prediction_path = Path(str(prediction_path).replace("TestData", "Predictions/predictions_bce_25_epochs"))
     print(prediction_path)
 
 
@@ -186,8 +199,10 @@ if __name__ == "__main__":
     # devices = tf.config.experimental.list_physical_devices("GPU")
     # tf.config.experimental.set_memory_growth(devices[0], True)
     # input_loading()
-    # main()
-    preprocessing()
+    check_for_empty_arrays()
+    input_loading()
+    main()
+    # preprocessing()
     # check_testing_and_training_paths()
     # identity_check()
     # dataset_path = Path("/Users/simonmeske/Desktop/TestOrdner/data_per_subject")
