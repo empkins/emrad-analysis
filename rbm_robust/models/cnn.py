@@ -53,7 +53,7 @@ class CNN(Algorithm):
         kernel_initializer: str = "he_normal",
         bias_initializer: str = "zeros",
         learning_rate: float = 0.0001,
-        num_epochs: int = 2,
+        num_epochs: int = 25,
         batch_size: int = 16,
         _model=None,
         overlap: int = 0.8,
@@ -251,7 +251,7 @@ class CNN(Algorithm):
         # self._model.add(layers.TimeDistributed(layers.Flatten()))
         # self._model.add(layers.TimeDistributed(layers.Dense(units=1)))
         self._model.add(layers.Conv2D(filters=1, kernel_size=(1, 256), activation="linear"))
-        loss_func = keras.losses.BinaryCrossentropy(from_logits=True, label_smoothing=0, reduction="sum")
+        loss_func = keras.losses.BinaryCrossentropy(from_logits=True, label_smoothing=0, reduction="none")
         self._model.compile(optimizer="adam", loss=loss_func)
         # self._model.compile(optimizer="adam", loss="mse")
         return self
