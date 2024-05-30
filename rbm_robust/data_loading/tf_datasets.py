@@ -36,7 +36,7 @@ class DatasetFactory:
                 ),
                 num_parallel_calls=tf.data.AUTOTUNE,
             )
-            .batch(1, drop_remainder=True)
+            .batch(batch_size, drop_remainder=True)
             .map(set_shapes)
             .prefetch(tf.data.AUTOTUNE)
             .repeat()
