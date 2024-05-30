@@ -10,8 +10,8 @@ from keras.src.utils import img_to_array, load_img
 
 
 def set_shapes(input, label):
-    input.set_shape((1000, 256, 5))
-    label.set_shape((1000,))
+    input.set_shape([None, 1000, 256, 5])
+    label.set_shape([None, 1000])
     return image, label
 
 
@@ -35,8 +35,8 @@ class DatasetFactory:
                 ),
                 num_parallel_calls=tf.data.AUTOTUNE,
             )
-            .map(set_shapes)
             .batch(batch_size, drop_remainder=True)
+            .map(set_shapes)
             .prefetch(tf.data.AUTOTUNE)
             .repeat()
         )
