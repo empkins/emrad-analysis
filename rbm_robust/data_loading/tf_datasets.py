@@ -25,7 +25,7 @@ class DatasetFactory:
             return input_file, label_file
         except Exception as e:
             print(f"Exception: {e}")
-            return np.zeros((1000, 256, 5)), np.zeros((1000))
+            return None
 
     def _get_dataset(self, input_paths, label_paths, batch_size=8):
         dataset = tf.data.Dataset.from_tensor_slices((input_paths, label_paths))
@@ -37,7 +37,6 @@ class DatasetFactory:
                 num_parallel_calls=tf.data.AUTOTUNE,
             )
             .batch(batch_size, drop_remainder=True)
-            .map(set_shapes)
             .prefetch(tf.data.AUTOTUNE)
             .repeat()
         )
