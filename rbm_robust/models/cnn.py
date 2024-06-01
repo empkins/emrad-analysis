@@ -120,9 +120,7 @@ class CNN(Algorithm):
                     continue
                 input_path = phase_path / "inputs"
                 prediction_path = phase_path
-                prediction_path = Path(
-                    str(prediction_path).replace("TestData", "Predictions/predictions_bce_25_epochs")
-                )
+                prediction_path = Path(str(prediction_path).replace("TestData", "Predictions/predictions_kl_25_epochs"))
                 prediction_path.mkdir(parents=True, exist_ok=True)
                 input_files = sorted(input_path.glob("*.npy"))
                 if grouped:

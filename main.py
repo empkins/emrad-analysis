@@ -154,7 +154,7 @@ def check_testing_and_training_paths():
     print(f"Testing subjects: {testing_subjects}")
     phase_path = Path("/home/woody/iwso/iwso116h/TestData/004/ei_1")
     prediction_path = phase_path
-    prediction_path = Path(str(prediction_path).replace("TestData", "Predictions/predictions_bce_25_epochs"))
+    prediction_path = Path(str(prediction_path).replace("TestData", "Predictions/predictions_kl_25_epochs"))
     print(prediction_path)
 
 
