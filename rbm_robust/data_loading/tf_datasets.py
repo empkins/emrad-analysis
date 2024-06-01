@@ -83,12 +83,12 @@ class DatasetFactory:
                 raise FileNotFoundError(f"Label path: {label_path} does not exist")
         return input_paths, label_paths
 
-    def get_dataset_for_subjects(self, base_path, training_subjects, training_phase=None):
+    def get_dataset_for_subjects(self, base_path, training_subjects, batch_size: int = 16, training_phase=None):
         input_paths, label_paths = self._get_all_input_and_label_paths(base_path, training_subjects, training_phase)
         dataset = self._build_dataset(input_paths, label_paths)
-        return dataset, len(input_paths)
+        return dataset, int(len(input_paths) / batch_size)
 
-    def _build_dataset(self, input_paths, label_paths, batch_size=8):
+    def _build_dataset(self, input_paths, label_paths, batch_size=16):
         dataset = tf.data.Dataset.from_tensor_slices((input_paths, label_paths))
         dataset = (
             dataset.map(

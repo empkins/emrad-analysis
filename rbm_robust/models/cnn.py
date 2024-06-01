@@ -176,9 +176,11 @@ class CNN(Algorithm):
 
         print("Before Generators")
         dataset_factory = DatasetFactory()
-        training_dataset, training_steps_alt = dataset_factory.get_dataset_for_subjects(base_path, training_subjects)
+        training_dataset, training_steps_alt = dataset_factory.get_dataset_for_subjects(
+            base_path, training_subjects, batch_size=self.batch_size
+        )
         validation_dataset, validation_steps_alt = dataset_factory.get_dataset_for_subjects(
-            base_path, validation_subjects
+            base_path, validation_subjects, batch_size=self.batch_size
         )
 
         print("Getting steps per epoch")
