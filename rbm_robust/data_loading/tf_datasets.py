@@ -43,13 +43,15 @@ class DatasetFactory:
         return dataset
 
     @staticmethod
-    def _get_all_input_and_label_paths(base_path, subject_list):
+    def _get_all_input_and_label_paths(base_path, subject_list, training_phase: str = None):
         base_path = Path(base_path)
         input_paths = []
         label_paths = []
         for subject in subject_list:
             subject_path = base_path / subject
             for phase in subject_path.iterdir():
+                if training_phase is not None and training_phase not in phase.name:
+                    continue
                 if not phase.is_dir():
                     continue
                 input_path = phase / "inputs"
@@ -81,10 +83,10 @@ class DatasetFactory:
                 raise FileNotFoundError(f"Label path: {label_path} does not exist")
         return input_paths, label_paths
 
-    def get_dataset_for_subjects(self, base_path, training_subjects):
-        input_paths, label_paths = self._get_all_input_and_label_paths(base_path, training_subjects)
+    def get_dataset_for_subjects(self, base_path, training_subjects, training_phase=None):
+        input_paths, label_paths = self._get_all_input_and_label_paths(base_path, training_subjects, training_phase)
         dataset = self._build_dataset(input_paths, label_paths)
-        return dataset
+        return dataset, len(input_paths)
 
     def _build_dataset(self, input_paths, label_paths, batch_size=8):
         dataset = tf.data.Dataset.from_tensor_slices((input_paths, label_paths))
@@ -184,7 +186,6 @@ class DeprecatedDatasetFactory:
                         ],
                         axis=0,
                     )
-                    # inputs = inputs[:, 50:950, :, :]
                     labels = np.stack(
                         [
                             np.load(label_path / number) if number is not None else self.get_labels(input_path, None)
@@ -192,7 +193,6 @@ class DeprecatedDatasetFactory:
                         ],
                         axis=0,
                     )
-                    # labels = labels[:, 50:950]
                     yield inputs, labels
                     del inputs, labels
                     gc.collect()

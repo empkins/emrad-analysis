@@ -176,13 +176,20 @@ class CNN(Algorithm):
 
         print("Before Generators")
         dataset_factory = DatasetFactory()
-        training_dataset = dataset_factory.get_dataset_for_subjects(base_path, training_subjects)
-        validation_dataset = dataset_factory.get_dataset_for_subjects(base_path, validation_subjects)
+        training_dataset, training_steps_alt = dataset_factory.get_dataset_for_subjects(base_path, training_subjects)
+        validation_dataset, validation_steps_alt = dataset_factory.get_dataset_for_subjects(
+            base_path, validation_subjects
+        )
 
         print("Getting steps per epoch")
         training_steps = self.get_steps_per_epoch(base_path, training_subjects)
         validation_steps = self.get_steps_per_epoch(base_path, validation_subjects)
         print("Got the step count")
+
+        if training_steps_alt != training_steps:
+            print(f"Training steps: {training_steps} vs {training_steps_alt} Alt")
+        if validation_steps_alt != validation_steps:
+            print(f"Validation steps: {validation_steps} vs {validation_steps_alt} Alt")
 
         print("Fitting")
         history = self._model.fit(
@@ -190,7 +197,7 @@ class CNN(Algorithm):
             epochs=self.num_epochs,
             steps_per_epoch=training_steps,
             batch_size=self.batch_size,
-            shuffle=False,
+            shuffle=True,
             validation_data=validation_dataset,
             validation_steps=validation_steps,
             verbose=1,
@@ -238,7 +245,7 @@ class CNN(Algorithm):
         self._model.add(
             models.unet_2d(
                 (1000, 256, 5),
-                filter_num=[16, 32, 64],
+                filter_num=[32, 64, 128],
                 weights=None,
                 freeze_backbone=False,
                 freeze_batch_norm=False,
@@ -250,7 +257,7 @@ class CNN(Algorithm):
         # self._model.add(layers.TimeDistributed(layers.Dense(units=1)))
         self._model.add(layers.Conv2D(filters=1, kernel_size=(1, 256), activation="linear"))
         # loss_func = keras.losses.BinaryCrossentropy(from_logits=False, reduction="none")
-        loss_func = keras.losses.MeanSquaredLogarithmicError(reduction=None, name="mean_squared_logarithmic_error")
+        loss_func = keras.losses.MeanAbsolutePercentageError(reduction=None, name="mean_squared_logarithmic_error")
         self._model.compile(optimizer="adam", loss=loss_func)
         # self._model.compile(optimizer="adam", loss="mse")
         return self
