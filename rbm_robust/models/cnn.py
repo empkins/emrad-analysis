@@ -54,7 +54,7 @@ class CNN(Algorithm):
         bias_initializer: str = "zeros",
         learning_rate: float = 0.0001,
         num_epochs: int = 25,
-        batch_size: int = 16,
+        batch_size: int = 8,
         _model=None,
         overlap: int = 0.8,
         image_based: bool = False,
