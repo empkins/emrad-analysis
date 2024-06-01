@@ -260,8 +260,8 @@ class CNN(Algorithm):
         self._model.add(layers.Conv2D(filters=1, kernel_size=(1, 256), activation="linear"))
         # loss_func = keras.losses.BinaryCrossentropy(from_logits=False, reduction="none")
         loss_func = keras.losses.MeanAbsolutePercentageError(reduction="none", name="mean_squared_logarithmic_error")
-        self._model.compile(optimizer="adam", loss=loss_func)
-        # self._model.compile(optimizer="adam", loss="mse")
+        # self._model.compile(optimizer="adam", loss=loss_func)
+        self._model.compile(optimizer="adam", loss="mse")
         return self
 
     def save_model(self):
