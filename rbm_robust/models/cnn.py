@@ -52,7 +52,7 @@ class CNN(Algorithm):
         use_bias: bool = True,
         kernel_initializer: str = "he_normal",
         bias_initializer: str = "zeros",
-        learning_rate: float = 0.001,
+        learning_rate: float = 0.0001,
         num_epochs: int = 25,
         batch_size: int = 8,
         _model=None,
@@ -243,6 +243,7 @@ class CNN(Algorithm):
                 freeze_batch_norm=False,
                 output_activation=None,
                 n_labels=5,
+                activation="linear",
             )
         )
         # self._model.add(layers.TimeDistributed(layers.Flatten()))
