@@ -237,7 +237,7 @@ class CNN(Algorithm):
         self._model.add(
             models.unet_2d(
                 (1000, 256, 5),
-                filter_num=[32, 64, 128],
+                filter_num=[16, 32, 64],
                 weights=None,
                 freeze_backbone=False,
                 freeze_batch_norm=False,
