@@ -243,15 +243,15 @@ class CNN(Algorithm):
                 freeze_batch_norm=False,
                 output_activation=None,
                 n_labels=5,
-                activation="linear",
+                activation="Snake",
             )
         )
         # self._model.add(layers.TimeDistributed(layers.Flatten()))
         # self._model.add(layers.TimeDistributed(layers.Dense(units=1)))
         self._model.add(layers.Conv2D(filters=1, kernel_size=(1, 256), activation="linear"))
-        # loss_func = keras.losses.BinaryCrossentropy(from_logits=False, reduction="sum_over_batch_size")
-        # self._model.compile(optimizer=keras.optimizers.Adam(learning_rate=self.learning_rate), loss=loss_func)
-        self._model.compile(optimizer=keras.optimizers.Adam(learning_rate=self.learning_rate), loss="mse")
+        loss_func = keras.losses.BinaryCrossentropy(from_logits=False, reduction="sum_over_batch_size")
+        self._model.compile(optimizer=keras.optimizers.Adam(learning_rate=self.learning_rate), loss=loss_func)
+        # self._model.compile(optimizer=keras.optimizers.Adam(learning_rate=self.learning_rate), loss="mse")
         return self
 
     def save_model(self):
