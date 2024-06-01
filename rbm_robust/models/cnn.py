@@ -251,8 +251,8 @@ class CNN(Algorithm):
         # self._model.add(layers.TimeDistributed(layers.Flatten()))
         # self._model.add(layers.TimeDistributed(layers.Dense(units=1)))
         self._model.add(layers.Conv2D(filters=1, kernel_size=(1, 256), activation="linear"))
-        loss_func = keras.losses.BinaryCrossentropy(from_logits=False, reduction="none")
-        self._model.compile(optimizer="adam", loss=loss_func)
+        # loss_func = keras.losses.BinaryCrossentropy(from_logits=False, reduction="none")
+        self._model.compile(optimizer="adam", loss=keras.losses.kl_divergence)
         # self._model.compile(optimizer="adam", loss="mse")
         return self
 
