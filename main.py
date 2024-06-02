@@ -15,7 +15,7 @@ import os
 import tensorflow as tf
 
 
-def main():
+def main(model_path: str = None, remaining_epochs: int = 0):
     print("Starting")
     # devices = tf.config.experimental.list_physical_devices("GPU")
     # tf.config.experimental.set_memory_growth(devices[0], True)
@@ -26,7 +26,7 @@ def main():
     # dataset_path = Path(path)
     dataset = D02Dataset(path)
     cnn_pipeline = CnnPipeline()
-    cnnPipelineScoring(cnn_pipeline, dataset, path)
+    cnnPipelineScoring(cnn_pipeline, dataset, path, model_path=model_path, remaining_epochs=remaining_epochs)
 
 
 def alt():
@@ -201,7 +201,15 @@ if __name__ == "__main__":
     # input_loading()
     # check_for_empty_arrays()
     # input_loading()
-    main()
+    args = sys.argv[1:]
+    model_path = None
+    remaining_epochs = 0
+    if len(args) > 0:
+        if args[0] == "-mp":
+            model_path = args[1]
+        if args[2] == "-epochs":
+            remaining_epochs = int(args[3])
+    main(model_path, remaining_epochs)
     # preprocessing()
     # check_testing_and_training_paths()
     # identity_check()

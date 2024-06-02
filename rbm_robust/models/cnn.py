@@ -158,15 +158,20 @@ class CNN(Algorithm):
         image_based: bool = False,
         training_subjects: list = None,
         validation_subjects: list = None,
+        model_path: str = None,
+        starting_epochs: int = 0,
+        remaining_epochs: int = 0,
     ):
         self.base_path = base_path
         self.training_subjects = training_subjects
         self.validation_subjects = validation_subjects
 
-        if not image_based:
+        if not image_based and model_path is None:
             self._create_model()
-        else:
+        elif model_path is None:
             self._image_model()
+        else:
+            self._model = keras.saving.load_model(model_path)
 
         log_dir = os.getenv("WORK") + "/Runs/logs/fit/"
         time = datetime.now().strftime("%Y%m%d-%H%M%S")
@@ -186,24 +191,37 @@ class CNN(Algorithm):
         )
 
         print("Fitting")
-        history = self._model.fit(
-            training_dataset,
-            epochs=self.num_epochs,
-            steps_per_epoch=training_steps,
-            batch_size=self.batch_size,
-            shuffle=True,
-            validation_data=validation_dataset,
-            validation_steps=validation_steps,
-            verbose=1,
-            callbacks=[tensorboard_callback],
-        )
+        if model_path is None:
+            history = self._model.fit(
+                training_dataset,
+                epochs=self.num_epochs,
+                steps_per_epoch=training_steps,
+                batch_size=self.batch_size,
+                shuffle=True,
+                validation_data=validation_dataset,
+                validation_steps=validation_steps,
+                verbose=1,
+                callbacks=[tensorboard_callback],
+            )
+        else:
+            history = self._model.fit(
+                training_dataset,
+                epochs=remaining_epochs + starting_epochs,
+                steps_per_epoch=training_steps,
+                batch_size=self.batch_size,
+                shuffle=True,
+                validation_data=validation_dataset,
+                validation_steps=validation_steps,
+                verbose=1,
+                callbacks=[tensorboard_callback],
+                initial_epoch=starting_epochs,
+            )
 
         history_path = os.getenv("WORK") + "/Runs/History/"
         if not os.path.exists(history_path):
             os.makedirs(history_path)
         history_path += time + "_history.pkl"
         pickle.dump(history.history, open(history_path, "wb"))
-
         return self
 
     def _image_model(self):

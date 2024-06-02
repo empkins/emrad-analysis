@@ -63,11 +63,42 @@ class Scoring:
             return pickle.load(f)
 
 
+def cnnReturnScoring(
+    pipeline: CnnPipeline,
+    dataset: D02Dataset,
+    training_and_validation_path: str = "/home/woody/iwso/iwso116h/Data",
+    testing_path: str = "/home/vault/iwso/iwso116h/TestData",
+    epochs_done: int = 25,
+    epochs_remaining: int = 25,
+    model_path: str = "/home/woody/iwso/iwso116h/Models",
+):
+    pipeline = pipeline.clone()
+
+    time_stamps = {}
+    data_path = Path(training_and_validation_path)
+    possible_subjects = [path.name for path in data_path.iterdir() if path.is_dir()]
+    testing_subjects = [path.name for path in Path(testing_path).iterdir() if path.is_dir()]
+
+    dataset = dataset.get_subset(participant=possible_subjects)
+    # Split Data
+    # To always get the same subjects
+    subjects = dataset.subjects
+    subjects.sort()
+    train_data, validation_data = train_test_split(subjects, test_size=0.2, random_state=42)
+    training_dataset = dataset.get_subset(participant=train_data)
+    validation_dataset = dataset.get_subset(participant=validation_data)
+
+    pipeline.self_optimize(training_dataset, validation_dataset, training_and_validation_path)
+
+
 def cnnPipelineScoring(
     pipeline: CnnPipeline,
     dataset: D02Dataset,
     training_and_validation_path: str = "/home/woody/iwso/iwso116h/Data",
     testing_path: str = "/home/vault/iwso/iwso116h/TestData",
+    model_path: str = None,
+    start_epoch: int = 0,
+    remaining_epochs: int = 25,
 ):
     pipeline = pipeline.clone()
 
@@ -91,7 +122,14 @@ def cnnPipelineScoring(
 
     time_stamps["Start"] = datetime.now().isoformat(sep="-", timespec="seconds")
     print("Start Training")
-    pipeline.self_optimize(training_dataset, validation_dataset, training_and_validation_path)
+    pipeline.self_optimize(
+        training_dataset,
+        validation_dataset,
+        training_and_validation_path,
+        model_path=model_path,
+        start_epoch=start_epoch,
+        remaining_epochs=remaining_epochs,
+    )
 
     time_stamps["AfterTraining"] = datetime.now().isoformat(sep="-", timespec="seconds")
     print("Training done")
