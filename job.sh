@@ -1,6 +1,6 @@
 #!/bin/bash -l
 #
-#SBATCH --job-name=uNetTwentyFiveEpochsMSELearningRate0.0001
+#SBATCH --job-name=uNetTwentyFiveEpochsMSELearningRate0001
 #SBATCH --nodes=1
 #SBATCH --time=19:00:00
 #SBATCH --gres=gpu:1
