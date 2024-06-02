@@ -119,7 +119,7 @@ def cnnPipelineScoring(
             print(f"phase {phase}")
             prediction_path = phase
             prediction_path = Path(
-                str(prediction_path).replace("TestData", "Predictions/predictions_bce_logits_25_epochs")
+                str(prediction_path).replace("TestData", "Predictions/predictions_mse_0_0001_25_epochs")
             )
             label_path = phase / "labels_gaussian"
             prediction_files = sorted(path.name for path in prediction_path.iterdir() if path.is_file())
