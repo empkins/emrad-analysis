@@ -1,8 +1,8 @@
 #!/bin/bash -l
 #
-#SBATCH --job-name=uNetTwentyFiveEpochsBCE
+#SBATCH --job-name=uNetTwentyFiveEpochsBCELogits
 #SBATCH --nodes=1
-#SBATCH --time=19:30:00
+#SBATCH --time=19:00:00
 #SBATCH --gres=gpu:1
 
 

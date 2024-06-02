@@ -120,7 +120,9 @@ class CNN(Algorithm):
                     continue
                 input_path = phase_path / "inputs"
                 prediction_path = phase_path
-                prediction_path = Path(str(prediction_path).replace("TestData", "Predictions/predictions_kl_25_epochs"))
+                prediction_path = Path(
+                    str(prediction_path).replace("TestData", "Predictions/predictions_bce_logits_25_epochs")
+                )
                 prediction_path.mkdir(parents=True, exist_ok=True)
                 input_files = sorted(input_path.glob("*.npy"))
                 if grouped:
@@ -243,13 +245,12 @@ class CNN(Algorithm):
                 freeze_batch_norm=False,
                 output_activation=None,
                 n_labels=5,
-                activation="Snake",
             )
         )
         # self._model.add(layers.TimeDistributed(layers.Flatten()))
         # self._model.add(layers.TimeDistributed(layers.Dense(units=1)))
         self._model.add(layers.Conv2D(filters=1, kernel_size=(1, 256), activation="linear"))
-        loss_func = keras.losses.BinaryCrossentropy(from_logits=False, reduction="sum_over_batch_size")
+        loss_func = keras.losses.BinaryCrossentropy(from_logits=True, reduction="sum_over_batch_size")
         self._model.compile(optimizer=keras.optimizers.Adam(learning_rate=self.learning_rate), loss=loss_func)
         # self._model.compile(optimizer=keras.optimizers.Adam(learning_rate=self.learning_rate), loss="mse")
         return self

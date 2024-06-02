@@ -41,4 +41,8 @@ class ValidationBase:
 
     def _get_ordered_file_paths(self, path: Path):
         array_path = path / self.subject / self.phase
-        return sorted(array_path.iterdir(), key=lambda x: int(x.name.split(".")[0]))
+        if not array_path.exists():
+            raise ValueError(f"Path {array_path} does not exist")
+        file_paths = list(array_path.iterdir())
+        file_paths = [file_path for file_path in file_paths if file_path.is_file() and file_path.suffix == ".npy"]
+        return sorted(file_paths, key=lambda x: int(x.name.split(".")[0]))
