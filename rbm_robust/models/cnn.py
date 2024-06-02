@@ -104,7 +104,7 @@ class CNN(Algorithm):
 
     def predict(
         self,
-        data_path: str = "/home/woody/iwso/iwso116h/TestData",
+        data_path: str = "/home/vault/iwso/iwso116h/TestData",
         testing_subjects: list = None,
         grouped: bool = False,
     ):

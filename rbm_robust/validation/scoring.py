@@ -67,7 +67,7 @@ def cnnPipelineScoring(
     pipeline: CnnPipeline,
     dataset: D02Dataset,
     training_and_validation_path: str = "/home/woody/iwso/iwso116h/Data",
-    testing_path: str = "/home/woody/iwso/iwso116h/TestData",
+    testing_path: str = "/home/vault/iwso/iwso116h/TestData",
 ):
     pipeline = pipeline.clone()
 
