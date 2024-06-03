@@ -264,7 +264,7 @@ class WaveletTransformer(Algorithm):
                 continue
             imf = signal[i]
             # scales = range(self.wavelet_coefficients[0], self.wavelet_coefficients[1])
-            scales = np.geomspace(self.wavelet_coefficients[0], self.wavelet_coefficients[1], num=257)
+            scales = np.geomspace(self.wavelet_coefficients[0], self.wavelet_coefficients[1], num=256)
             coefficients, frequencies = pywt.cwt(imf, scales, self.wavelet_type, sampling_period=1 / self.sampling_rate)
             if img_based:
                 self._save_image(coefficients, frequencies, len(imf), segment, i, path)
