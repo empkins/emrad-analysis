@@ -201,16 +201,16 @@ if __name__ == "__main__":
     # input_loading()
     # check_for_empty_arrays()
     # input_loading()
-    args = sys.argv[1:]
-    model_path = None
-    remaining_epochs = 0
-    if len(args) > 0:
-        if args[0] == "-mp":
-            model_path = args[1]
-        if args[2] == "-epochs":
-            remaining_epochs = int(args[3])
-    main(model_path, remaining_epochs)
-    # preprocessing()
+    # args = sys.argv[1:]
+    # model_path = None
+    # remaining_epochs = 0
+    # if len(args) > 0:
+    #     if args[0] == "-mp":
+    #         model_path = args[1]
+    #     if args[2] == "-epochs":
+    #         remaining_epochs = int(args[3])
+    # main(model_path, remaining_epochs)
+    preprocessing()
     # check_testing_and_training_paths()
     # identity_check()
     # dataset_path = Path("/Users/simonmeske/Desktop/TestOrdner/data_per_subject")
