@@ -1,8 +1,8 @@
 #!/bin/bash -l
 #
-#SBATCH --job-name=uNetTwentyFiveEpochsMSELearningRate0001
+#SBATCH --job-name=uNetTwentyFiveEpochsRefinedPreproc
 #SBATCH --nodes=1
-#SBATCH --time=19:00:00
+#SBATCH --time=12:00:00
 #SBATCH --gres=gpu:1
 
 
@@ -15,5 +15,5 @@ module add tensorrt/8.6.1.6-cuda12.0-cudnn8.9
 rsync -r $WORK/Data $TMPDIR
 
 
-cd "$HOME"/parallel/emrad-analysis || exit
+cd "$HOME"/altPreprocessing/emrad-analysis || exit
 poetry run python main.py

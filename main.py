@@ -144,8 +144,8 @@ def identity_check():
 
 
 def check_testing_and_training_paths():
-    training_path = "/home/woody/iwso/iwso116h/Data"
-    testing_path = "/home/woody/iwso/iwso116h/TestData"
+    training_path = "/home/woody/iwso/iwso116h/DataRef"
+    testing_path = "/home/woody/iwso/iwso116h/TestDataRef"
     training_path = pathlib.Path(training_path)
     testing_path = pathlib.Path(testing_path)
     training_subjects = [path.name for path in training_path.iterdir() if path.is_dir()]
@@ -154,7 +154,9 @@ def check_testing_and_training_paths():
     print(f"Testing subjects: {testing_subjects}")
     phase_path = Path("/home/woody/iwso/iwso116h/TestData/004/ei_1")
     prediction_path = phase_path
-    prediction_path = Path(str(prediction_path).replace("TestData", "Predictions/predictions_mse_0_0001_25_epochs"))
+    prediction_path = Path(
+        str(prediction_path).replace("TestDataRef", "Predictions/predictions_mse_0001_25_epochs_ref")
+    )
     print(prediction_path)
 
 
@@ -210,7 +212,8 @@ if __name__ == "__main__":
     #     if args[2] == "-epochs":
     #         remaining_epochs = int(args[3])
     # main(model_path, remaining_epochs)
-    preprocessing()
+    main(None, 0)
+    # preprocessing()
     # check_testing_and_training_paths()
     # identity_check()
     # dataset_path = Path("/Users/simonmeske/Desktop/TestOrdner/data_per_subject")

@@ -104,7 +104,7 @@ class CNN(Algorithm):
 
     def predict(
         self,
-        data_path: str = "/home/vault/iwso/iwso116h/TestData",
+        data_path: str = "/home/woody/iwso/iwso116h/TestDataRef",
         testing_subjects: list = None,
         grouped: bool = False,
     ):
@@ -121,7 +121,7 @@ class CNN(Algorithm):
                 input_path = phase_path / "inputs"
                 prediction_path = phase_path
                 prediction_path = Path(
-                    str(prediction_path).replace("TestData", "Predictions/predictions_mse_0_0001_25_epochs")
+                    str(prediction_path).replace("TestDataRef", "Predictions/predictions_mse_0001_25_epochs_ref")
                 )
                 prediction_path.mkdir(parents=True, exist_ok=True)
                 input_files = sorted(input_path.glob("*.npy"))
@@ -168,7 +168,7 @@ class CNN(Algorithm):
 
         if not image_based and model_path is None:
             self._create_model()
-        elif model_path is None:
+        elif model_path is None and image_based:
             self._image_model()
         else:
             self._model = keras.saving.load_model(model_path)

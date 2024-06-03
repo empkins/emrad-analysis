@@ -67,7 +67,7 @@ def cnnReturnScoring(
     pipeline: CnnPipeline,
     dataset: D02Dataset,
     training_and_validation_path: str = "/home/woody/iwso/iwso116h/Data",
-    testing_path: str = "/home/vault/iwso/iwso116h/TestData",
+    testing_path: str = "/home/woody/iwso/iwso116h/TestDataRef",
     epochs_done: int = 25,
     epochs_remaining: int = 25,
     model_path: str = "/home/woody/iwso/iwso116h/Models",
@@ -95,7 +95,7 @@ def cnnPipelineScoring(
     pipeline: CnnPipeline,
     dataset: D02Dataset,
     training_and_validation_path: str = "/home/woody/iwso/iwso116h/Data",
-    testing_path: str = "/home/vault/iwso/iwso116h/TestData",
+    testing_path: str = "/home/woody/iwso/iwso116h/TestDataRef",
     model_path: str = None,
     start_epoch: int = 0,
     remaining_epochs: int = 25,
@@ -157,7 +157,7 @@ def cnnPipelineScoring(
             print(f"phase {phase}")
             prediction_path = phase
             prediction_path = Path(
-                str(prediction_path).replace("TestData", "Predictions/predictions_mse_0_0001_25_epochs")
+                str(prediction_path).replace("TestDataRef", "Predictions/predictions_mse_0001_25_epochs_ref")
             )
             label_path = phase / "labels_gaussian"
             prediction_files = sorted(path.name for path in prediction_path.iterdir() if path.is_file())
