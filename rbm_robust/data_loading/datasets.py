@@ -162,6 +162,49 @@ class D02Dataset(Dataset):
         "482",
     )
 
+    REDUCED_SUBEJCTS = [
+        "231",
+        "134",
+        "284",
+        "199",
+        "269",
+        "114",
+        "196",
+        "175",
+        "071",
+        "310",
+        "094",
+        "559",
+        "287",
+        "142",
+        "288",
+        "038",
+        "251",
+        "232",
+        "173",
+        "159",
+        "117",
+        "259",
+        "156",
+        "052",
+        "198",
+        "261",
+        "263",
+        "141",
+        "121",
+        "308",
+        "139",
+        "270",
+        "146",
+        "257",
+        "254",
+        "228",
+        "201",
+        "385",
+        "338",
+        "212",
+    ]
+
     RECALCULATE = ("013", "028", "040", "147", "201", "263", "327", "439", "559")
 
     INCLUDE_SUBJECTS = ("338", "251", "310", "094")
@@ -197,7 +240,8 @@ class D02Dataset(Dataset):
         participant_ids = [pid for pid in participant_ids if pid not in self.EXCLUDE_SUBJECTS]
         # participant_ids = [pid for pid in participant_ids if pid in self.INCLUSION]
         # participant_ids = [pid for pid in participant_ids if pid in self.INCLUDE_SUBJECTS]
-        participant_ids = [pid for pid in participant_ids if pid in self.ALL_SUBJECTS]
+        # participant_ids = [pid for pid in participant_ids if pid in self.ALL_SUBJECTS]
+        participant_ids = [pid for pid in participant_ids if pid in self.REDUCED_SUBEJCTS]
 
         df = pd.DataFrame({"participant": participant_ids})
         if df.empty:
