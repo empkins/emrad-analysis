@@ -306,6 +306,7 @@ class WaveletTransformer(Algorithm):
         ax.set_xticks([])
         ax.set_yticks([])
         plt.savefig(os.path.join(path, f"{segment}.png"), bbox_inches="tight", pad_inches=0)
+        plt.close(fig)
 
     def _normalize(self, coefficients):
         normalizer_clone = self.normalizer.clone()
