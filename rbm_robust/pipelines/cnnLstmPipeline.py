@@ -427,13 +427,24 @@ class CnnPipeline(OptimizablePipeline):
         validation: D02Dataset,
         path: str = "/home/woody/iwso/iwso116h/Data",
         image_based: bool = False,
+        model_path: str = None,
+        start_epoch: int = 0,
+        remaining_epochs: int = 0,
     ) -> Self:
         self.feature_extractor = self.feature_extractor.clone()
         self.cnn = self.cnn.clone()
         print("Optimizing CNN")
         training_subjects = dataset.subjects
         validation_subjects = validation.subjects
-        self.cnn.self_optimize(path, image_based, training_subjects, validation_subjects)
+        self.cnn.self_optimize(
+            path,
+            image_based,
+            training_subjects,
+            validation_subjects,
+            model_path=model_path,
+            start_epoch=start_epoch,
+            remaining_epochs=remaining_epochs,
+        )
         return self
 
     def return_self_optimize(self):
