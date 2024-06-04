@@ -35,10 +35,10 @@ def alt():
 
 
 def preprocessing():
-    # base_path = Path("/home/vault/empkins/tpD/D03/Data/MA_Simon_Meske/Data_D02/data_per_subject")
-    # target_path = "/home/woody/iwso/iwso116h/DataRefined"
-    base_path = Path("/Users/simonmeske/Desktop/TestOrdner/data_per_subject")
-    target_path = "/Users/simonmeske/Desktop/TestOrdner/data_per_subject"
+    base_path = Path("/home/vault/empkins/tpD/D03/Data/MA_Simon_Meske/Data_D02/data_per_subject")
+    target_path = "/home/woody/iwso/iwso116h/DataWavelet"
+    # base_path = Path("/Users/simonmeske/Desktop/TestOrdner/data_per_subject")
+    # target_path = "/Users/simonmeske/Desktop/TestOrdner/data_per_subject"
     run(base_path, target_path, process_inputs=True, process_labels=True, process_images=False)
     check_for_empty_arrays()
 
