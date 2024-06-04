@@ -17,7 +17,7 @@ def run(
     # Get the subjects from the data path
     subjects_dataset = D02Dataset(pathlib.Path(data_path))
     subsets = [subjects_dataset.get_subset(participant=subject) for subject in subjects_dataset.subjects]
-    num_processes = os.cpu_count() - 1 if os.cpu_count() > 1 else 1
+    num_processes = 1
     print(num_processes)
     with Pool(num_processes) as p:
         p.starmap(

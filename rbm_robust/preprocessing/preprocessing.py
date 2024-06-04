@@ -2,10 +2,12 @@ import os.path
 from typing import Tuple, List
 
 import emrad_toolbox
+import keras.utils
 import numpy
 import numpy as np
 import pywt
 import resampy
+from PIL.Image import Image
 from PyEMD import EMD
 from matplotlib import pyplot as plt
 from scipy.signal import filtfilt, butter
@@ -246,6 +248,8 @@ class WaveletTransformer(Algorithm):
         segment: int,
         base_path: str = "Data",
         img_based: bool = False,
+        single_signal: bool = False,
+        identity: bool = False,
     ):
         """Transform the input signal using a wavelet transform
 
@@ -256,14 +260,19 @@ class WaveletTransformer(Algorithm):
             _type_: Transformed signal
         """
 
-        path = self.get_path(base_path, subject_id, phase)
+        path = self.get_path(base_path, subject_id, phase, identity=identity)
+
+        if single_signal:
+            self._calculate_single_signal(signal, segment, path, img_based)
+            self.transformed_signal_ = []
+            return self
+
         transformed_signals = []
-        for i in range(self.num_imfs):
+        for i in range(len(signal)):
             if i > len(signal) and not img_based:
                 transformed_signals.append(self._get_empty_array())
                 continue
             imf = signal[i]
-            # scales = range(self.wavelet_coefficients[0], self.wavelet_coefficients[1])
             scales = np.geomspace(self.wavelet_coefficients[0], self.wavelet_coefficients[1], num=256)
             coefficients, frequencies = pywt.cwt(imf, scales, self.wavelet_type, sampling_period=1 / self.sampling_rate)
             if img_based:
@@ -278,6 +287,25 @@ class WaveletTransformer(Algorithm):
             numpy.save(save_path, transformed_signals)
         self.transformed_signal_ = []
         return self
+
+    def _calculate_single_signal(self, signal, segment, path, img_based):
+        scales = np.geomspace(
+            self.wavelet_coefficients[0],
+            self.wavelet_coefficients[1],
+            num=self.wavelet_coefficients[1] - self.wavelet_coefficients[0],
+        )
+        coefficients, frequencies = pywt.cwt(signal, scales, self.wavelet_type, sampling_period=1 / self.sampling_rate)
+        fig, ax = plt.subplots()
+        time = numpy.arange(0, len(coefficients) / self.sampling_rate, 1 / self.sampling_rate)
+        ax.imshow(
+            numpy.abs(coefficients),
+            aspect="auto",
+            cmap="jet",
+            extent=[time.min(), time.max(), frequencies.min(), frequencies.max()],
+        )
+        ax.set_xticks([])
+        ax.set_yticks([])
+        plt.savefig(os.path.join(path, f"{segment}.png"), bbox_inches="tight", pad_inches=0)
 
     def _normalize(self, coefficients):
         normalizer_clone = self.normalizer.clone()
@@ -325,8 +353,11 @@ class WaveletTransformer(Algorithm):
         ax.set_yticks([])
         plt.savefig(os.path.join(path, f"{segment_nr}_{imf_nr}.png"), bbox_inches="tight", pad_inches=0)
 
-    def get_path(self, base_path: str, subject_id: str, phase: str):
-        path = f"{base_path}/{subject_id}/{phase}/inputs"
+    def get_path(self, base_path: str, subject_id: str, phase: str, identity: bool = False):
+        if identity:
+            path = f"{base_path}/{subject_id}/{phase}/inputs_wavlab"
+        else:
+            path = f"{base_path}/{subject_id}/{phase}/inputs"
         if not os.path.exists(path):
             os.makedirs(path)
         return path

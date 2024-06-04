@@ -82,11 +82,11 @@ class PreProcessor(Algorithm):
         ).downsampled_signal_
 
         # Empirical Mode Decomposition
-        self.preprocessed_signal_ = emd_clone.decompose(self.preprocessed_signal_).imfs_
+        # self.preprocessed_signal_ = emd_clone.decompose(self.preprocessed_signal_).imfs_
 
         # Wavelet Transform
         self.preprocessed_signal_ = wavelet_transform_clone.transform(
-            self.preprocessed_signal_, subject_id, phase, segment, base_path, image_based
+            self.preprocessed_signal_, subject_id, phase, segment, base_path, image_based, single_signal=True
         ).transformed_signal_
 
         return self
@@ -99,6 +99,7 @@ class LabelProcessor(Algorithm):
     downsampling: Downsampling
     normalizer: Normalizer
     gaussian: ComputeEcgPeakGaussians
+    wavelet_transform: WaveletTransformer
 
     labels_: np.array
 
@@ -108,11 +109,13 @@ class LabelProcessor(Algorithm):
         downsampling: Downsampling = cf(Downsampling()),
         normalizer: Normalizer = cf(Normalizer()),
         gaussian: ComputeEcgPeakGaussians = cf(ComputeEcgPeakGaussians()),
+        wavelet_transform: WaveletTransformer = cf(WaveletTransformer()),
     ):
         self.blip_algo = blip_algo
         self.downsampling = downsampling
         self.normalizer = normalizer
         self.gaussian = gaussian
+        self.wavelet_transform = wavelet_transform
 
     @make_action_safe
     def label_generation(
@@ -129,6 +132,7 @@ class LabelProcessor(Algorithm):
         downsampling_clone = self.downsampling.clone()
         normalization_clone = self.normalizer.clone()
         gaussian_clone = self.gaussian.clone()
+        wavelet_transform_clone = self.wavelet_transform.clone()
 
         processed_ecg = raw_ecg
         # Downsample the segment
@@ -141,6 +145,11 @@ class LabelProcessor(Algorithm):
         # TODO: Test this after normalization
         # # Compute the blips
         # processed_ecg = blip_algo_clone.compute(raw_ecg).blips_
+
+        # Wavelet Transform Label
+        wavelet_transform_clone.transform(
+            processed_ecg, subject_id, phase, segment, base_path, single_signal=True, identity=True
+        ).transformed_signal_
 
         # Save the labels
         path = self.get_path(subject_id, phase, base_path) + f"/{segment}.npy"
