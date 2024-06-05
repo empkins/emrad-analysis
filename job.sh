@@ -1,6 +1,6 @@
 #!/bin/bash -l
 #
-#SBATCH --job-name=uNetTwentyFiveEpochsRefinedPreproc
+#SBATCH --job-name=uNetWTRD25
 #SBATCH --nodes=1
 #SBATCH --time=12:00:00
 #SBATCH --gres=gpu:1
@@ -15,5 +15,5 @@ module add tensorrt/8.6.1.6-cuda12.0-cudnn8.9
 rsync -r $WORK/Data $TMPDIR
 
 
-cd "$HOME"/altPreprocessing/emrad-analysis || exit
+cd "$HOME"/parallel/emrad-analysis || exit
 poetry run python main.py
