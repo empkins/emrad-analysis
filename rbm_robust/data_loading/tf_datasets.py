@@ -23,6 +23,7 @@ class DatasetFactory:
     @staticmethod
     def read_image_file(input_path, label_path):
         input_file = img_to_array(load_img(input_path, target_size=(256, 1000))) / 255
+        input_file = np.transpose(input_file, (1, 0, 2))
         label_file = np.load(label_path)
         return input_file, label_file
 
@@ -109,27 +110,28 @@ class DatasetFactory:
                     continue
                 if not phase.is_dir():
                     continue
-                input_path = phase / "inputs"
+                input_path = phase / "inputs_wavlab"
                 label_path = phase / "labels_gaussian"
                 if not input_path.exists() or not label_path.exists():
                     continue
                 input_files = sorted(input_path.glob("*.png"))
                 label_files = sorted(label_path.glob("*.npy"))
-                label_filenames = set([label_file.name for label_file in label_files])
-                input_filenames = set([input_file.name for input_file in input_files])
+                label_filenames = set([label_file.stem for label_file in label_files])
+                input_filenames = set([input_file.stem for input_file in input_files])
                 filename_intersection = label_filenames.intersection(input_filenames)
                 input_files = [
-                    str(input_file) for input_file in input_files if input_file.name in filename_intersection
+                    str(input_file) for input_file in input_files if input_file.stem in filename_intersection
                 ]
                 label_files = [
-                    str(label_file) for label_file in label_files if label_file.name in filename_intersection
+                    str(label_file) for label_file in label_files if label_file.stem in filename_intersection
                 ]
                 input_paths += input_files
                 label_paths += label_files
         # Sanity Check
         all_paths = list(zip(input_paths, label_paths))
         for input_path, label_path in all_paths:
-            modified_input_path = input_path.replace("inputs", "labels_gaussian")
+            modified_input_path = input_path.replace("inputs_wavlab", "labels_gaussian")
+            modified_input_path = modified_input_path.replace("png", "npy")
             if modified_input_path != label_path:
                 raise ValueError(f"Input path: {input_path} does not match label path: {label_path}")
             if not Path(input_path).exists():
@@ -155,7 +157,7 @@ class DatasetFactory:
         dataset = (
             dataset.map(
                 lambda input_path, label_path: tf.numpy_function(
-                    self.read_image_file, [input_path, label_path], [tf.float64, tf.float64]
+                    self.read_image_file, [input_path, label_path], [tf.float32, tf.float64]
                 ),
                 num_parallel_calls=tf.data.AUTOTUNE,
             )

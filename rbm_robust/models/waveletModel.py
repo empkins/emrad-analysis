@@ -2,33 +2,21 @@ import os
 import pickle
 from datetime import datetime
 from pathlib import Path
-from typing import Optional, Tuple
+from typing import Optional
 import keras
 import numpy as np
 from keras import Sequential, layers
 from keras_unet_collection import models
 from tpcp import Algorithm, OptimizableParameter
-from itertools import groupby
-import tensorflow as tf
 from rbm_robust.data_loading.tf_datasets import DatasetFactory
 
 
-class CNN(Algorithm):
+class UNetWavelet(Algorithm):
     _action_methods = "predict"
 
     # Input Parameters
-    kernel_size: int
-    strides: Tuple[int]
-    padding: OptimizableParameter[str]
-    dilation_rate: OptimizableParameter[Tuple[int]]
-    groups: OptimizableParameter[int]
-    activation: OptimizableParameter[str]
-    use_bias: OptimizableParameter[bool]
-    kernel_initializer: OptimizableParameter[str]
-    bias_initializer: OptimizableParameter[str]
     learning_rate: OptimizableParameter[float]
     batch_size: OptimizableParameter[int]
-    filters: OptimizableParameter[int]
     overlap: int
     training_subjects: list = None
     validation_subjects: list = None
@@ -42,33 +30,13 @@ class CNN(Algorithm):
 
     def __init__(
         self,
-        filters: int = 64,
-        kernel_size: Tuple[int] = (5, 5),
-        strides: Tuple[int] = (1, 1),
-        padding: str = "valid",
-        dilation_rate: Tuple[int] = (1, 1),
-        groups: int = 1,
-        activation: str = "relu",
-        use_bias: bool = True,
-        kernel_initializer: str = "he_normal",
-        bias_initializer: str = "zeros",
         learning_rate: float = 0.001,
         num_epochs: int = 25,
         batch_size: int = 8,
         _model=None,
-        overlap: int = 0.8,
+        overlap: int = 0.4,
         image_based: bool = False,
     ):
-        self.groups = groups
-        self.filters = filters
-        self.kernel_size = kernel_size
-        self.strides = strides
-        self.padding = padding
-        self.dilation_rate = dilation_rate
-        self.activation = activation
-        self.use_bias = use_bias
-        self.kernel_initializer = kernel_initializer
-        self.bias_initializer = bias_initializer
         self.learning_rate = learning_rate
         self.num_epochs = num_epochs
         self.batch_size = batch_size
@@ -76,37 +44,10 @@ class CNN(Algorithm):
         self.image_based = image_based
         self._model = _model
 
-    def _get_middle(self, array):
-        percentile = (1 - self.overlap) / 2
-        start = int(len(array) / 2 - percentile)
-        end = int(len(array) / 2 + percentile)
-        return array[start:end]
-
-    def get_steps_per_epoch(self, base_path, training_subjects: list = None):
-        base_path = Path(base_path)
-        steps = 0
-        for subject_path in base_path.iterdir():
-            if not subject_path.is_dir():
-                continue
-            if training_subjects is not None and subject_path.name not in training_subjects:
-                continue
-            for phase_path in subject_path.iterdir():
-                if not phase_path.is_dir():
-                    continue
-                input_path = phase_path / "inputs"
-                label_path = phase_path / "labels_gaussian"
-                if not input_path.exists() or not label_path.exists():
-                    continue
-                input_names = sorted(path.name for path in input_path.iterdir() if path.is_file())
-                grouped_inputs = {k: list(g) for k, g in groupby(input_names, key=lambda s: s.split("_")[0])}
-                steps += len(grouped_inputs.keys())
-        return int(steps / self.batch_size)
-
     def predict(
         self,
         data_path: str = "/home/woody/iwso/iwso116h/TestDataRef",
         testing_subjects: list = None,
-        grouped: bool = False,
     ):
         print("Prediction started")
         data_path = Path(data_path)
@@ -120,36 +61,16 @@ class CNN(Algorithm):
                     continue
                 input_path = phase_path / "inputs"
                 prediction_path = phase_path
-                prediction_path = Path(
-                    str(prediction_path).replace("TestDataRef", "Predictions/predictions_mse_0001_25_epochs_ref")
-                )
+                prediction_path = Path(str(prediction_path).replace("TestDataRef", "Predictions/predictions_wavelet"))
                 prediction_path.mkdir(parents=True, exist_ok=True)
-                input_files = sorted(input_path.glob("*.npy"))
-                if grouped:
-                    grouped_inputs = {k: list(g) for k, g in groupby(input_files, key=lambda s: s.stem.split("_")[0])}
-                    for key, group in grouped_inputs.items():
-                        inputs = [np.load(file) for file in group]
-                        inputs = np.stack(inputs, axis=0)
-                        inputs = np.transpose(inputs)
-                        inputs = np.array([inputs])
-                        if inputs.shape != (1, 1000, 256, 5):
-                            padded = np.zeros((1, 1000, 256, 5))
-                            padded[:, : inputs.shape[1], : inputs.shape[2], : inputs.shape[3]] = inputs
-                            inputs = padded
-                        pred = self._model.predict(inputs)
-                        pred = pred.flatten()
-                        np.save(prediction_path / f"{key}.npy", pred)
-                else:
-                    for input_file in input_files:
-                        inputs = np.load(input_file)
-                        inputs = np.array([inputs])
-                        if inputs.shape != (1000, 256, 5):
-                            padded = np.zeros((1, 1000, 256, 5))
-                            padded[: inputs.shape[0], : inputs.shape[1], : inputs.shape[2], : inputs.shape[3]] = inputs
-                            inputs = padded
-                        pred = self._model.predict(inputs, verbose=0)
-                        pred = pred.flatten()
-                        np.save(prediction_path / input_file.name, pred)
+                input_files = sorted(input_path.glob("*.png"))
+                for input_file in input_files:
+                    inputs = keras.utils.img_to_array(
+                        keras.preprocessing.image.load_img(input_file, target_size=(1000, 256))
+                    )
+                    pred = self._model.predict(inputs, verbose=0)
+                    pred = pred.flatten()
+                    np.save(prediction_path / input_file.name, pred)
         return self
 
     def self_optimize(
@@ -159,7 +80,7 @@ class CNN(Algorithm):
         training_subjects: list = None,
         validation_subjects: list = None,
         model_path: str = None,
-        starting_epochs: int = 0,
+        start_epoch: int = 0,
         remaining_epochs: int = 0,
     ):
         self.base_path = base_path
@@ -206,7 +127,7 @@ class CNN(Algorithm):
         else:
             history = self._model.fit(
                 training_dataset,
-                epochs=remaining_epochs + starting_epochs,
+                epochs=remaining_epochs + start_epoch,
                 steps_per_epoch=training_steps,
                 batch_size=self.batch_size,
                 shuffle=True,
@@ -214,7 +135,7 @@ class CNN(Algorithm):
                 validation_steps=validation_steps,
                 verbose=1,
                 callbacks=[tensorboard_callback],
-                initial_epoch=starting_epochs,
+                initial_epoch=start_epoch,
             )
 
         history_path = os.getenv("WORK") + "/Runs/History/"
@@ -228,7 +149,7 @@ class CNN(Algorithm):
         self._model = Sequential()
         self._model.add(
             models.unet_2d(
-                (256, 1000, 3),
+                (1000, 256, 3),
                 filter_num=[16, 32, 64],
                 weights=None,
                 freeze_backbone=False,
@@ -237,7 +158,9 @@ class CNN(Algorithm):
                 n_labels=3,
             )
         )
-        self._model.add(layers.Conv2D(filters=1, kernel_size=(256, 1), activation="linear"))
+        self._model.add(layers.Conv2D(filters=1, kernel_size=(1, 256), activation="linear"))
+        # self._model.add(layers.Dense(1000, activation="linear"))
+        # self._model.add(layers.Flatten())
         loss_func_mse = keras.losses.MeanSquaredError(reduction="sum_over_batch_size")
         self._model.compile(optimizer=keras.optimizers.Adam(learning_rate=self.learning_rate), loss=loss_func_mse)
         return self

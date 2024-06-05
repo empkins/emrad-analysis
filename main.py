@@ -9,10 +9,13 @@ from rbm_robust.data_loading.datasets import D02Dataset
 from rbm_robust.models.cnn import CNN
 from rbm_robust.pipelines.cnnLstmPipeline import CnnPipeline
 from rbm_robust.pipelines.preprocessing_pipeline import run
+from rbm_robust.pipelines.waveletPipeline import WaveletPipeline
 from rbm_robust.validation.identityScoring import identityScoring
 from rbm_robust.validation.scoring import cnnPipelineScoring
 import os
 import tensorflow as tf
+
+from rbm_robust.validation.wavelet_scoring import waveletPipelineScoring
 
 
 def main(model_path: str = None, remaining_epochs: int = 0):
@@ -27,6 +30,21 @@ def main(model_path: str = None, remaining_epochs: int = 0):
     dataset = D02Dataset(path)
     cnn_pipeline = CnnPipeline()
     cnnPipelineScoring(cnn_pipeline, dataset, path, model_path=model_path, remaining_epochs=remaining_epochs)
+
+
+def wavelet_training(model_path: str = None, remaining_epochs: int = 0):
+    path = os.getenv("TMPDIR") + "/Data"
+    # path = "/Users/simonmeske/Desktop/Masterarbeit/TestSubjects"
+    dataset = D02Dataset(path)
+    wavelet_pipeline = WaveletPipeline()
+    waveletPipelineScoring(
+        pipeline=wavelet_pipeline,
+        dataset=dataset,
+        training_and_validation_path=path,
+        testing_path=path,
+        model_path=model_path,
+        remaining_epochs=remaining_epochs,
+    )
 
 
 def alt():
@@ -213,7 +231,8 @@ if __name__ == "__main__":
     #         remaining_epochs = int(args[3])
     # main(model_path, remaining_epochs)
     # main(None, 0)
-    preprocessing()
+    # preprocessing()
+    wavelet_training(None, 0)
     # check_testing_and_training_paths()
     # identity_check()
     # dataset_path = Path("/Users/simonmeske/Desktop/TestOrdner/data_per_subject")
