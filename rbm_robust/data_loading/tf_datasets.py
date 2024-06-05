@@ -23,7 +23,7 @@ class DatasetFactory:
     @staticmethod
     def read_image_file(input_path, label_path):
         input_file = img_to_array(load_img(input_path, target_size=(256, 1000))) / 255
-        input_file = np.transpose(input_file, (1, 0, 2))
+        # input_file = np.transpose(input_file, (1, 0, 2))
         label_file = np.load(label_path)
         return input_file, label_file
 

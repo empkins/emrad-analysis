@@ -17,7 +17,6 @@ class UNetWavelet(Algorithm):
     # Input Parameters
     learning_rate: OptimizableParameter[float]
     batch_size: OptimizableParameter[int]
-    overlap: int
     training_subjects: list = None
     validation_subjects: list = None
     base_path: str = "/home/woody/iwso/iwso116h/Data"
@@ -32,15 +31,13 @@ class UNetWavelet(Algorithm):
         self,
         learning_rate: float = 0.001,
         num_epochs: int = 25,
-        batch_size: int = 8,
+        batch_size: int = 64,
         _model=None,
-        overlap: int = 0.4,
         image_based: bool = False,
     ):
         self.learning_rate = learning_rate
         self.num_epochs = num_epochs
         self.batch_size = batch_size
-        self.overlap = overlap
         self.image_based = image_based
         self._model = _model
 
@@ -149,7 +146,7 @@ class UNetWavelet(Algorithm):
         self._model = Sequential()
         self._model.add(
             models.unet_2d(
-                (1000, 256, 3),
+                (256, 1000, 3),
                 filter_num=[16, 32, 64],
                 weights=None,
                 freeze_backbone=False,
@@ -158,9 +155,9 @@ class UNetWavelet(Algorithm):
                 n_labels=3,
             )
         )
-        self._model.add(layers.Conv2D(filters=1, kernel_size=(1, 256), activation="linear"))
+        self._model.add(layers.Conv2D(filters=1, kernel_size=(256, 1), activation="linear"))
         # self._model.add(layers.Dense(1000, activation="linear"))
-        # self._model.add(layers.Flatten())
+        self._model.add(layers.Flatten())
         loss_func_mse = keras.losses.MeanSquaredError(reduction="sum_over_batch_size")
         self._model.compile(optimizer=keras.optimizers.Adam(learning_rate=self.learning_rate), loss=loss_func_mse)
         return self
