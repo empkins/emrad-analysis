@@ -6,6 +6,7 @@ from typing import Optional
 import keras
 import numpy as np
 from keras import Sequential, layers
+from keras.src.utils import load_img, img_to_array
 from keras_unet_collection import models
 from tpcp import Algorithm, OptimizableParameter
 from rbm_robust.data_loading.tf_datasets import DatasetFactory
@@ -64,10 +65,8 @@ class UNetWavelet(Algorithm):
                 prediction_path.mkdir(parents=True, exist_ok=True)
                 input_files = sorted(input_path.glob("*.png"))
                 for input_file in input_files:
-                    inputs = keras.utils.img_to_array(
-                        keras.preprocessing.image.load_img(input_file, target_size=(1000, 256))
-                    )
-                    pred = self._model.predict(inputs, verbose=0)
+                    img_input = img_to_array(load_img(input_file, target_size=(256, 1000))) / 255
+                    pred = self._model.predict(img_input, verbose=0)
                     pred = pred.flatten()
                     np.save(prediction_path / input_file.name, pred)
         return self
