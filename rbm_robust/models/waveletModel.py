@@ -31,7 +31,7 @@ class UNetWavelet(Algorithm):
     def __init__(
         self,
         learning_rate: float = 0.001,
-        num_epochs: int = 1,
+        num_epochs: int = 15,
         batch_size: int = 16,
         _model=None,
         image_based: bool = False,
@@ -68,7 +68,7 @@ class UNetWavelet(Algorithm):
                     img_input = img_to_array(load_img(input_file, target_size=(256, 1000))) / 255
                     img_input = np.array([img_input])
                     print(img_input.shape)
-                    pred = self._model.predict(img_input)
+                    pred = self._model.predict(img_input, verbose=0)
                     pred = pred.flatten()
                     np.save(prediction_path / input_file.name, pred)
         return self
@@ -110,9 +110,6 @@ class UNetWavelet(Algorithm):
         validation_dataset, validation_steps = dataset_factory.get_wavelet_dataset_for_subjects(
             base_path, validation_subjects, batch_size=self.batch_size
         )
-
-        training_steps = 400
-        validation_steps = 100
 
         print("Fitting")
         if model_path is None:
