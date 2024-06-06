@@ -139,7 +139,7 @@ def waveletPipelineScoring(
                 total_pred_peaks += f1RPeakScore.pred_peaks_
 
     # Save the Model
-    pipeline.cnn.save_model()
+    pipeline.wavelet_model.save_model()
 
     if total_pred_peaks == 0:
         print("No Peaks detected")
