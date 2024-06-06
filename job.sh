@@ -1,8 +1,8 @@
 #!/bin/bash -l
 #
-#SBATCH --job-name=uNetWTRD25
+#SBATCH --job-name=uNet25MSEWavelet
 #SBATCH --nodes=1
-#SBATCH --time=12:00:00
+#SBATCH --time=10:00:00
 #SBATCH --gres=gpu:1
 
 
