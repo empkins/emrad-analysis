@@ -66,6 +66,7 @@ class UNetWavelet(Algorithm):
                 input_files = sorted(input_path.glob("*.png"))
                 for input_file in input_files:
                     img_input = img_to_array(load_img(input_file, target_size=(256, 1000))) / 255
+                    img_input = np.array([img_input])
                     print(img_input.shape)
                     pred = self._model.predict(img_input)
                     pred = pred.flatten()
