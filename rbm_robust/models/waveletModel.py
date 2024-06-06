@@ -31,7 +31,7 @@ class UNetWavelet(Algorithm):
     def __init__(
         self,
         learning_rate: float = 0.001,
-        num_epochs: int = 25,
+        num_epochs: int = 1,
         batch_size: int = 16,
         _model=None,
         image_based: bool = False,
@@ -110,6 +110,9 @@ class UNetWavelet(Algorithm):
         validation_dataset, validation_steps = dataset_factory.get_wavelet_dataset_for_subjects(
             base_path, validation_subjects, batch_size=self.batch_size
         )
+
+        training_steps = 400
+        validation_steps = 100
 
         print("Fitting")
         if model_path is None:
