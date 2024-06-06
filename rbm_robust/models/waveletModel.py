@@ -60,14 +60,13 @@ class UNetWavelet(Algorithm):
                 input_path = phase_path / "inputs_wavlab"
                 prediction_path = phase_path
                 prediction_path = Path(
-                    str(prediction_path).replace("TestDataRef", "Predictions/predictions_wavelet_ident")
+                    str(prediction_path).replace("TestData", "Predictions/predictions_wavelet_ident")
                 )
                 prediction_path.mkdir(parents=True, exist_ok=True)
                 input_files = sorted(input_path.glob("*.png"))
                 for input_file in input_files:
                     img_input = img_to_array(load_img(input_file, target_size=(256, 1000))) / 255
                     img_input = np.array([img_input])
-                    print(img_input.shape)
                     pred = self._model.predict(img_input, verbose=0)
                     pred = pred.flatten()
                     np.save(prediction_path / input_file.name, pred)
