@@ -43,7 +43,7 @@ class WaveletPipeline(OptimizablePipeline):
         )
         return self
 
-    def run(self, testing_subjects: list = None, path: str = "/home/woody/iwso/iwso116h/Data") -> Self:
+    def run(self, testing_subjects: list = None, path: str = "/home/woody/iwso/iwso116h/TestData") -> Self:
         print("Run")
         self.wavelet_model.predict(path, testing_subjects)
         return self

@@ -65,7 +65,7 @@ def waveletPipelineScoring(
     pipeline: WaveletPipeline,
     dataset: D02Dataset,
     training_and_validation_path: str = "/home/woody/iwso/iwso116h/Data",
-    testing_path: str = "/home/woody/iwso/iwso116h/TestDataRef",
+    testing_path: str = "/home/woody/iwso/iwso116h/TestData",
     model_path: str = None,
     start_epoch: int = 0,
     remaining_epochs: int = 25,
@@ -126,9 +126,7 @@ def waveletPipelineScoring(
                 continue
             print(f"phase {phase}")
             prediction_path = phase
-            prediction_path = Path(
-                str(prediction_path).replace("TestData", "Predictions/predictions_wavelet_mse_001_25_epochs")
-            )
+            prediction_path = Path(str(prediction_path).replace("TestData", "Predictions/predictions_wavelet_ident"))
             label_path = phase / "labels_gaussian"
             prediction_files = sorted(path.name for path in prediction_path.iterdir() if path.is_file())
             f1RPeakScore = RPeakF1Score(max_deviation_ms=100)

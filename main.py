@@ -41,7 +41,6 @@ def wavelet_training(model_path: str = None, remaining_epochs: int = 0):
         pipeline=wavelet_pipeline,
         dataset=dataset,
         training_and_validation_path=path,
-        testing_path=path,
         model_path=model_path,
         remaining_epochs=remaining_epochs,
     )
