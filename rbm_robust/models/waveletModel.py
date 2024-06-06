@@ -69,7 +69,8 @@ class UNetWavelet(Algorithm):
                     img_input = np.array([img_input])
                     pred = self._model.predict(img_input, verbose=0)
                     pred = pred.flatten()
-                    np.save(prediction_path / input_file.stem + ".npy", pred)
+                    filename = input_file.stem + ".npy"
+                    np.save(prediction_path / filename, pred)
         return self
 
     def self_optimize(
