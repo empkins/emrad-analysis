@@ -1,6 +1,6 @@
 #!/bin/bash -l
 #
-#SBATCH --job-name=uNet70MSEWavelet0001
+#SBATCH --job-name=uNet70BCEWavelet0001
 #SBATCH --nodes=1
 #SBATCH --time=22:45:00
 #SBATCH --gres=gpu:1
@@ -15,5 +15,5 @@ module add tensorrt/8.6.1.6-cuda12.0-cudnn8.9
 rsync -r $WORK/Data $TMPDIR
 
 
-cd "$HOME"/parallel/emrad-analysis || exit
+cd "$HOME"/emrad-analysis || exit
 poetry run python main.py
