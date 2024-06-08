@@ -30,7 +30,7 @@ class UNetWavelet(Algorithm):
 
     def __init__(
         self,
-        learning_rate: float = 0.0001,
+        learning_rate: float = 0.001,
         num_epochs: int = 70,
         batch_size: int = 16,
         _model=None,
