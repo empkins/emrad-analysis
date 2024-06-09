@@ -127,7 +127,7 @@ def waveletPipelineScoring(
             print(f"phase {phase}")
             prediction_path = phase
             prediction_path = Path(
-                str(prediction_path).replace("TestData", "Predictions/predictions_wavelet_mse_75_001")
+                str(prediction_path).replace("TestData", "Predictions/predictions_wavelet_mse_75_0001")
             )
             label_path = phase / "labels_gaussian"
             prediction_files = sorted(path.name for path in prediction_path.iterdir() if path.is_file())
