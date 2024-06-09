@@ -60,7 +60,7 @@ class UNetWavelet(Algorithm):
                 input_path = phase_path / "inputs"
                 prediction_path = phase_path
                 prediction_path = Path(
-                    str(prediction_path).replace("TestData", "Predictions/predictions_wavelet_mse_75_0001")
+                    str(prediction_path).replace("TestData", "Predictions/predictions_wavelet_bce_75_0001_sig")
                 )
                 prediction_path.mkdir(parents=True, exist_ok=True)
                 input_files = sorted(input_path.glob("*.png"))
@@ -161,9 +161,10 @@ class UNetWavelet(Algorithm):
         self._model.add(layers.Conv2D(filters=1, kernel_size=(256, 1), activation="linear"))
         # self._model.add(layers.Dense(1000, activation="linear"))
         self._model.add(layers.Flatten())
-        loss_func_bce = keras.losses.BinaryCrossentropy(from_logits=True, reduction="sum_over_batch_size")
+        self._model.add(layers.Dense(units=1000, activation="softmax"))
+        loss_func_bce = keras.losses.BinaryCrossentropy(from_logits=False, reduction="sum_over_batch_size")
         loss_func_mse = keras.losses.MeanSquaredError(reduction="sum_over_batch_size")
-        self._model.compile(optimizer=keras.optimizers.Adam(learning_rate=self.learning_rate), loss=loss_func_mse)
+        self._model.compile(optimizer=keras.optimizers.Adam(learning_rate=self.learning_rate), loss=loss_func_bce)
         return self
 
     def save_model(self):
