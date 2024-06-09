@@ -99,6 +99,48 @@ class DatasetFactory:
         return input_paths, label_paths
 
     @staticmethod
+    def _get_all_wavelet_input_and_ecg_label_paths(base_path, subject_list, training_phase: str = None):
+        base_path = Path(base_path)
+        input_paths = []
+        label_paths = []
+        for subject in subject_list:
+            subject_path = base_path / subject
+            for phase in subject_path.iterdir():
+                if training_phase is not None and training_phase not in phase.name:
+                    continue
+                if not phase.is_dir():
+                    continue
+                input_path = phase / "inputs"
+                label_path = phase / "labels_ecg"
+                if not input_path.exists() or not label_path.exists():
+                    continue
+                input_files = sorted(input_path.glob("*.png"))
+                label_files = sorted(label_path.glob("*.npy"))
+                label_filenames = set([label_file.stem for label_file in label_files])
+                input_filenames = set([input_file.stem for input_file in input_files])
+                filename_intersection = label_filenames.intersection(input_filenames)
+                input_files = [
+                    str(input_file) for input_file in input_files if input_file.stem in filename_intersection
+                ]
+                label_files = [
+                    str(label_file) for label_file in label_files if label_file.stem in filename_intersection
+                ]
+                input_paths += input_files
+                label_paths += label_files
+        # Sanity Check
+        all_paths = list(zip(input_paths, label_paths))
+        for input_path, label_path in all_paths:
+            modified_input_path = input_path.replace("inputs", "labels_gaussian")
+            modified_input_path = modified_input_path.replace("png", "npy")
+            if modified_input_path != label_path:
+                raise ValueError(f"Input path: {input_path} does not match label path: {label_path}")
+            if not Path(input_path).exists():
+                raise FileNotFoundError(f"Input path: {input_path} does not exist")
+            if not Path(label_path).exists():
+                raise FileNotFoundError(f"Label path: {label_path} does not exist")
+        return input_paths, label_paths
+
+    @staticmethod
     def _get_all_wavelet_input_and_label_paths(base_path, subject_list, training_phase: str = None):
         base_path = Path(base_path)
         input_paths = []
@@ -143,6 +185,15 @@ class DatasetFactory:
     def get_dataset_for_subjects(self, base_path, training_subjects, batch_size: int = 8, training_phase=None):
         input_paths, label_paths = self._get_all_input_and_label_paths(base_path, training_subjects, training_phase)
         dataset = self._build_dataset(input_paths, label_paths, batch_size)
+        return dataset, int(len(input_paths) / batch_size)
+
+    def get_wavelet_dataset_and_ecg_labels_for_subjects(
+        self, base_path, training_subjects, batch_size: int = 8, training_phase=None
+    ):
+        input_paths, label_paths = self._get_all_wavelet_input_and_ecg_label_paths(
+            base_path, training_subjects, training_phase
+        )
+        dataset = self._build_wavelet_dataset(input_paths, label_paths, batch_size)
         return dataset, int(len(input_paths) / batch_size)
 
     def get_wavelet_dataset_for_subjects(self, base_path, training_subjects, batch_size: int = 8, training_phase=None):

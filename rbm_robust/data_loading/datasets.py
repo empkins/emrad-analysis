@@ -55,6 +55,66 @@ class D02Dataset(Dataset):
         "537",
         "350",
     )
+    ALR_PROC = (
+        "007",
+        "008",
+        "038",
+        "040",
+        "052",
+        "071",
+        "094",
+        "111",
+        "114",
+        "119",
+        "121",
+        "134",
+        "137",
+        "140",
+        "146",
+        "151",
+        "160",
+        "171",
+        "175",
+        "199",
+        "203",
+        "212",
+        "213",
+        "223",
+        "226",
+        "228",
+        "239",
+        "240",
+        "241",
+        "251",
+        "253",
+        "254",
+        "259",
+        "260",
+        "263",
+        "266",
+        "268",
+        "269",
+        "272",
+        "288",
+        "292",
+        "295",
+        "296",
+        "300",
+        "310",
+        "315",
+        "316",
+        "327",
+        "338",
+        "371",
+        "416",
+        "417",
+        "439",
+        "447",
+        "471",
+        "472",
+        "559",
+    )
+
     ALL_SUBJECTS = (
         "146",
         "257",
@@ -240,7 +300,8 @@ class D02Dataset(Dataset):
         participant_ids = [pid for pid in participant_ids if pid not in self.EXCLUDE_SUBJECTS]
         # participant_ids = [pid for pid in participant_ids if pid in self.INCLUSION]
         # participant_ids = [pid for pid in participant_ids if pid in self.INCLUDE_SUBJECTS]
-        participant_ids = [pid for pid in participant_ids if pid in self.ALL_SUBJECTS]
+        # participant_ids = [pid for pid in participant_ids if pid in self.ALL_SUBJECTS]
+        participant_ids = [pid for pid in participant_ids if pid not in self.ALR_PROC]
         # participant_ids = [pid for pid in participant_ids if pid in self.REDUCED_SUBEJCTS]
 
         df = pd.DataFrame({"participant": participant_ids})

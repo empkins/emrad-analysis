@@ -60,7 +60,7 @@ class UNetWavelet(Algorithm):
                 input_path = phase_path / "inputs"
                 prediction_path = phase_path
                 prediction_path = Path(
-                    str(prediction_path).replace("TestData", "Predictions/predictions_wavelet_bce_75_001_sig")
+                    str(prediction_path).replace("TestData", "Predictions/predictions_wavelet_bce_75_001_sig_ecg")
                 )
                 prediction_path.mkdir(parents=True, exist_ok=True)
                 input_files = sorted(input_path.glob("*.png"))
@@ -104,10 +104,10 @@ class UNetWavelet(Algorithm):
 
         print("Before Generators")
         dataset_factory = DatasetFactory()
-        training_dataset, training_steps = dataset_factory.get_wavelet_dataset_for_subjects(
+        training_dataset, training_steps = dataset_factory.get_wavelet_dataset_and_ecg_labels_for_subjects(
             base_path, training_subjects, batch_size=self.batch_size
         )
-        validation_dataset, validation_steps = dataset_factory.get_wavelet_dataset_for_subjects(
+        validation_dataset, validation_steps = dataset_factory.get_wavelet_dataset_and_ecg_labels_for_subjects(
             base_path, validation_subjects, batch_size=self.batch_size
         )
 
