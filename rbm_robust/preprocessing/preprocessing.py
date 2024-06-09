@@ -223,7 +223,7 @@ class WaveletTransformer(Algorithm):
 
     def __init__(
         self,
-        wavelet_coefficients: Tuple[int, int] = (1, 257),
+        wavelet_coefficients: Tuple[int, int] = (1, 1024),
         wavelet_type="morl",
         sampling_rate: float = 200,
         window_size: int = 5,
@@ -358,7 +358,7 @@ class WaveletTransformer(Algorithm):
         if identity:
             path = f"{base_path}/{subject_id}/{phase}/inputs_wavlab"
         else:
-            path = f"{base_path}/{subject_id}/{phase}/inputs"
+            path = f"{base_path}/{subject_id}/{phase}/inputs_wavelet_1024"
         if not os.path.exists(path):
             os.makedirs(path)
         return path

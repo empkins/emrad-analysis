@@ -139,6 +139,11 @@ class LabelProcessor(Algorithm):
         processed_ecg = downsampling_clone.downsample(processed_ecg, downsample_hz, sampling_rate).downsampled_signal_
         # Normalize the segment
         processed_ecg = normalization_clone.normalize(processed_ecg).normalized_signal_
+
+        # Save normalized signal
+        path = self.get_ecg_path(subject_id, phase, base_path) + f"/{segment}.npy"
+        np.save(path, processed_ecg)
+
         # Compute the gaussian
         processed_ecg = gaussian_clone.compute(processed_ecg, downsample_hz).peak_gaussians_
 
@@ -156,6 +161,12 @@ class LabelProcessor(Algorithm):
         np.save(path, processed_ecg)
         self.labels_ = processed_ecg
         return self
+
+    def get_ecg_path(self, subject_id: str, phase: str, base_path: str = "Data"):
+        path = f"{base_path}/{subject_id}/{phase}/labels_ecg"
+        if not os.path.exists(path):
+            os.makedirs(path)
+        return path
 
     def get_path(self, subject_id: str, phase: str, base_path: str = "Data"):
         path = f"{base_path}/{subject_id}/{phase}/labels_gaussian"
