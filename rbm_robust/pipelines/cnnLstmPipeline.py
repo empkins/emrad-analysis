@@ -80,6 +80,8 @@ class PreProcessor(Algorithm):
         self.preprocessed_signal_ = downsampling_clone.downsample(
             self.preprocessed_signal_, 200, sampling_rate
         ).downsampled_signal_
+        path = self.get_filtered_radar_path(subject_id, phase) + f"/{segment}.npy"
+        np.save(path, self.preprocessed_signal_)
 
         # Empirical Mode Decomposition
         # self.preprocessed_signal_ = emd_clone.decompose(self.preprocessed_signal_).imfs_
@@ -90,6 +92,14 @@ class PreProcessor(Algorithm):
         ).transformed_signal_
 
         return self
+
+    def get_filtered_radar_path(
+        self, subject_id: str, phase: str, base_path: str = "/home/woody/iwso/iwso116h/RadarData"
+    ):
+        path = f"{base_path}/{subject_id}/{phase}/filtered_radar"
+        if not os.path.exists(path):
+            os.makedirs(path)
+        return path
 
 
 class LabelProcessor(Algorithm):
