@@ -15,5 +15,5 @@ module add tensorrt/8.6.1.6-cuda12.0-cudnn8.9
 rsync -r $WORK/Data $TMPDIR
 
 
-cd "$HOME"/parallel/emrad-analysis || exit
+cd "$HOME"/otherVersion/emrad-analysis || exit
 poetry run python main.py
