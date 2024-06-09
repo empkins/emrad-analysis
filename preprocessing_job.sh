@@ -3,7 +3,7 @@
 #SBATCH --job-name=wavePreprocess
 #SBATCH --nodes=1
 #SBATCH --time=8:45:00
-#SBATCH --gres=gpu:rtx3080:1
+#SBATCH --gres=gpu:1
 
 
 module unload python
