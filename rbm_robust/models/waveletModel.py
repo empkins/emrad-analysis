@@ -30,7 +30,7 @@ class UNetWavelet(Algorithm):
 
     def __init__(
         self,
-        learning_rate: float = 0.0001,
+        learning_rate: float = 0.001,
         num_epochs: int = 75,
         batch_size: int = 16,
         _model=None,
@@ -60,7 +60,7 @@ class UNetWavelet(Algorithm):
                 input_path = phase_path / "inputs"
                 prediction_path = phase_path
                 prediction_path = Path(
-                    str(prediction_path).replace("TestData", "Predictions/predictions_wavelet_bce_75_0001_sig")
+                    str(prediction_path).replace("TestData", "Predictions/predictions_wavelet_bce_75_001_sig")
                 )
                 prediction_path.mkdir(parents=True, exist_ok=True)
                 input_files = sorted(input_path.glob("*.png"))
