@@ -1,8 +1,8 @@
 #!/bin/bash -l
 #
-#SBATCH --job-name=uNet75BCEWavelet001Sigmoid
+#SBATCH --job-name=uNet75BCEWavelet001SoftMax
 #SBATCH --nodes=1
-#SBATCH --time=16:45:00
+#SBATCH --time=16:30:00
 #SBATCH --gres=gpu:rtx3080:1
 
 
@@ -15,5 +15,5 @@ module add tensorrt/8.6.1.6-cuda12.0-cudnn8.9
 rsync -r $WORK/Data $TMPDIR
 
 
-cd "$HOME"/emrad-analysis || exit
+cd "$HOME"/preprocess/emrad-analysis || exit
 poetry run python main.py

@@ -300,8 +300,8 @@ class D02Dataset(Dataset):
         participant_ids = [pid for pid in participant_ids if pid not in self.EXCLUDE_SUBJECTS]
         # participant_ids = [pid for pid in participant_ids if pid in self.INCLUSION]
         # participant_ids = [pid for pid in participant_ids if pid in self.INCLUDE_SUBJECTS]
-        # participant_ids = [pid for pid in participant_ids if pid in self.ALL_SUBJECTS]
-        participant_ids = [pid for pid in participant_ids if pid not in self.ALR_PROC]
+        participant_ids = [pid for pid in participant_ids if pid in self.ALL_SUBJECTS]
+        # participant_ids = [pid for pid in participant_ids if pid not in self.ALR_PROC]
         # participant_ids = [pid for pid in participant_ids if pid in self.REDUCED_SUBEJCTS]
 
         df = pd.DataFrame({"participant": participant_ids})

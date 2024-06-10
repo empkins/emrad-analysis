@@ -44,7 +44,7 @@ class UNetWavelet(Algorithm):
 
     def predict(
         self,
-        data_path: str = "/home/woody/iwso/iwso116h/TestDataRef",
+        data_path: str = "/home/woody/iwso/iwso116h/TestData",
         testing_subjects: list = None,
     ):
         print("Prediction started")
