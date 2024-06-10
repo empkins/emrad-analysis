@@ -133,6 +133,110 @@ def check_for_empty_arrays():
                     print(f"Empty array in {label_file} at {label_path}")
 
 
+def move_training_data():
+    source_path = os.getenv("WORK") + "/DataWavelet"
+    target_path = os.getenv("WORK") + "/Data"
+    input_different_wavelet = "inputs_wavelet_1024"
+    labels_ecg = "labels_ecg"
+    subjects = (
+        "231",
+        "134",
+        "284",
+        "199",
+        "269",
+        "114",
+        "196",
+        "175",
+        "071",
+        "310",
+        "094",
+        "559",
+        "287",
+        "142",
+        "288",
+        "038",
+        "251",
+        "232",
+        "173",
+        "159",
+        "117",
+        "259",
+        "156",
+        "052",
+        "198",
+        "261",
+        "263",
+        "141",
+        "121",
+        "308",
+        "139",
+        "270",
+        "216",
+        "100",
+        "137",
+        "013",
+        "119",
+        "171",
+        "060",
+        "295",
+        "040",
+        "260",
+        "160",
+        "337",
+        "300",
+        "230",
+        "221",
+        "266",
+        "203",
+        "471",
+        "250",
+        "472",
+        "439",
+        "177",
+        "240",
+        "213",
+        "327",
+        "239",
+        "273",
+        "151",
+        "444",
+        "241",
+        "253",
+        "476",
+        "162",
+        "143",
+        "007",
+        "226",
+        "130",
+        "008",
+        "135",
+        "316",
+        "416",
+        "272",
+        "315",
+        "296",
+        "129",
+        "242",
+        "268",
+        "111",
+        "371",
+        "223",
+        "482",
+    )
+    for subject in subjects:
+        source_subject_path = Path(source_path) / subject
+        target_subject_path = Path(target_path) / subject
+        for phase in source_subject_path.iterdir():
+            if not phase.is_dir():
+                continue
+            target_phase_path = target_subject_path / phase.name
+            source_wavelet_path = phase / input_different_wavelet
+            source_ecg_label_path = phase / labels_ecg
+            print(f"Moving {source_wavelet_path} to {target_phase_path} - source wavelet")
+            print(f"Moving {source_ecg_label_path} to {target_phase_path} - source ecg")
+            # shutil.move(source_wavelet_path, target_phase_path)
+
+
 def rename_folders():
     base_path = os.getenv("TMPDIR") + "/Data"
     base_path = pathlib.Path(base_path)
@@ -230,7 +334,8 @@ if __name__ == "__main__":
     #         remaining_epochs = int(args[3])
     # main(model_path, remaining_epochs)
     # main(None, 0)
-    preprocessing()
+    # preprocessing()
+    move_training_data()
     # wavelet_training(None, 0)
     # check_testing_and_training_paths()
     # identity_check()
