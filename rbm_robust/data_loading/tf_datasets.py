@@ -130,7 +130,7 @@ class DatasetFactory:
         # Sanity Check
         all_paths = list(zip(input_paths, label_paths))
         for input_path, label_path in all_paths:
-            modified_input_path = input_path.replace("inputs", "labels_gaussian")
+            modified_input_path = input_path.replace("inputs", "labels_ecg")
             modified_input_path = modified_input_path.replace("png", "npy")
             if modified_input_path != label_path:
                 raise ValueError(f"Input path: {input_path} does not match label path: {label_path}")
