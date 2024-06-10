@@ -173,10 +173,10 @@ def move_training_data():
             target_phase_path = target_subject_path / phase.name
             source_wavelet_path = phase / input_different_wavelet
             source_ecg_label_path = phase / labels_ecg
-            print(f"Moving {source_wavelet_path} to {target_phase_path} - source wavelet")
-            print(f"Moving {source_ecg_label_path} to {target_phase_path} - source ecg")
-            # shutil.move(source_wavelet_path, target_phase_path)
-            # shutil.move(source_ecg_label_path, target_phase_path)
+            # print(f"Moving {source_wavelet_path} to {target_phase_path} - source wavelet")
+            # print(f"Moving {source_ecg_label_path} to {target_phase_path} - source ecg")
+            shutil.move(source_wavelet_path, target_phase_path)
+            shutil.move(source_ecg_label_path, target_phase_path)
 
 
 def rename_folders():
