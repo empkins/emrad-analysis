@@ -60,7 +60,7 @@ class UNetWavelet(Algorithm):
                 input_path = phase_path / "inputs"
                 prediction_path = phase_path
                 prediction_path = Path(
-                    str(prediction_path).replace("TestData", "Predictions/predictions_wavelet_bce_75_001_sig_ecg")
+                    str(prediction_path).replace("TestData", "Predictions/predictions_wavelet_bce_75_001_sigmoid_gauss")
                 )
                 prediction_path.mkdir(parents=True, exist_ok=True)
                 input_files = sorted(input_path.glob("*.png"))
@@ -104,10 +104,10 @@ class UNetWavelet(Algorithm):
 
         print("Before Generators")
         dataset_factory = DatasetFactory()
-        training_dataset, training_steps = dataset_factory.get_wavelet_dataset_and_ecg_labels_for_subjects(
+        training_dataset, training_steps = dataset_factory.get_wavelet_dataset_for_subjects(
             base_path, training_subjects, batch_size=self.batch_size
         )
-        validation_dataset, validation_steps = dataset_factory.get_wavelet_dataset_and_ecg_labels_for_subjects(
+        validation_dataset, validation_steps = dataset_factory.get_wavelet_dataset_for_subjects(
             base_path, validation_subjects, batch_size=self.batch_size
         )
 
@@ -161,10 +161,10 @@ class UNetWavelet(Algorithm):
         self._model.add(layers.Conv2D(filters=1, kernel_size=(256, 1), activation="linear"))
         # self._model.add(layers.Dense(1000, activation="linear"))
         self._model.add(layers.Flatten())
-        self._model.add(layers.Dense(units=1000, activation="softmax"))
-        # loss_func_bce = keras.losses.BinaryCrossentropy(from_logits=False, reduction="sum_over_batch_size")
-        loss_func_mse = keras.losses.MeanSquaredError(reduction="sum_over_batch_size")
-        self._model.compile(optimizer=keras.optimizers.Adam(learning_rate=self.learning_rate), loss=loss_func_mse)
+        self._model.add(layers.Dense(units=1000, activation="sigmoid"))
+        loss_func_bce = keras.losses.BinaryCrossentropy(from_logits=False, reduction="sum_over_batch_size")
+        # loss_func_mse = keras.losses.MeanSquaredError(reduction="sum_over_batch_size")
+        self._model.compile(optimizer=keras.optimizers.Adam(learning_rate=self.learning_rate), loss=loss_func_bce)
         return self
 
     def save_model(self):
