@@ -226,6 +226,9 @@ def move_training_data():
     for subject in subjects:
         source_subject_path = Path(source_path) / subject
         target_subject_path = Path(target_path) / subject
+        if not source_subject_path.exists():
+            print(f"Source path {source_subject_path} does not exist")
+            continue
         for phase in source_subject_path.iterdir():
             if not phase.is_dir():
                 continue
