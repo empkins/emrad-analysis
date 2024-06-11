@@ -22,7 +22,7 @@ class RPeakF1Score(Algorithm):
     pred_peaks_: int
     total_peaks_: int
 
-    def __init__(self, max_deviation_ms: int = 100, max_heart_rate: int = 180, sampling_rate: float = 100):
+    def __init__(self, max_deviation_ms: int = 100, max_heart_rate: int = 180, sampling_rate: float = 200):
         self.max_deviation_ms = max_deviation_ms
         self.max_heart_rate = max_heart_rate
         self.sampling_rate = sampling_rate
