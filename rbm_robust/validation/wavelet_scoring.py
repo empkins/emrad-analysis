@@ -129,7 +129,7 @@ def waveletPipelineScoring(
             prediction_path = Path(
                 str(prediction_path).replace("TestData", "Predictions/predictions_ecg_bce_75_0001_sigmoid")
             )
-            label_path = phase / "labels_ecg"
+            label_path = phase / "labels_gaussian"
             prediction_files = sorted(path.name for path in prediction_path.iterdir() if path.is_file())
             f1RPeakScore = RPeakF1Score(max_deviation_ms=100)
             for prediction_file in prediction_files:
