@@ -315,8 +315,7 @@ class WaveletTransformer(Algorithm):
             log_transformed_coefficients = np.zeros_like(coefficients, dtype=float)
             non_zero_mask = coefficients != 0
             log_transformed_coefficients[non_zero_mask] = np.log(np.abs(coefficients[non_zero_mask]))
-            coefficients_log_scaled = np.where(coefficients == 0, -np.inf, np.log10(np.abs(coefficients)))
-            np.save(os.path.join(log_path, f"{segment}.npy"), coefficients_log_scaled)
+            np.save(os.path.join(log_path, f"{segment}.npy"), log_transformed_coefficients)
 
     def _normalize(self, coefficients):
         normalizer_clone = self.normalizer.clone()
