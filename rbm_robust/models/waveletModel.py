@@ -158,10 +158,9 @@ class UNetWavelet(Algorithm):
                 n_labels=3,
             )
         )
-        self._model.add(layers.Conv2D(filters=1, kernel_size=(256, 1), activation="linear"))
+        self._model.add(layers.Conv2D(filters=1, kernel_size=(256, 1), activation="sigmoid"))
         # self._model.add(layers.Dense(1000, activation="linear"))
         self._model.add(layers.Flatten())
-        self._model.add(layers.Dense(units=1000, activation="sigmoid"))
         loss_func_bce = keras.losses.BinaryCrossentropy(from_logits=False, reduction="sum_over_batch_size")
         # loss_func_mse = keras.losses.MeanSquaredError(reduction="sum_over_batch_size")
         self._model.compile(optimizer=keras.optimizers.Adam(learning_rate=self.learning_rate), loss=loss_func_bce)

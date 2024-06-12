@@ -80,8 +80,8 @@ class PreProcessor(Algorithm):
         self.preprocessed_signal_ = downsampling_clone.downsample(
             self.preprocessed_signal_, 200, sampling_rate
         ).downsampled_signal_
-        path = self.get_filtered_radar_path(subject_id, phase) + f"/{segment}.npy"
-        np.save(path, self.preprocessed_signal_)
+        # path = self.get_filtered_radar_path(subject_id, phase) + f"/{segment}.npy"
+        # np.save(path, self.preprocessed_signal_)
 
         # Empirical Mode Decomposition
         # self.preprocessed_signal_ = emd_clone.decompose(self.preprocessed_signal_).imfs_
@@ -335,6 +335,52 @@ class InputAndLabelGenerator(Algorithm):
                         j,
                         self.downsampled_hz,
                         base_path,
+                    )
+        self.input_data_path_ = base_path
+        return self
+
+    @make_action_safe
+    def generate_training_inputs(self, dataset: D02Dataset, base_path: str = "Data", image_based: bool = False):
+        # Init Clones
+        pre_processor_clone = self.pre_processor.clone()
+        label_processor_clone = self.labelProcessor.clone()
+        segmentation_clone = self.segmentation.clone()
+        for i in range(len(dataset.subjects)):
+            subject = dataset.get_subset(participant=dataset.subjects[i])
+            print(f"Subject {subject.subjects[0]}")
+            try:
+                radar_data = subject.synced_radar
+                ecg_data = subject.synced_ecg
+            except Exception as e:
+                print(f"Exclude Subject {subject} due to error {e}")
+                continue
+            phases = subject.phases
+            sampling_rate = subject.SAMPLING_RATE_DOWNSAMPLED
+            for phase in phases.keys():
+                print(f"Starting phase {phase}")
+                timezone = pytz.timezone("Europe/Berlin")
+                phase_start = timezone.localize(phases[phase]["start"])
+                phase_end = timezone.localize(phases[phase]["end"])
+                phase_radar_data = radar_data[phase_start:phase_end]
+                phase_ecg_data = ecg_data[phase_start:phase_end]
+                # Segmentation
+                if len(phase_radar_data) == 0 or len(phase_ecg_data) == 0:
+                    continue
+                segments_radar = segmentation_clone.segment(phase_radar_data, sampling_rate).segmented_signal_
+                segments_ecg = segmentation_clone.segment(phase_ecg_data, sampling_rate).segmented_signal_
+                if len(segments_radar) != len(segments_ecg):
+                    continue
+                # Create Inputs
+                length = min(len(segments_radar), len(segments_ecg))
+                for j in range(length):
+                    pre_processor_clone.preprocess(
+                        segments_radar[j],
+                        subject.SAMPLING_RATE_DOWNSAMPLED,
+                        subject.subjects[0],
+                        phase,
+                        j,
+                        base_path,
+                        image_based,
                     )
         self.input_data_path_ = base_path
         return self

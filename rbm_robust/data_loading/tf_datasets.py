@@ -21,6 +21,18 @@ class DatasetFactory:
             return None
 
     @staticmethod
+    def read_dual_channel_file(input_path, input_log_path, label_path):
+        try:
+            input_file = np.load(input_path)
+            input_log_file = np.load(input_log_path)
+            label_file = np.load(label_path)
+            input_file = np.stack((input_file, input_log_file))
+            return input_file, label_file
+        except Exception as e:
+            print(f"Exception: {e}")
+            return None
+
+    @staticmethod
     def read_image_file(input_path, label_path):
         input_file = img_to_array(load_img(input_path, target_size=(256, 1000))) / 255
         # input_file = np.transpose(input_file, (1, 0, 2))
@@ -141,6 +153,120 @@ class DatasetFactory:
         return input_paths, label_paths
 
     @staticmethod
+    def _get_dual_channel_wavelet_input_and_label_paths(
+        base_path,
+        subject_list,
+        training_phase: str = None,
+        wavelet_type: str = "morl",
+        ecg_labels: bool = False,
+    ):
+        input_folder_name = f"inputs_wavelet_array_{wavelet_type}"
+        input_log_folder_name = f"inputs_wavelet_array_{wavelet_type}_log"
+        label_folder_name = "labels_ecg" if ecg_labels else "labels_gaussian"
+        base_path = Path(base_path)
+        input_paths = []
+        input_log_paths = []
+        label_paths = []
+        for subject in subject_list:
+            subject_path = base_path / subject
+            for phase in subject_path.iterdir():
+                if training_phase is not None and training_phase not in phase.name:
+                    continue
+                if not phase.is_dir():
+                    continue
+                input_path = phase / input_folder_name
+                input_log_path = phase / input_log_folder_name
+                label_path = phase / label_folder_name
+                if not input_path.exists() or not label_path.exists() or not input_log_path.exists():
+                    continue
+                input_files = sorted(input_path.glob("*.npy"))
+                input_log_files = sorted(input_log_path.glob("*.npy"))
+                label_files = sorted(label_path.glob("*.npy"))
+                label_filenames = set([label_file.stem for label_file in label_files])
+                input_filenames = set([input_file.stem for input_file in input_files])
+                input_log_filenames = set([input_log_file.stem for input_log_file in input_log_files])
+                filename_intersection = label_filenames & input_filenames & input_log_filenames
+                input_files = [
+                    str(input_file) for input_file in input_files if input_file.stem in filename_intersection
+                ]
+                input_log_files = [
+                    str(input_log_file)
+                    for input_log_file in input_log_files
+                    if input_log_file.stem in filename_intersection
+                ]
+                label_files = [
+                    str(label_file) for label_file in label_files if label_file.stem in filename_intersection
+                ]
+                input_paths += input_files
+                input_log_paths += input_log_files
+                label_paths += label_files
+        # Sanity Check
+        all_paths = list(zip(input_paths, input_log_paths, label_paths))
+        for input_path, input_log_path, label_path in all_paths:
+            modified_input_path = input_path.replace(input_folder_name, label_folder_name)
+            if modified_input_path != label_path:
+                raise ValueError(f"Input path: {input_path} does not match label path: {label_path}")
+            if not Path(input_path).exists():
+                raise FileNotFoundError(f"Input path: {input_path} does not exist")
+            if not Path(label_path).exists():
+                raise FileNotFoundError(f"Label path: {label_path} does not exist")
+            if not Path(input_log_path).exists():
+                raise FileNotFoundError(f"Input Log path: {input_log_path} does not exist")
+        return input_paths, input_log_paths, label_paths
+
+    @staticmethod
+    def _get_single_wavelet_input_and_label_paths(
+        base_path,
+        subject_list,
+        training_phase: str = None,
+        wavelet_type: str = "morl",
+        log_transform: bool = False,
+        ecg_labels: bool = False,
+    ):
+        input_folder_name = (
+            f"inputs_wavelet_array_{wavelet_type}_log" if log_transform else f"inputs_wavelet_array_{wavelet_type}"
+        )
+        label_folder_name = "labels_ecg" if ecg_labels else "labels_gaussian"
+        base_path = Path(base_path)
+        input_paths = []
+        label_paths = []
+        for subject in subject_list:
+            subject_path = base_path / subject
+            for phase in subject_path.iterdir():
+                if training_phase is not None and training_phase not in phase.name:
+                    continue
+                if not phase.is_dir():
+                    continue
+                input_path = phase / input_folder_name
+                label_path = phase / label_folder_name
+                if not input_path.exists() or not label_path.exists():
+                    continue
+                input_files = sorted(input_path.glob("*.npy"))
+                label_files = sorted(label_path.glob("*.npy"))
+                label_filenames = set([label_file.stem for label_file in label_files])
+                input_filenames = set([input_file.stem for input_file in input_files])
+                filename_intersection = label_filenames.intersection(input_filenames)
+                input_files = [
+                    str(input_file) for input_file in input_files if input_file.stem in filename_intersection
+                ]
+                label_files = [
+                    str(label_file) for label_file in label_files if label_file.stem in filename_intersection
+                ]
+                input_paths += input_files
+                label_paths += label_files
+        # Sanity Check
+        all_paths = list(zip(input_paths, label_paths))
+        for input_path, label_path in all_paths:
+            modified_input_path = input_path.replace(input_folder_name, label_folder_name)
+            if modified_input_path != label_path:
+                raise ValueError(f"Input path: {input_path} does not match label path: {label_path}")
+            if not Path(input_path).exists():
+                raise FileNotFoundError(f"Input path: {input_path} does not exist")
+            if not Path(label_path).exists():
+                raise FileNotFoundError(f"Label path: {label_path} does not exist")
+        return input_paths, label_paths
+
+    @staticmethod
     def _get_all_wavelet_input_and_label_paths(base_path, subject_list, training_phase: str = None):
         base_path = Path(base_path)
         input_paths = []
@@ -195,6 +321,74 @@ class DatasetFactory:
         )
         dataset = self._build_wavelet_dataset(input_paths, label_paths, batch_size)
         return dataset, int(len(input_paths) / batch_size)
+
+    def get_single_channel_wavelet_dataset_for_subjects(
+        self,
+        base_path,
+        training_subjects,
+        batch_size: int = 8,
+        training_phase=None,
+        wavelet_type="morl",
+        log_transform=False,
+        ecg_labels=False,
+    ):
+        input_paths, label_paths = self._get_single_wavelet_input_and_label_paths(
+            base_path=base_path,
+            subject_list=training_subjects,
+            training_phase=training_phase,
+            wavelet_type=wavelet_type,
+            log_transform=log_transform,
+            ecg_labels=ecg_labels,
+        )
+        dataset = self._build_wavelet_single_array_dataset(input_paths, label_paths, batch_size)
+        return dataset, int(len(input_paths) / batch_size)
+
+    def get_dual_channel_wavelet_dataset_for_subjects(
+        self,
+        base_path,
+        training_subjects,
+        batch_size: int = 8,
+        training_phase=None,
+        wavelet_type="morl",
+        ecg_labels=False,
+    ):
+        input_paths, label_paths = self._get_dual_channel_wavelet_input_and_label_paths(
+            base_path=base_path,
+            subject_list=training_subjects,
+            training_phase=training_phase,
+            wavelet_type=wavelet_type,
+            ecg_labels=ecg_labels,
+        )
+        dataset = self._build_wavelet_dual_array_dataset(input_paths, label_paths, batch_size)
+        return dataset, int(len(input_paths) / batch_size)
+
+    def _build_wavelet_dual_array_dataset(self, input_paths, input_log_paths, label_paths, batch_size=8):
+        dataset = tf.data.Dataset.from_tensor_slices((input_paths, input_log_paths, label_paths))
+        dataset = (
+            dataset.map(
+                lambda input_path, input_log_path, label_path: tf.numpy_function(
+                    self.read_dual_channel_file, [input_path, input_log_path, label_path], [tf.float64, tf.float64]
+                ),
+                num_parallel_calls=tf.data.AUTOTUNE,
+            )
+            .batch(batch_size, drop_remainder=True)
+            .prefetch(tf.data.AUTOTUNE)
+        )
+        return dataset
+
+    def _build_wavelet_single_array_dataset(self, input_paths, label_paths, batch_size=8):
+        dataset = tf.data.Dataset.from_tensor_slices((input_paths, label_paths))
+        dataset = (
+            dataset.map(
+                lambda input_path, label_path: tf.numpy_function(
+                    self.read_file, [input_path, label_path], [tf.float64, tf.float64]
+                ),
+                num_parallel_calls=tf.data.AUTOTUNE,
+            )
+            .batch(batch_size, drop_remainder=True)
+            .prefetch(tf.data.AUTOTUNE)
+        )
+        return dataset
 
     def get_wavelet_dataset_for_subjects(self, base_path, training_subjects, batch_size: int = 8, training_phase=None):
         input_paths, label_paths = self._get_all_wavelet_input_and_label_paths(

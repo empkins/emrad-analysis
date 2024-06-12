@@ -223,7 +223,7 @@ class WaveletTransformer(Algorithm):
 
     def __init__(
         self,
-        wavelet_coefficients: Tuple[int, int] = (1, 1024),
+        wavelet_coefficients: Tuple[int, int] = (1, 257),
         wavelet_type="morl",
         sampling_rate: float = 200,
         window_size: int = 5,
@@ -261,9 +261,16 @@ class WaveletTransformer(Algorithm):
         """
 
         path = self.get_path(base_path, subject_id, phase, identity=identity)
-
         if single_signal:
-            self._calculate_single_signal(signal, segment, path, img_based)
+            self._calculate_single_signal(
+                signal=signal,
+                segment=segment,
+                base_path=base_path,
+                subject_id=subject_id,
+                img_based=img_based,
+                phase=phase,
+                identity=identity,
+            )
             self.transformed_signal_ = []
             return self
 
@@ -288,25 +295,25 @@ class WaveletTransformer(Algorithm):
         self.transformed_signal_ = []
         return self
 
-    def _calculate_single_signal(self, signal, segment, path, img_based):
-        scales = np.geomspace(
-            self.wavelet_coefficients[0],
-            self.wavelet_coefficients[1],
-            num=self.wavelet_coefficients[1] - self.wavelet_coefficients[0],
-        )
-        coefficients, frequencies = pywt.cwt(signal, scales, self.wavelet_type, sampling_period=1 / self.sampling_rate)
-        fig, ax = plt.subplots()
-        time = numpy.arange(0, len(coefficients) / self.sampling_rate, 1 / self.sampling_rate)
-        ax.imshow(
-            numpy.abs(coefficients),
-            aspect="auto",
-            cmap="jet",
-            extent=[time.min(), time.max(), frequencies.min(), frequencies.max()],
-        )
-        ax.set_xticks([])
-        ax.set_yticks([])
-        plt.savefig(os.path.join(path, f"{segment}.png"), bbox_inches="tight", pad_inches=0)
-        plt.close(fig)
+    def _calculate_single_signal(self, signal, segment, base_path, subject_id, phase, img_based, identity):
+        wavelet_types = ["morl", "gaus5"]
+        for wavelet_type in wavelet_types:
+            path = self.get_path(base_path, subject_id, phase, identity=identity, create_dir=False)
+            scales = np.geomspace(
+                self.wavelet_coefficients[0],
+                self.wavelet_coefficients[1],
+                num=self.wavelet_coefficients[1] - self.wavelet_coefficients[0],
+            )
+            path = path + f"_{wavelet_type}"
+            if not os.path.exists(path):
+                os.makedirs(path)
+            log_path = path + f"_{wavelet_type}_log"
+            if not os.path.exists(log_path):
+                os.makedirs(log_path)
+            coefficients, frequencies = pywt.cwt(signal, scales, wavelet_type, sampling_period=1 / self.sampling_rate)
+            np.save(os.path.join(path, f"{segment}.npy"), coefficients)
+            coefficients_log_scaled = np.where(coefficients == 0, -np.inf, np.log10(np.abs(coefficients)))
+            np.save(os.path.join(log_path, f"{segment}.npy"), coefficients_log_scaled)
 
     def _normalize(self, coefficients):
         normalizer_clone = self.normalizer.clone()
@@ -354,12 +361,12 @@ class WaveletTransformer(Algorithm):
         ax.set_yticks([])
         plt.savefig(os.path.join(path, f"{segment_nr}_{imf_nr}.png"), bbox_inches="tight", pad_inches=0)
 
-    def get_path(self, base_path: str, subject_id: str, phase: str, identity: bool = False):
+    def get_path(self, base_path: str, subject_id: str, phase: str, identity: bool = False, create_dir: bool = True):
         if identity:
             path = f"{base_path}/{subject_id}/{phase}/inputs_wavlab"
         else:
-            path = f"{base_path}/{subject_id}/{phase}/inputs_wavelet_1024"
-        if not os.path.exists(path):
+            path = f"{base_path}/{subject_id}/{phase}/inputs_wavelet_array"
+        if not os.path.exists(path) and create_dir:
             os.makedirs(path)
         return path
 

@@ -53,7 +53,7 @@ def alt():
 
 def preprocessing():
     base_path = Path("/home/vault/empkins/tpD/D03/Data/MA_Simon_Meske/Data_D02/data_per_subject")
-    target_path = "/home/woody/iwso/iwso116h/DataWavelet"
+    target_path = "/home/woody/iwso/iwso116h/Data"
     # base_path = Path("/Users/simonmeske/Desktop/TestOrdner/data_per_subject")
     # target_path = "/Users/simonmeske/Desktop/TestOrdner/data_per_subject"
     run(base_path, target_path, process_inputs=True, process_labels=True, process_images=False)
@@ -276,9 +276,9 @@ if __name__ == "__main__":
     #         remaining_epochs = int(args[3])
     # main(model_path, remaining_epochs)
     # main(None, 0)
-    # preprocessing()
+    preprocessing()
     # move_training_data()
-    wavelet_training(None, 0)
+    # wavelet_training(None, 0)
     # check_testing_and_training_paths()
     # identity_check()
     # dataset_path = Path("/Users/simonmeske/Desktop/TestOrdner/data_per_subject")
