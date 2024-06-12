@@ -307,7 +307,7 @@ class WaveletTransformer(Algorithm):
             path = path + f"_{wavelet_type}"
             if not os.path.exists(path):
                 os.makedirs(path)
-            log_path = path + f"_{wavelet_type}_log"
+            log_path = path + f"_log"
             if not os.path.exists(log_path):
                 os.makedirs(log_path)
             coefficients, frequencies = pywt.cwt(signal, scales, wavelet_type, sampling_period=1 / self.sampling_rate)
