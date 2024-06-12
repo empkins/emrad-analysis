@@ -162,9 +162,9 @@ class LabelProcessor(Algorithm):
         # processed_ecg = blip_algo_clone.compute(raw_ecg).blips_
 
         # Wavelet Transform Label
-        wavelet_transform_clone.transform(
-            processed_ecg, subject_id, phase, segment, base_path, single_signal=True, identity=True
-        ).transformed_signal_
+        # wavelet_transform_clone.transform(
+        #     processed_ecg, subject_id, phase, segment, base_path, single_signal=True, identity=True
+        # ).transformed_signal_
 
         # Save the labels
         path = self.get_path(subject_id, phase, base_path) + f"/{segment}.npy"
