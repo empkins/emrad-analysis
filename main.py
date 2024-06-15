@@ -7,7 +7,6 @@ import numpy as np
 from sklearn.model_selection import train_test_split
 
 from rbm_robust.data_loading.datasets import D02Dataset
-from rbm_robust.data_loading.tf_datasets import DatasetFactory
 from rbm_robust.models.cnn import CNN
 from rbm_robust.pipelines.cnnLstmPipeline import CnnPipeline
 from rbm_robust.pipelines.preprocessing_pipeline import run_d02, run_radarcadia
@@ -16,7 +15,6 @@ from rbm_robust.pipelines.waveletPipeline import WaveletPipeline
 from rbm_robust.validation.identityScoring import identityScoring
 from rbm_robust.validation.scoring import cnnPipelineScoring
 import os
-import tensorflow as tf
 
 from rbm_robust.validation.scoring_pipeline import training_and_testing_pipeline
 from rbm_robust.validation.wavelet_scoring import waveletPipelineScoring
@@ -47,7 +45,7 @@ def main():
         training_subjects=training_subjects,
         validation_subjects=validation_subjects,
         testing_subjects=testing_subjects,
-        breathing_type="hold",
+        breathing_type="all",
         image_based=image_based,
     )
     training_and_testing_pipeline(pipeline=pipeline, testing_path=path, image_based=image_based)
