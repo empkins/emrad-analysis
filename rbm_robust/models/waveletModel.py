@@ -62,11 +62,11 @@ class UNetWaveletTF(Algorithm):
         history = self._model.fit(
             self.training_ds,
             epochs=self.epochs,
-            steps_per_epoch=1,
+            steps_per_epoch=self.training_steps,
             batch_size=self.batch_size,
             shuffle=True,
             validation_data=self.validation_ds,
-            validation_steps=1,
+            validation_steps=self.validation_steps,
             verbose=1,
             # callbacks=[tensorboard_callback],
         )
