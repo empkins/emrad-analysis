@@ -43,7 +43,7 @@ def main():
         learning_rate=0.001,
         data_path=path,
         testing_path=testing_path,
-        epochs=1,
+        epochs=15,
         training_subjects=training_subjects,
         validation_subjects=validation_subjects,
         testing_subjects=testing_subjects,
