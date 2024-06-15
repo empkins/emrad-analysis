@@ -27,7 +27,7 @@ def main():
     # path = "/Users/simonmeske/Desktop/TestOrdner/data_per_subject"
     # path = "/Users/simonmeske/Desktop/Masterarbeit/Radarcadia/Processed_Files"
     # testing_path = "/Users/simonmeske/Desktop/Masterarbeit/RadarcadiaTestData"
-    path = os.getenv("TMPDIR") + "/Data"
+    path = os.getenv("TMPDIR") + "/Data/DataRadarcadia"
     testing_path = os.getenv("HPCVAULT") + "/TestDataRadarcadia"
     # print(path)
     # Get Training and Testing Subjects
