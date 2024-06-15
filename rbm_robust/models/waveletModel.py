@@ -155,7 +155,6 @@ class UNetWaveletTF(Algorithm):
                         img_input = np.load(input_file)
                     else:
                         img_input = img_to_array(load_img(input_file, target_size=(256, 1000))) / 255
-                    img_input = np.load(input_file)
                     img_input = np.array([img_input])
                     pred = self._model.predict(img_input, verbose=0)
                     pred = pred.flatten()

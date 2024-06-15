@@ -25,11 +25,10 @@ from rbm_robust.validation.wavelet_scoring import waveletPipelineScoring
 def main():
     print("Starting")
     # path = "/Users/simonmeske/Desktop/TestOrdner/data_per_subject"
-    path = "/Users/simonmeske/Desktop/Masterarbeit/Radarcadia/Processed_Files"
-    testing_path = "/Users/simonmeske/Desktop/Masterarbeit/RadarcadiaTestData"
-    # path = os.getenv("TMPDIR") + "/Data/DataRadarcadia"
-    # testing_path = os.getenv("HPCVAULT") + "/TestDataRadarcadia"
-    # print(path)
+    # path = "/Users/simonmeske/Desktop/Masterarbeit/Radarcadia/Processed_Files"
+    # testing_path = "/Users/simonmeske/Desktop/Masterarbeit/RadarcadiaTestData"
+    path = os.getenv("TMPDIR") + "/Data/DataRadarcadia"
+    testing_path = os.getenv("HPCVAULT") + "/TestDataRadarcadia"
     # Get Training and Testing Subjects
     data_path = Path(path)
     testing_path = Path(testing_path)
@@ -306,9 +305,9 @@ if __name__ == "__main__":
     #     if args[2] == "-epochs":
     #         remaining_epochs = int(args[3])
     # main(model_path, remaining_epochs)
-    # main()
+    main()
     # preprocessing()
-    preprocessing_radarcadia()
+    # preprocessing_radarcadia()
     # get_data_set_radarcadia()
     # move_training_data()
     # wavelet_training(None, 0)
