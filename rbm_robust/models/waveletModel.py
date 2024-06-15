@@ -133,7 +133,7 @@ class UNetWaveletTF(Algorithm):
         data_path = Path(data_path)
         data_folder_name = data_path.name
         print(data_path)
-        input_file_type = ".npy" if not self.image_based else ".png"
+        input_file_type = "npy" if not self.image_based else "png"
         subjects = [path.name for path in data_path.iterdir() if path.is_dir()]
         if testing_subjects is not None:
             subjects = [subject for subject in subjects if subject in testing_subjects]

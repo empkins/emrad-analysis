@@ -374,6 +374,7 @@ class WaveletTransformer(Algorithm):
             plt.savefig(os.path.join(path, f"{segment_nr}_{imf_nr}.png"), bbox_inches="tight", pad_inches=0)
         else:
             plt.savefig(os.path.join(path, f"{segment_nr}.png"), bbox_inches="tight", pad_inches=0)
+        plt.close(fig)
 
     def get_path(self, base_path: str, subject_id: str, phase: str, identity: bool = False, create_dir: bool = True):
         if identity:
