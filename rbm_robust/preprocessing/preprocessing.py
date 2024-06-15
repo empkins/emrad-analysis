@@ -313,12 +313,16 @@ class WaveletTransformer(Algorithm):
             if not os.path.exists(log_path):
                 os.makedirs(log_path)
             coefficients, frequencies = pywt.cwt(signal, scales, wavelet_type, sampling_period=1 / self.sampling_rate)
+            self._save_image(coefficients, frequencies, -1, segment, 0, path.replace("array", "image"))
             coefficients_reshaped = coefficients.reshape(coefficients.shape[0], coefficients.shape[1], 1)
             np.save(os.path.join(path, f"{segment}.npy"), coefficients_reshaped)
             log_transformed_coefficients = np.zeros_like(coefficients_reshaped, dtype=float)
             non_zero_mask = coefficients_reshaped != 0
             log_transformed_coefficients[non_zero_mask] = np.log(np.abs(coefficients_reshaped[non_zero_mask]))
             np.save(os.path.join(log_path, f"{segment}.npy"), log_transformed_coefficients)
+            self._save_image(
+                log_transformed_coefficients, frequencies, -1, segment, 0, log_path.replace("array", "image")
+            )
 
     def _normalize(self, coefficients):
         normalizer_clone = self.normalizer.clone()
@@ -354,6 +358,8 @@ class WaveletTransformer(Algorithm):
         numpy.save(save_path, coefficients)
 
     def _save_image(self, coefficients, frequencies, num_of_imfs, segment_nr, imf_nr, path):
+        if not os.path.exists(path):
+            os.makedirs(path)
         fig, ax = plt.subplots()
         time = numpy.arange(0, len(coefficients) / self.sampling_rate, 1 / self.sampling_rate)
         ax.imshow(
@@ -364,7 +370,10 @@ class WaveletTransformer(Algorithm):
         )
         ax.set_xticks([])
         ax.set_yticks([])
-        plt.savefig(os.path.join(path, f"{segment_nr}_{imf_nr}.png"), bbox_inches="tight", pad_inches=0)
+        if num_of_imfs != -1:
+            plt.savefig(os.path.join(path, f"{segment_nr}_{imf_nr}.png"), bbox_inches="tight", pad_inches=0)
+        else:
+            plt.savefig(os.path.join(path, f"{segment_nr}.png"), bbox_inches="tight", pad_inches=0)
 
     def get_path(self, base_path: str, subject_id: str, phase: str, identity: bool = False, create_dir: bool = True):
         if identity:

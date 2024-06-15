@@ -371,6 +371,7 @@ class DatasetFactory:
         wavelet_type="morl",
         ecg_labels=False,
         log_transform=False,
+        image_based=False,
     ):
         input_paths, label_paths = self._get_all_wavelet_input_and_label_paths_radarcadia(
             base_path=base_path,
@@ -379,8 +380,12 @@ class DatasetFactory:
             wavelet_type=wavelet_type,
             ecg_labels=ecg_labels,
             log_transform=log_transform,
+            image_based=image_based,
         )
-        dataset = self._build_wavelet_single_array_dataset(input_paths, label_paths, batch_size)
+        if not image_based:
+            dataset = self._build_wavelet_single_array_dataset(input_paths, label_paths, batch_size)
+        else:
+            dataset = self._build_wavelet_dataset(input_paths, label_paths, batch_size)
         return dataset, int(len(input_paths) / batch_size)
 
     def _get_all_wavelet_input_and_label_paths_radarcadia(
@@ -391,12 +396,16 @@ class DatasetFactory:
         wavelet_type="morl",
         ecg_labels=False,
         log_transform=False,
+        image_based=False,
     ):
         base_path = Path(base_path)
         input_paths = []
         label_paths = []
-        input_folder_name = self._get_input_folder_name_radarcadia(wavelet_type, log_transform)
+        input_folder_name = self._get_input_folder_name_radarcadia(
+            wavelet_type=wavelet_type, log_transform=log_transform, image_based=image_based
+        )
         label_folder_name = self._get_label_folder_name_radarcadia(ecg_labels)
+        input_datatype = "png" if image_based else "npy"
         for subject in subject_list:
             subject_path = base_path / subject
             for location in subject_path.iterdir():
@@ -408,7 +417,7 @@ class DatasetFactory:
                 label_path = location / label_folder_name
                 if not input_path.exists() or not label_path.exists():
                     continue
-                input_files = sorted(input_path.glob("*.npy"))
+                input_files = sorted(input_path.glob(f"*.{input_datatype}"))
                 label_files = sorted(label_path.glob("*.npy"))
                 label_filenames = set([label_file.stem for label_file in label_files])
                 input_filenames = set([input_file.stem for input_file in input_files])
@@ -422,13 +431,17 @@ class DatasetFactory:
                 input_paths += input_files
                 label_paths += label_files
         # Sanity Check
-        self._sanity_check_radarcadia(input_paths, label_paths, input_folder_name, label_folder_name)
+        self._sanity_check_radarcadia(input_paths, label_paths, input_folder_name, label_folder_name, image_based)
         return input_paths, label_paths
 
-    def _sanity_check_radarcadia(self, input_paths, label_paths, input_folder_name, label_folder_name):
+    def _sanity_check_radarcadia(
+        self, input_paths, label_paths, input_folder_name, label_folder_name, image_based=False
+    ):
+        input_datatype = ".png" if image_based else ".npy"
         all_paths = list(zip(input_paths, label_paths))
         for input_path, label_path in all_paths:
             modified_input_path = input_path.replace(input_folder_name, label_folder_name)
+            modified_input_path = modified_input_path.replace(input_datatype, ".npy")
             if modified_input_path != label_path:
                 raise ValueError(f"Input path: {input_path} does not match label path: {label_path}")
             if not Path(input_path).exists():
@@ -436,10 +449,15 @@ class DatasetFactory:
             if not Path(label_path).exists():
                 raise FileNotFoundError(f"Label path: {label_path} does not exist")
 
-    def _get_input_folder_name_radarcadia(self, wavelet_type="morl", log_transform=False):
-        input_folder_name = (
-            f"inputs_wavelet_array_{wavelet_type}_log" if log_transform else f"inputs_wavelet_array_{wavelet_type}"
-        )
+    def _get_input_folder_name_radarcadia(self, wavelet_type="morl", log_transform=False, image_based=False):
+        input_folder_name = "inputs_wavelet_"
+        if image_based:
+            input_folder_name += "image_"
+        else:
+            input_folder_name += "array_"
+        input_folder_name += f"{wavelet_type}"
+        if log_transform:
+            input_folder_name += "_log"
         return input_folder_name
 
     def _get_label_folder_name_radarcadia(self, ecg_labels=False):

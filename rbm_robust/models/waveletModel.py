@@ -25,6 +25,7 @@ class UNetWaveletTF(Algorithm):
     validation_steps: int
     _model = Optional[keras.Sequential]
     batch_size: int
+    image_based: bool
 
     def __init__(
         self,
@@ -36,6 +37,7 @@ class UNetWaveletTF(Algorithm):
         training_steps: int = 0,
         validation_steps: int = 0,
         batch_size: int = 8,
+        image_based=False,
     ):
         self.learning_rate = learning_rate
         self.training_ds = training_ds
@@ -45,18 +47,19 @@ class UNetWaveletTF(Algorithm):
         self.training_steps = training_steps
         self.validation_steps = validation_steps
         self.batch_size = batch_size
+        self.image_based = image_based
 
     def self_optimize(
         self,
     ):
         self._create_model()
-        log_dir = os.getenv("WORK") + "/Runs/logs/fit/"
-        time = self.model_name + datetime.now().strftime("%Y%m%d-%H%M%S")
-        log_dir += time
-        if not os.path.exists(log_dir):
-            os.makedirs(log_dir)
+        # log_dir = os.getenv("WORK") + "/Runs/logs/fit/"
+        # time = self.model_name + datetime.now().strftime("%Y%m%d-%H%M%S")
+        # log_dir += time
+        # if not os.path.exists(log_dir):
+        #     os.makedirs(log_dir)
 
-        tensorboard_callback = keras.callbacks.TensorBoard(log_dir=log_dir, write_graph=False, update_freq="epoch")
+        # tensorboard_callback = keras.callbacks.TensorBoard(log_dir=log_dir, write_graph=False, update_freq="epoch")
         print("Fitting")
         history = self._model.fit(
             self.training_ds,
@@ -67,35 +70,48 @@ class UNetWaveletTF(Algorithm):
             validation_data=self.validation_ds,
             validation_steps=self.validation_steps,
             verbose=1,
-            callbacks=[tensorboard_callback],
+            # callbacks=[tensorboard_callback],
         )
 
-        history_path = os.getenv("WORK") + "/Runs/History/"
-        if not os.path.exists(history_path):
-            os.makedirs(history_path)
-        history_path += time + "_history.pkl"
-        pickle.dump(history.history, open(history_path, "wb"))
+        # history_path = os.getenv("WORK") + "/Runs/History/"
+        # if not os.path.exists(history_path):
+        #     os.makedirs(history_path)
+        # history_path += time + "_history.pkl"
+        # pickle.dump(history.history, open(history_path, "wb"))
         self.save_model()
         return self
 
     def _create_model(self):
         self._model = Sequential()
-        self._model.add(
-            models.unet_2d(
-                (256, 1000, 1),
-                filter_num=[16, 32, 64],
-                weights=None,
-                freeze_backbone=False,
-                freeze_batch_norm=False,
-                output_activation=None,
-                n_labels=1,
+        if self.image_based:
+            self._model.add(
+                models.unet_2d(
+                    (256, 1000, 3),
+                    filter_num=[16, 32, 64],
+                    weights=None,
+                    freeze_backbone=False,
+                    freeze_batch_norm=False,
+                    output_activation=None,
+                    n_labels=3,
+                )
             )
-        )
-        self._model.add(layers.Conv2D(filters=1, kernel_size=(256, 1), activation="linear"))
+        else:
+            self._model.add(
+                models.unet_2d(
+                    (256, 1000, 1),
+                    filter_num=[16, 32, 64],
+                    weights=None,
+                    freeze_backbone=False,
+                    freeze_batch_norm=False,
+                    output_activation=None,
+                    n_labels=1,
+                )
+            )
+        self._model.add(layers.Conv2D(filters=1, kernel_size=(256, 1), activation="sigmoid"))
         self._model.add(layers.Flatten())
-        # loss_func_bce = keras.losses.BinaryCrossentropy(from_logits=False, reduction="sum_over_batch_size")
+        loss_func_bce = keras.losses.BinaryCrossentropy(from_logits=False, reduction="sum_over_batch_size")
         loss_func_mse = keras.losses.MeanSquaredError(reduction="sum_over_batch_size")
-        self._model.compile(optimizer=keras.optimizers.Adam(learning_rate=self.learning_rate), loss=loss_func_mse)
+        self._model.compile(optimizer=keras.optimizers.Adam(learning_rate=self.learning_rate), loss=loss_func_bce)
         return self
 
     def save_model(self):
@@ -117,7 +133,7 @@ class UNetWaveletTF(Algorithm):
         data_path = Path(data_path)
         data_folder_name = data_path.name
         print(data_path)
-
+        input_file_type = ".npy" if not self.image_based else ".png"
         subjects = [path.name for path in data_path.iterdir() if path.is_dir()]
         if testing_subjects is not None:
             subjects = [subject for subject in subjects if subject in testing_subjects]
@@ -133,8 +149,12 @@ class UNetWaveletTF(Algorithm):
                     str(prediction_path).replace(data_folder_name, f"Predictions/predictions_{self.model_name}")
                 )
                 prediction_path.mkdir(parents=True, exist_ok=True)
-                input_files = sorted(input_path.glob("*.npy"))
+                input_files = sorted(input_path.glob(f"*.{input_file_type}"))
                 for input_file in input_files:
+                    if not self.image_based:
+                        img_input = np.load(input_file)
+                    else:
+                        img_input = img_to_array(load_img(input_file, target_size=(256, 1000))) / 255
                     img_input = np.load(input_file)
                     img_input = np.array([img_input])
                     pred = self._model.predict(img_input, verbose=0)

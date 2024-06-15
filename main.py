@@ -25,10 +25,10 @@ from rbm_robust.validation.wavelet_scoring import waveletPipelineScoring
 def main():
     print("Starting")
     # path = "/Users/simonmeske/Desktop/TestOrdner/data_per_subject"
-    # path = "/Users/simonmeske/Desktop/Masterarbeit/Radarcadia/Processed_Files"
-    # testing_path = "/Users/simonmeske/Desktop/Masterarbeit/RadarcadiaTestData"
-    path = os.getenv("TMPDIR") + "/Data/DataRadarcadia"
-    testing_path = os.getenv("HPCVAULT") + "/TestDataRadarcadia"
+    path = "/Users/simonmeske/Desktop/Masterarbeit/Radarcadia/Processed_Files"
+    testing_path = "/Users/simonmeske/Desktop/Masterarbeit/RadarcadiaTestData"
+    # path = os.getenv("TMPDIR") + "/Data/DataRadarcadia"
+    # testing_path = os.getenv("HPCVAULT") + "/TestDataRadarcadia"
     # print(path)
     # Get Training and Testing Subjects
     data_path = Path(path)
@@ -39,19 +39,19 @@ def main():
     # Split Data
     training_subjects, validation_subjects = train_test_split(possible_subjects, test_size=0.2, random_state=42)
 
+    image_based = True
     pipeline = RadarcadiaPipeline(
         learning_rate=0.001,
         data_path=path,
         testing_path=testing_path,
-        epochs=50,
+        epochs=1,
         training_subjects=training_subjects,
         validation_subjects=validation_subjects,
         testing_subjects=testing_subjects,
         breathing_type="hold",
+        image_based=image_based,
     )
-    training_and_testing_pipeline(
-        pipeline=pipeline, training_and_validation_path=path, testing_path=path, data_set_type="RadarCardia"
-    )
+    training_and_testing_pipeline(pipeline=pipeline, testing_path=path, image_based=image_based)
 
 
 def wavelet_training(model_path: str = None, remaining_epochs: int = 0):
@@ -306,9 +306,9 @@ if __name__ == "__main__":
     #     if args[2] == "-epochs":
     #         remaining_epochs = int(args[3])
     # main(model_path, remaining_epochs)
-    main()
+    # main()
     # preprocessing()
-    # preprocessing_radarcadia()
+    preprocessing_radarcadia()
     # get_data_set_radarcadia()
     # move_training_data()
     # wavelet_training(None, 0)
