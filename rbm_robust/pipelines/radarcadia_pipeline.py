@@ -117,7 +117,6 @@ class RadarcadiaPipeline(OptimizablePipeline):
         )
 
     def self_optimize(self, training: tf.data.Dataset, validation: tf.data.Dataset, path_to_save_predictions: str):
-        # self.wavelet_model = self.wavelet_model.clone()
         self.wavelet_model.self_optimize()
         return self
 

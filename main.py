@@ -40,14 +40,14 @@ def main():
     training_subjects, validation_subjects = train_test_split(possible_subjects, test_size=0.2, random_state=42)
 
     pipeline = RadarcadiaPipeline(
-        learning_rate=0.0001,
+        learning_rate=0.001,
         data_path=path,
         testing_path=testing_path,
         epochs=50,
         training_subjects=training_subjects,
         validation_subjects=validation_subjects,
         testing_subjects=testing_subjects,
-        breathing_type="all",
+        breathing_type="hold",
     )
     training_and_testing_pipeline(
         pipeline=pipeline, training_and_validation_path=path, testing_path=path, data_set_type="RadarCardia"

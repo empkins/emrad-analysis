@@ -91,7 +91,7 @@ class UNetWaveletTF(Algorithm):
                 n_labels=1,
             )
         )
-        self._model.add(layers.Conv2D(filters=1, kernel_size=(256, 1), activation="sigmoid"))
+        self._model.add(layers.Conv2D(filters=1, kernel_size=(256, 1), activation="softmax"))
         self._model.add(layers.Flatten())
         # loss_func_bce = keras.losses.BinaryCrossentropy(from_logits=False, reduction="sum_over_batch_size")
         loss_func_mse = keras.losses.MeanSquaredError(reduction="sum_over_batch_size")
