@@ -36,12 +36,12 @@ def main():
     # Split Data
     training_subjects, validation_subjects = train_test_split(possible_subjects, test_size=0.2, random_state=42)
 
-    image_based = True
+    image_based = False
     pipeline = RadarcadiaPipeline(
         learning_rate=0.001,
         data_path=path,
         testing_path=testing_path,
-        epochs=15,
+        epochs=300,
         training_subjects=training_subjects,
         validation_subjects=validation_subjects,
         testing_subjects=testing_subjects,

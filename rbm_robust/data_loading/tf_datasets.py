@@ -14,7 +14,7 @@ class DatasetFactory:
     def read_file(input_path, label_path):
         try:
             input_file = np.load(input_path)
-            # input_file = np.absolute(input_file)
+            input_file = np.absolute(input_file)
             # Normalize the input file
             input_file = (input_file - np.min(input_file)) / (np.max(input_file) - np.min(input_file))
             label_file = np.load(label_path)
