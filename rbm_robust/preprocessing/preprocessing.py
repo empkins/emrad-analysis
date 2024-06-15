@@ -260,7 +260,6 @@ class WaveletTransformer(Algorithm):
             _type_: Transformed signal
         """
 
-        path = self.get_path(base_path, subject_id, phase, identity=identity)
         if single_signal:
             self._calculate_single_signal(
                 signal=signal,
@@ -274,6 +273,7 @@ class WaveletTransformer(Algorithm):
             self.transformed_signal_ = []
             return self
 
+        path = self.get_path(base_path, subject_id, phase, identity=identity)
         transformed_signals = []
         for i in range(len(signal)):
             if i > len(signal) and not img_based:
@@ -298,7 +298,9 @@ class WaveletTransformer(Algorithm):
     def _calculate_single_signal(self, signal, segment, base_path, subject_id, phase, img_based, identity):
         wavelet_types = ["morl", "gaus5"]
         for wavelet_type in wavelet_types:
-            path = self.get_path(base_path, subject_id, phase, identity=identity, create_dir=False)
+            path = self.get_path(
+                base_path=base_path, subject_id=subject_id, phase=phase, identity=identity, create_dir=False
+            )
             scales = np.geomspace(
                 self.wavelet_coefficients[0],
                 self.wavelet_coefficients[1],
@@ -311,10 +313,11 @@ class WaveletTransformer(Algorithm):
             if not os.path.exists(log_path):
                 os.makedirs(log_path)
             coefficients, frequencies = pywt.cwt(signal, scales, wavelet_type, sampling_period=1 / self.sampling_rate)
-            np.save(os.path.join(path, f"{segment}.npy"), coefficients)
-            log_transformed_coefficients = np.zeros_like(coefficients, dtype=float)
-            non_zero_mask = coefficients != 0
-            log_transformed_coefficients[non_zero_mask] = np.log(np.abs(coefficients[non_zero_mask]))
+            coefficients_reshaped = coefficients.reshape(coefficients.shape[0], coefficients.shape[1], 1)
+            np.save(os.path.join(path, f"{segment}.npy"), coefficients_reshaped)
+            log_transformed_coefficients = np.zeros_like(coefficients_reshaped, dtype=float)
+            non_zero_mask = coefficients_reshaped != 0
+            log_transformed_coefficients[non_zero_mask] = np.log(np.abs(coefficients_reshaped[non_zero_mask]))
             np.save(os.path.join(log_path, f"{segment}.npy"), log_transformed_coefficients)
 
     def _normalize(self, coefficients):
@@ -365,9 +368,15 @@ class WaveletTransformer(Algorithm):
 
     def get_path(self, base_path: str, subject_id: str, phase: str, identity: bool = False, create_dir: bool = True):
         if identity:
-            path = f"{base_path}/{subject_id}/{phase}/inputs_wavlab"
+            if phase is not None:
+                path = f"{base_path}/{subject_id}/{phase}/inputs_wavlab"
+            else:
+                path = f"{base_path}/{subject_id}/inputs_wavlab"
         else:
-            path = f"{base_path}/{subject_id}/{phase}/inputs_wavelet_array"
+            if phase is not None:
+                path = f"{base_path}/{subject_id}/{phase}/inputs_wavelet_array"
+            else:
+                path = f"{base_path}/{subject_id}/inputs_wavelet_array"
         if not os.path.exists(path) and create_dir:
             os.makedirs(path)
         return path

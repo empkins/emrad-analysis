@@ -4,32 +4,54 @@ from itertools import zip_longest
 from pathlib import Path
 import shutil
 import numpy as np
+from sklearn.model_selection import train_test_split
 
 from rbm_robust.data_loading.datasets import D02Dataset
+from rbm_robust.data_loading.tf_datasets import DatasetFactory
 from rbm_robust.models.cnn import CNN
 from rbm_robust.pipelines.cnnLstmPipeline import CnnPipeline
-from rbm_robust.pipelines.preprocessing_pipeline import run
+from rbm_robust.pipelines.preprocessing_pipeline import run_d02, run_radarcadia
+from rbm_robust.pipelines.radarcadia_pipeline import RadarcadiaPipeline
 from rbm_robust.pipelines.waveletPipeline import WaveletPipeline
 from rbm_robust.validation.identityScoring import identityScoring
 from rbm_robust.validation.scoring import cnnPipelineScoring
 import os
 import tensorflow as tf
 
+from rbm_robust.validation.scoring_pipeline import training_and_testing_pipeline
 from rbm_robust.validation.wavelet_scoring import waveletPipelineScoring
 
 
-def main(model_path: str = None, remaining_epochs: int = 0):
+def main():
     print("Starting")
-    # devices = tf.config.experimental.list_physical_devices("GPU")
-    # tf.config.experimental.set_memory_growth(devices[0], True)
-    # path = os.environ.get("DATA_PATH")
     # path = "/Users/simonmeske/Desktop/TestOrdner/data_per_subject"
-    path = os.getenv("TMPDIR") + "/Data"
+    path = "/Users/simonmeske/Desktop/Masterarbeit/Radarcadia/Processed_Files"
+    testing_path = "/Users/simonmeske/Desktop/Masterarbeit/RadarcadiaTestData"
+    # path = os.getenv("TMPDIR") + "/Data"
+    # testing_path = os.getenv("WORK") + "/TestData"
     print(path)
-    # dataset_path = Path(path)
-    dataset = D02Dataset(path)
-    cnn_pipeline = CnnPipeline()
-    cnnPipelineScoring(cnn_pipeline, dataset, path, model_path=model_path, remaining_epochs=remaining_epochs)
+    # Get Training and Testing Subjects
+    data_path = Path(path)
+    testing_path = Path(testing_path)
+    possible_subjects = [path.name for path in data_path.iterdir() if path.is_dir()]
+    testing_subjects = [path.name for path in Path(testing_path).iterdir() if path.is_dir()]
+
+    # Split Data
+    training_subjects, validation_subjects = train_test_split(possible_subjects, test_size=0.2, random_state=42)
+
+    pipeline = RadarcadiaPipeline(
+        learning_rate=0.0001,
+        data_path=path,
+        testing_path=testing_path,
+        epochs=1,
+        training_subjects=training_subjects,
+        validation_subjects=validation_subjects,
+        testing_subjects=testing_subjects,
+        breathing_type="all",
+    )
+    training_and_testing_pipeline(
+        pipeline=pipeline, training_and_validation_path=path, testing_path=path, data_set_type="RadarCardia"
+    )
 
 
 def wavelet_training(model_path: str = None, remaining_epochs: int = 0):
@@ -56,7 +78,16 @@ def preprocessing():
     target_path = "/home/woody/iwso/iwso116h/DataArray"
     # base_path = Path("/Users/simonmeske/Desktop/TestOrdner/data_per_subject")
     # target_path = "/Users/simonmeske/Desktop/TestOrdner/data_per_subject"
-    run(base_path, target_path, process_inputs=True, process_labels=True, process_images=False)
+    run_d02(base_path, target_path, process_inputs=True, process_labels=True, process_images=False)
+    # check_for_empty_arrays()
+
+
+def preprocessing_radarcadia():
+    base_path = Path("/home/vault/empkins/tpD/D03/Data/MA_Simon_Meske/2023_radarcardia_study")
+    target_path = os.getenv("HPCVAULT") + "/DataRadarcadia"
+    # base_path = Path("/Users/simonmeske/Desktop/Masterarbeit/Radarcadia")
+    # target_path = "/Users/simonmeske/Desktop/Masterarbeit/Radarcadia/Processed_Files"
+    run_radarcadia(base_path, target_path)
     # check_for_empty_arrays()
 
 
@@ -275,8 +306,10 @@ if __name__ == "__main__":
     #     if args[2] == "-epochs":
     #         remaining_epochs = int(args[3])
     # main(model_path, remaining_epochs)
-    # main(None, 0)
-    preprocessing()
+    # main()
+    # preprocessing()
+    preprocessing_radarcadia()
+    # get_data_set_radarcadia()
     # move_training_data()
     # wavelet_training(None, 0)
     # check_testing_and_training_paths()

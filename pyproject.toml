@@ -23,6 +23,7 @@ tensorflow = "2.15.0"
 keras = "2.15.0"
 keras-unet-collection = "^0.1.13"
 tensorboard-plugin-profile = "^2.15.1"
+tables = "^3.9.2"
 
 [tool.poetry.group.dev.dependencies]
 black = "^23.11.0"

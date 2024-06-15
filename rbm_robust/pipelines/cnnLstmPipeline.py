@@ -1,11 +1,12 @@
 import os
 
+import pandas as pd
 import pytz
 from typing_extensions import Self
 
 import numpy as np
 from tpcp import Algorithm, make_action_safe, cf, OptimizablePipeline, OptimizableParameter
-from rbm_robust.data_loading.datasets import D02Dataset
+from rbm_robust.data_loading.datasets import D02Dataset, RadarCardiaStudyDataset
 from rbm_robust.label_generation.label_generation_algorithm import ComputeEcgBlips, ComputeEcgPeakGaussians
 from rbm_robust.models.cnn import CNN
 from rbm_robust.preprocessing.preprocessing import (
@@ -71,8 +72,10 @@ class PreProcessor(Algorithm):
         downsampling_clone = self.downsampling.clone()
 
         # Calculate Power
-        radar_mag = RadarPreprocessor().calculate_power(i=raw_radar["I"], q=raw_radar["Q"])
-
+        if raw_radar.shape[0] == 2:
+            radar_mag = RadarPreprocessor().calculate_power(i=raw_radar["I"], q=raw_radar["Q"])
+        else:
+            radar_mag = raw_radar
         # Bandpass Filter
         self.preprocessed_signal_ = bandpass_filter_clone.filter(radar_mag, sampling_rate).filtered_signal_
 
@@ -179,7 +182,10 @@ class LabelProcessor(Algorithm):
         return path
 
     def get_path(self, subject_id: str, phase: str, base_path: str = "Data"):
-        path = f"{base_path}/{subject_id}/{phase}/labels_gaussian"
+        if phase is None:
+            path = f"{base_path}/{subject_id}/labels_gaussian"
+        else:
+            path = f"{base_path}/{subject_id}/{phase}/labels_gaussian"
         if not os.path.exists(path):
             os.makedirs(path)
         return path
@@ -193,7 +199,12 @@ class InputAndLabelGenerator(Algorithm):
         self.input_labels
     """
 
-    _action_methods = ("generate_training_inputs", "generate_training_labels", "generate_training_inputs_and_labels")
+    _action_methods = (
+        "generate_training_inputs",
+        "generate_training_labels",
+        "generate_training_inputs_and_labels",
+        "generate_training_inputs_and_labels_radarcadia",
+    )
 
     # PreProcessing
     pre_processor: PreProcessor
@@ -336,6 +347,67 @@ class InputAndLabelGenerator(Algorithm):
                         self.downsampled_hz,
                         base_path,
                     )
+        self.input_data_path_ = base_path
+        return self
+
+    @make_action_safe
+    def generate_training_inputs_and_labels_radarcadia(
+        self, dataset: RadarCardiaStudyDataset, base_path: str = "Data", image_based: bool = False
+    ):
+        # Init Clones
+        pre_processor_clone = self.pre_processor.clone()
+        label_processor_clone = self.labelProcessor.clone()
+        segmentation_clone = self.segmentation.clone()
+        subjects = list(set(dataset.index["subject"]))
+        for i in range(len(subjects)):
+            # subject = dataset.get_subset(subject=subjects[i])
+            print(f"Subject {subjects[i]}")
+            # iterate over different locations
+            for location in ["carotis", "aorta_prox", "aorta_med", "aorta_dist"]:
+                # Check which breathing types are avaialable
+                subject = dataset.get_subset(
+                    subject=subjects[i],
+                    location=location,
+                )
+                breathing_types = list(set(subject.index["breathing"]))
+                for breath in breathing_types:
+                    subject = dataset.get_subset(
+                        subject=subjects[i],
+                        location=location,
+                        breathing=breath,
+                    )
+                    try:
+                        radar_data = subject.load_data_from_location("emrad_data_preprocessed")["hs_Will_2018"]
+                        ecg_data = subject.load_data_from_location("biopac_data_preprocessed")["ecg"]
+                    except Exception as e:
+                        print(f"Exclude Subject {subject} due to error {e}")
+                        continue
+                    sampling_rate = subject.sampling_rates["resampled"]
+                    segments_radar = segmentation_clone.segment(radar_data, sampling_rate).segmented_signal_
+                    segments_ecg = segmentation_clone.segment(ecg_data, sampling_rate).segmented_signal_
+                    if len(segments_radar) != len(segments_ecg):
+                        continue
+                    print(f"Location {location}")
+                    # Create Inputs
+                    for j in range(len(segments_radar)):
+                        pre_processor_clone.preprocess(
+                            segments_radar[j],
+                            sampling_rate,
+                            subjects[0],
+                            location + "_" + breath,
+                            j,
+                            base_path,
+                            image_based,
+                        )
+                        label_processor_clone.label_generation(
+                            segments_ecg[j],
+                            sampling_rate,
+                            subjects[0],
+                            location + "_" + breath,
+                            j,
+                            self.downsampled_hz,
+                            base_path,
+                        )
         self.input_data_path_ = base_path
         return self
 

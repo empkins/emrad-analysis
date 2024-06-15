@@ -362,6 +362,89 @@ class DatasetFactory:
         dataset = self._build_wavelet_dual_array_dataset(input_paths, label_paths, batch_size)
         return dataset, int(len(input_paths) / batch_size)
 
+    def get_wavelet_dataset_for_subjects_radarcadia(
+        self,
+        base_path,
+        subjects,
+        batch_size: int = 8,
+        breathing_type: str = "all",
+        wavelet_type="morl",
+        ecg_labels=False,
+        log_transform=False,
+    ):
+        input_paths, label_paths = self._get_all_wavelet_input_and_label_paths_radarcadia(
+            base_path=base_path,
+            subject_list=subjects,
+            breathing_type=breathing_type,
+            wavelet_type=wavelet_type,
+            ecg_labels=ecg_labels,
+            log_transform=log_transform,
+        )
+        dataset = self._build_wavelet_single_array_dataset(input_paths, label_paths, batch_size)
+        return dataset, int(len(input_paths) / batch_size)
+
+    def _get_all_wavelet_input_and_label_paths_radarcadia(
+        self,
+        base_path,
+        subject_list,
+        breathing_type: str = "all",
+        wavelet_type="morl",
+        ecg_labels=False,
+        log_transform=False,
+    ):
+        base_path = Path(base_path)
+        input_paths = []
+        label_paths = []
+        input_folder_name = self._get_input_folder_name_radarcadia(wavelet_type, log_transform)
+        label_folder_name = self._get_label_folder_name_radarcadia(ecg_labels)
+        for subject in subject_list:
+            subject_path = base_path / subject
+            for location in subject_path.iterdir():
+                if breathing_type != "all" and breathing_type not in location.name:
+                    continue
+                if not location.is_dir():
+                    continue
+                input_path = location / input_folder_name
+                label_path = location / label_folder_name
+                if not input_path.exists() or not label_path.exists():
+                    continue
+                input_files = sorted(input_path.glob("*.npy"))
+                label_files = sorted(label_path.glob("*.npy"))
+                label_filenames = set([label_file.stem for label_file in label_files])
+                input_filenames = set([input_file.stem for input_file in input_files])
+                filename_intersection = label_filenames.intersection(input_filenames)
+                input_files = [
+                    str(input_file) for input_file in input_files if input_file.stem in filename_intersection
+                ]
+                label_files = [
+                    str(label_file) for label_file in label_files if label_file.stem in filename_intersection
+                ]
+                input_paths += input_files
+                label_paths += label_files
+        # Sanity Check
+        self._sanity_check_radarcadia(input_paths, label_paths, input_folder_name, label_folder_name)
+        return input_paths, label_paths
+
+    def _sanity_check_radarcadia(self, input_paths, label_paths, input_folder_name, label_folder_name):
+        all_paths = list(zip(input_paths, label_paths))
+        for input_path, label_path in all_paths:
+            modified_input_path = input_path.replace(input_folder_name, label_folder_name)
+            if modified_input_path != label_path:
+                raise ValueError(f"Input path: {input_path} does not match label path: {label_path}")
+            if not Path(input_path).exists():
+                raise FileNotFoundError(f"Input path: {input_path} does not exist")
+            if not Path(label_path).exists():
+                raise FileNotFoundError(f"Label path: {label_path} does not exist")
+
+    def _get_input_folder_name_radarcadia(self, wavelet_type="morl", log_transform=False):
+        input_folder_name = (
+            f"inputs_wavelet_array_{wavelet_type}_log" if log_transform else f"inputs_wavelet_array_{wavelet_type}"
+        )
+        return input_folder_name
+
+    def _get_label_folder_name_radarcadia(self, ecg_labels=False):
+        return "labels_gaussian" if not ecg_labels else "labels_ecg"
+
     def _build_wavelet_dual_array_dataset(self, input_paths, input_log_paths, label_paths, batch_size=8):
         dataset = tf.data.Dataset.from_tensor_slices((input_paths, input_log_paths, label_paths))
         dataset = (

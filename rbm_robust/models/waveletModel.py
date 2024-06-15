@@ -10,6 +10,139 @@ from keras.src.utils import load_img, img_to_array
 from keras_unet_collection import models
 from tpcp import Algorithm, OptimizableParameter
 from rbm_robust.data_loading.tf_datasets import DatasetFactory
+import tensorflow as tf
+
+
+class UNetWaveletTF(Algorithm):
+    learning_rate: OptimizableParameter[float]
+    training_ds: tf.data.Dataset
+    validation_ds: tf.data.Dataset
+    prediction_base_path: str = "/home/woody/iwso/iwso116h/Predictions"
+    prediction_folder_name: str = "predictions_cwt_bce_75_0001_sigmoid"
+    model_name: str
+    epochs: int
+    training_steps: int
+    validation_steps: int
+    _model = Optional[keras.Sequential]
+    batch_size: int
+
+    def __init__(
+        self,
+        learning_rate: float = 0.0001,
+        training_ds: tf.data.Dataset = None,
+        validation_ds: tf.data.Dataset = None,
+        model_name: str = None,
+        epochs: int = 50,
+        training_steps: int = 0,
+        validation_steps: int = 0,
+        batch_size: int = 8,
+    ):
+        self.learning_rate = learning_rate
+        self.training_ds = training_ds
+        self.validation_ds = validation_ds
+        self.model_name = model_name
+        self.epochs = epochs
+        self.training_steps = training_steps
+        self.validation_steps = validation_steps
+        self.batch_size = batch_size
+
+    def self_optimize(
+        self,
+    ):
+        self._create_model()
+        # log_dir = os.getenv("WORK") + "/Runs/logs/fit/"
+        # time = self.model_name + datetime.now().strftime("%Y%m%d-%H%M%S")
+        # log_dir += time
+        # if not os.path.exists(log_dir):
+        #     os.makedirs(log_dir)
+        #
+        # tensorboard_callback = keras.callbacks.TensorBoard(log_dir=log_dir, write_graph=False, update_freq="epoch")
+        print("Fitting")
+        # self.training_steps, self.validation_steps
+        history = self._model.fit(
+            self.training_ds,
+            epochs=self.epochs,
+            steps_per_epoch=1,
+            batch_size=self.batch_size,
+            shuffle=True,
+            validation_data=self.validation_ds,
+            validation_steps=1,
+            verbose=1,
+            # callbacks=[tensorboard_callback],
+        )
+
+        # history_path = os.getenv("WORK") + "/Runs/History/"
+        # if not os.path.exists(history_path):
+        #     os.makedirs(history_path)
+        # history_path += time + "_history.pkl"
+        # pickle.dump(history.history, open(history_path, "wb"))
+        self.save_model()
+        return self
+
+    def _create_model(self):
+        self._model = Sequential()
+        self._model.add(
+            models.unet_2d(
+                (256, 1000, 1),
+                filter_num=[16, 32, 64],
+                weights=None,
+                freeze_backbone=False,
+                freeze_batch_norm=False,
+                output_activation=None,
+                n_labels=1,
+            )
+        )
+        self._model.add(layers.Conv2D(filters=1, kernel_size=(256, 1), activation="sigmoid"))
+        self._model.add(layers.Flatten())
+        loss_func_bce = keras.losses.BinaryCrossentropy(from_logits=False, reduction="sum_over_batch_size")
+        # loss_func_mse = keras.losses.MeanSquaredError(reduction="sum_over_batch_size")
+        self._model.compile(optimizer=keras.optimizers.Adam(learning_rate=self.learning_rate), loss=loss_func_bce)
+        return self
+
+    def save_model(self):
+        name = self.model_name + datetime.now().strftime("%Y%m%d_%H%M%S")
+        if not os.path.exists("Models"):
+            os.makedirs("Models")
+        self._model.save("Models/" + name + ".keras")
+        with open("Models/" + name + "_history.pkl", "wb") as f:
+            pickle.dump(self._model.history, f)
+        return self
+
+    def predict(
+        self,
+        testing_subjects: list[str] = None,
+        data_path: str = "/home/woody/iwso/iwso116h/TestData",
+        input_folder_name: str = "inputs",
+    ):
+        print("Prediction started")
+        data_path = Path(data_path)
+        data_folder_name = data_path.name
+        print(data_path)
+
+        subjects = [path.name for path in data_path.iterdir() if path.is_dir()]
+        if testing_subjects is not None:
+            subjects = [subject for subject in subjects if subject in testing_subjects]
+        for subject_id in subjects:
+            print(subject_id)
+            subject_path = data_path / subject_id
+            for phase_path in subject_path.iterdir():
+                if not phase_path.is_dir():
+                    continue
+                input_path = phase_path / input_folder_name
+                prediction_path = phase_path
+                prediction_path = Path(
+                    str(prediction_path).replace(data_folder_name, f"Predictions/predictions_{self.model_name}")
+                )
+                prediction_path.mkdir(parents=True, exist_ok=True)
+                input_files = sorted(input_path.glob("*.npy"))
+                for input_file in input_files:
+                    img_input = np.load(input_file)
+                    img_input = np.array([img_input])
+                    pred = self._model.predict(img_input, verbose=0)
+                    pred = pred.flatten()
+                    filename = input_file.stem + ".npy"
+                    np.save(prediction_path / filename, pred)
+        return self
 
 
 class UNetWavelet(Algorithm):
