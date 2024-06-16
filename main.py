@@ -31,7 +31,8 @@ from rbm_robust.validation.wavelet_scoring import waveletPipelineScoring
 @click.option("--label_type", default="guassian", help="Type of labels to use. Possible values are ecg and gaussian")
 @click.option("--log", default=False, help="Whether to use log transformed data")
 @click.option("--dual_channel", default=False, help="Whether to use log transformed data and not log transformed data")
-def main(epochs, learning_rate, image_based, datasource, breathing_type, label_type, log, dual_channel):
+@click.option("--wavelet", default="morl", help="Type of wavelet to use: morl, gaus5")
+def main(epochs, learning_rate, image_based, datasource, breathing_type, label_type, log, dual_channel, wavelet):
     if datasource == "radarcadia":
         ml_radarcadia(
             epochs=epochs,
@@ -78,6 +79,7 @@ def ml_radarcadia(
     label_type: str = "guassian",
     log: bool = False,
     dual_channel: bool = False,
+    wavelet: str = "morl",
 ):
     print("Starting")
     # path = "/Users/simonmeske/Desktop/TestOrdner/data_per_subject"
@@ -108,6 +110,7 @@ def ml_radarcadia(
         ecg_labels=use_ecg_labels,
         log_transform=log,
         dual_channel=dual_channel,
+        wavelet_type=wavelet,
     )
     training_and_testing_pipeline(pipeline=pipeline, testing_path=path, image_based=image_based)
 
