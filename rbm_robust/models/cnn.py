@@ -271,7 +271,7 @@ class CNN(Algorithm):
         # loss_func = keras.losses.BinaryCrossentropy(from_logits=False, reduction="none")
         # self._model.compile(optimizer=keras.optimizers.Adam(learning_rate=self.learning_rate), loss=loss_func)
         loss_func_mse = keras.losses.MeanSquaredError(reduction="sum_over_batch_size")
-        self._model.compile(optimizer=keras.optimizers.Adam(learning_rate=self.learning_rate), loss=loss_func)
+        self._model.compile(optimizer=keras.optimizers.Adam(learning_rate=self.learning_rate), loss=loss_func_mse)
         return self
 
     def save_model(self):

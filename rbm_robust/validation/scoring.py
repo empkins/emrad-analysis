@@ -9,7 +9,7 @@ from pathlib import Path
 from rbm_robust.validation.RPeakF1Score import RPeakF1Score
 from rbm_robust.data_loading.datasets import D02Dataset
 from rbm_robust.models.cnn import CNN
-from rbm_robust.pipelines.cnnLstmPipeline import CnnPipeline
+from rbm_robust.pipelines.cnnLstmPipeline import D02Pipeline
 
 
 class Scoring:
@@ -64,7 +64,7 @@ class Scoring:
 
 
 def cnnReturnScoring(
-    pipeline: CnnPipeline,
+    pipeline: D02Pipeline,
     dataset: D02Dataset,
     training_and_validation_path: str = "/home/woody/iwso/iwso116h/Data",
     testing_path: str = "/home/woody/iwso/iwso116h/TestDataRef",
@@ -92,7 +92,7 @@ def cnnReturnScoring(
 
 
 def cnnPipelineScoring(
-    pipeline: CnnPipeline,
+    pipeline: D02Pipeline,
     dataset: D02Dataset,
     training_and_validation_path: str = "/home/woody/iwso/iwso116h/Data",
     testing_path: str = "/home/woody/iwso/iwso116h/TestDataRef",

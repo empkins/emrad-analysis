@@ -26,6 +26,8 @@ class UNetWaveletTF(Algorithm):
     _model = Optional[keras.Sequential]
     batch_size: int
     image_based: bool
+    loss_func: str
+    dual_channel: bool
 
     def __init__(
         self,
@@ -38,6 +40,8 @@ class UNetWaveletTF(Algorithm):
         validation_steps: int = 0,
         batch_size: int = 8,
         image_based=False,
+        loss_func: str = "bce",
+        dual_channel: bool = False,
     ):
         self.learning_rate = learning_rate
         self.training_ds = training_ds
@@ -48,14 +52,14 @@ class UNetWaveletTF(Algorithm):
         self.validation_steps = validation_steps
         self.batch_size = batch_size
         self.image_based = image_based
+        self.loss_func = loss_func
+        self.dual_channel = dual_channel
 
     def self_optimize(
         self,
     ):
         self._create_model()
-        # log_dir = os.getenv("WORK") + "/Runs/logs/fit/"
-        # time = self.model_name + datetime.now().strftime("%Y%m%d-%H%M%S")
-        # log_dir += time
+        # log_dir = os.getenv("WORK") + f"/Runs/logs/fit/{self.model_name}"
         # if not os.path.exists(log_dir):
         #     os.makedirs(log_dir)
 
@@ -76,43 +80,47 @@ class UNetWaveletTF(Algorithm):
         # history_path = os.getenv("WORK") + "/Runs/History/"
         # if not os.path.exists(history_path):
         #     os.makedirs(history_path)
-        # history_path += time + "_history.pkl"
+        # history_path += self.model_name + "_history.pkl"
         # pickle.dump(history.history, open(history_path, "wb"))
-        self.save_model()
+        # self.save_model()
         return self
 
     def _create_model(self):
         self._model = Sequential()
-        if self.image_based:
-            self._model.add(
-                models.unet_2d(
-                    (256, 1000, 3),
-                    filter_num=[16, 32, 64],
-                    weights=None,
-                    freeze_backbone=False,
-                    freeze_batch_norm=False,
-                    output_activation=None,
-                    n_labels=3,
-                )
+        channel_number = self._get_channel_number()
+
+        self._model.add(
+            models.unet_2d(
+                (256, 1000, channel_number),
+                filter_num=[16, 32, 64],
+                weights=None,
+                freeze_backbone=False,
+                freeze_batch_norm=False,
+                output_activation=None,
+                n_labels=channel_number,
             )
-        else:
-            self._model.add(
-                models.unet_2d(
-                    (256, 1000, 1),
-                    filter_num=[16, 32, 64],
-                    weights=None,
-                    freeze_backbone=False,
-                    freeze_batch_norm=False,
-                    output_activation=None,
-                    n_labels=1,
-                )
-            )
+        )
         self._model.add(layers.Conv2D(filters=1, kernel_size=(256, 1), activation="sigmoid"))
         self._model.add(layers.Flatten())
-        loss_func_bce = keras.losses.BinaryCrossentropy(from_logits=False, reduction="sum_over_batch_size")
-        loss_func_mse = keras.losses.MeanSquaredError(reduction="sum_over_batch_size")
-        self._model.compile(optimizer=keras.optimizers.Adam(learning_rate=self.learning_rate), loss=loss_func_bce)
+        loss_func = None
+        if self.loss_func == "bce":
+            loss_func = keras.losses.BinaryCrossentropy(from_logits=False, reduction="sum_over_batch_size")
+        else:
+            loss_func = keras.losses.MeanSquaredError(reduction="sum_over_batch_size")
+        self._model.compile(optimizer=keras.optimizers.Adam(learning_rate=self.learning_rate), loss=loss_func)
         return self
+
+    def _get_channel_number(self):
+        if self.dual_channel and not self.image_based:
+            return 2
+        elif self.dual_channel and self.image_based:
+            return 6
+        elif not self.dual_channel and not self.image_based:
+            return 1
+        elif not self.dual_channel and self.image_based:
+            return 3
+        else:
+            raise ValueError("Invalid combination of dual_channel and image_based")
 
     def save_model(self):
         name = self.model_name + datetime.now().strftime("%Y%m%d_%H%M%S")
@@ -128,6 +136,7 @@ class UNetWaveletTF(Algorithm):
         testing_subjects: list[str] = None,
         data_path: str = "/home/woody/iwso/iwso116h/TestData",
         input_folder_name: str = "inputs",
+        prediction_folder_name: str = "predictions_unnnamed",
     ):
         print("Prediction started")
         data_path = Path(data_path)
@@ -146,7 +155,7 @@ class UNetWaveletTF(Algorithm):
                 input_path = phase_path / input_folder_name
                 prediction_path = phase_path
                 prediction_path = Path(
-                    str(prediction_path).replace(data_folder_name, f"Predictions/predictions_{self.model_name}")
+                    str(prediction_path).replace(data_folder_name, f"Predictions/{prediction_folder_name}")
                 )
                 prediction_path.mkdir(parents=True, exist_ok=True)
                 input_files = sorted(input_path.glob(f"*.{input_file_type}"))
@@ -155,12 +164,32 @@ class UNetWaveletTF(Algorithm):
                         img_input = np.load(input_file)
                     else:
                         img_input = img_to_array(load_img(input_file, target_size=(256, 1000))) / 255
+                    img_input = self._get_input_array(input_file)
                     img_input = np.array([img_input])
                     pred = self._model.predict(img_input, verbose=0)
                     pred = pred.flatten()
                     filename = input_file.stem + ".npy"
-                    np.save(prediction_path / filename, pred)
+                    save_path = Path(str(prediction_path)) / filename
+                    np.save(save_path, pred)
         return self
+
+    def _get_input_array(self, input_file):
+        if not self.image_based and not self.dual_channel:
+            return np.load(input_file)
+        elif self.image_based and not self.dual_channel:
+            return img_to_array(load_img(input_file, target_size=(256, 1000))) / 255
+        elif self.dual_channel and self.image_based:
+            img = img_to_array(load_img(input_file, target_size=(256, 1000))) / 255
+            second_channel_path = Path(str(input_file.parent) + "_log") / input_file.name
+            second_channel = img_to_array(load_img(second_channel_path, target_size=(256, 1000))) / 255
+            img = np.dstack((img, second_channel))
+            return img
+        elif self.dual_channel and not self.image_based:
+            img = np.load(input_file)
+            second_channel_path = Path(str(input_file.parent) + "_log") / input_file.name
+            second_channel = np.load(second_channel_path)
+            img = np.dstack((img, second_channel))
+            return img
 
 
 class UNetWavelet(Algorithm):

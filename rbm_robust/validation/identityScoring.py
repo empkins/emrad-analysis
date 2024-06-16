@@ -2,7 +2,7 @@ from sklearn.model_selection import train_test_split
 
 from rbm_robust.data_loading.datasets import D02Dataset
 from rbm_robust.models.identityModel import IdentityModel
-from rbm_robust.pipelines.cnnLstmPipeline import CnnPipeline
+from rbm_robust.pipelines.cnnLstmPipeline import D02Pipeline
 from rbm_robust.pipelines.identityPipeline import IdentityPipeline
 
 
@@ -13,8 +13,7 @@ def identityScoring(dataset: D02Dataset, path: str = "/home/woody/iwso/iwso116h/
     testing_dataset = dataset.get_subset(participant=test_data)
 
     identityPipeline = IdentityPipeline(IdentityModel())
-    cnn_pipeline = CnnPipeline()
-    # cnn_pipeline.prepare_data(training_dataset, validation_dataset, testing_dataset, path)
+    cnn_pipeline = D02Pipeline()
 
     print("Training started")
     identityPipeline.self_optimize(training_dataset, validation_dataset, path)

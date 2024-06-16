@@ -24,6 +24,7 @@ keras = "2.15.0"
 keras-unet-collection = "^0.1.13"
 tensorboard-plugin-profile = "^2.15.1"
 tables = "^3.9.2"
+click = "^8.1.7"
 
 [tool.poetry.group.dev.dependencies]
 black = "^23.11.0"

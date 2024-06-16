@@ -15,13 +15,10 @@ module add tensorrt/8.6.1.6-cuda12.0-cudnn8.9
 rsync -r $HPCVAULT/DataRadarcadia $TMPDIR/Data
 
 cd "$HOME"/emrad-analysis || exit
-poetry run python main.py --epochs 30 --learning_rate 0.0001 --image_based False --datasource radarcadia --breathing_type all --label_type ecg --dual_channel True
-poetry run python main.py --epochs 30 --learning_rate 0.0001 --image_based False --datasource radarcadia --breathing_type all --label_type gaussian --dual_channel True
-poetry run python main.py --epochs 30 --learning_rate 0.0001 --image_based False --datasource radarcadia --breathing_type all --label_type ecg --dual_channel False --log True
-poetry run python main.py --epochs 30 --learning_rate 0.0001 --image_based False --datasource radarcadia --breathing_type all --label_type ecg --dual_channel False --log False
-
 poetry run python main.py --epochs 30 --learning_rate 0.0001 --image_based True --datasource radarcadia --breathing_type all --label_type ecg --dual_channel False --log False
 poetry run python main.py --epochs 30 --learning_rate 0.0001 --image_based True --datasource radarcadia --breathing_type all --label_type ecg --dual_channel False --log True
+poetry run python main.py --epochs 30 --learning_rate 0.0001 --image_based True --datasource radarcadia --breathing_type all --label_type ecg --dual_channel True
+
 poetry run python main.py --epochs 30 --learning_rate 0.0001 --image_based True --datasource radarcadia --breathing_type all --label_type gaussian --dual_channel False --log False
 poetry run python main.py --epochs 30 --learning_rate 0.0001 --image_based True --datasource radarcadia --breathing_type all --label_type gaussian --dual_channel False --log True
-
+poetry run python main.py --epochs 30 --learning_rate 0.0001 --image_based True --datasource radarcadia --breathing_type all --label_type gaussian --dual_channel True

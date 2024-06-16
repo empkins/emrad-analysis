@@ -1,14 +1,18 @@
 import os
+from pathlib import Path
 
 import pandas as pd
 import pytz
 from typing_extensions import Self
+import tensorflow as tf
 
 import numpy as np
 from tpcp import Algorithm, make_action_safe, cf, OptimizablePipeline, OptimizableParameter
 from rbm_robust.data_loading.datasets import D02Dataset, RadarCardiaStudyDataset
+from rbm_robust.data_loading.tf_datasets import DatasetFactory
 from rbm_robust.label_generation.label_generation_algorithm import ComputeEcgBlips, ComputeEcgPeakGaussians
 from rbm_robust.models.cnn import CNN
+from rbm_robust.models.waveletModel import UNetWaveletTF
 from rbm_robust.preprocessing.preprocessing import (
     ButterBandpassFilter,
     Downsampling,
@@ -18,6 +22,37 @@ from rbm_robust.preprocessing.preprocessing import (
     Normalizer,
 )
 from emrad_toolbox.radar_preprocessing.radar import RadarPreprocessor
+
+from rbm_robust.validation.RPeakF1Score import RPeakF1Score
+
+
+def _get_dataset(
+    data_path,
+    subjects,
+    batch_size: int = 8,
+    wavelet_type: str = "morl",
+    ecg_labels: bool = False,
+    log_transform: bool = False,
+    single_channel: bool = True,
+) -> (tf.data.Dataset, int):
+    ds_factory = DatasetFactory()
+    if single_channel:
+        return ds_factory.get_single_channel_wavelet_dataset_for_subjects(
+            base_path=data_path,
+            training_subjects=subjects,
+            batch_size=batch_size,
+            wavelet_type=wavelet_type,
+            ecg_labels=ecg_labels,
+            log_transform=log_transform,
+        )
+    else:
+        return ds_factory.get_dual_channel_wavelet_dataset_for_subjects(
+            base_path=data_path,
+            training_subjects=subjects,
+            batch_size=batch_size,
+            wavelet_type=wavelet_type,
+            ecg_labels=ecg_labels,
+        )
 
 
 class PreProcessor(Algorithm):
@@ -538,67 +573,185 @@ class InputAndLabelGenerator(Algorithm):
         return self
 
 
-class CnnPipeline(OptimizablePipeline):
-    feature_extractor: InputAndLabelGenerator
-    cnn: CNN
-    cnn_model: OptimizableParameter
-
+class D02Pipeline(OptimizablePipeline):
+    model: UNetWaveletTF
+    result_ = np.ndarray
+    training_ds: tf.data.Dataset
+    validation_ds: tf.data.Dataset
+    testing_subjects: list
+    epochs: int
+    learning_rate: float
+    data_path: str
+    testing_path: str
+    ecg_labels: bool
+    log_transform: bool
+    breathing_type: str
+    training_subjects: list
+    validation_subjects: list
+    wavelet_type: str
+    batch_size: int
+    image_based: bool
+    single_channel: bool
     result_ = np.ndarray
 
     def __init__(
         self,
-        feature_extractor: InputAndLabelGenerator = cf(InputAndLabelGenerator()),
-        cnn: CNN = cf(CNN()),
-    ):
-        self.feature_extractor = feature_extractor
-        self.cnn = cnn
-
-    def prepare_data(
-        self,
-        training_data: D02Dataset,
-        validation_data: D02Dataset,
-        testing_data: D02Dataset,
-        path: str = "/home/woody/iwso/iwso116h/Data",
+        learning_rate: float = 0.0001,
+        data_path: str = "/home/woody/iwso/iwso116h/Data",
+        testing_path: str = "/home/woody/iwso/iwso116h/TestData",
+        epochs: int = 50,
+        training_subjects: list = None,
+        validation_subjects: list = None,
+        testing_subjects: list = None,
+        wavelet_type: str = "morl",
+        breathing_type: str = "all",
+        ecg_labels: bool = False,
+        log_transform: bool = False,
+        batch_size: int = 8,
         image_based: bool = False,
+        single_channel: bool = True,
     ):
-        print("Extracting features and Labels")
-        self.feature_extractor.generate_training_inputs_and_labels(training_data, path, image_based)
-        print("Generating Validation Set")
-        self.feature_extractor.generate_training_inputs_and_labels(validation_data, path, image_based)
-        print("Generating Testing Set")
-        self.feature_extractor.generate_training_inputs_and_labels(testing_data, path, image_based)
+        # Set the different fields
+        self.single_channel = single_channel
+        self.learning_rate = learning_rate
+        self.epochs = epochs
+        self.data_path = data_path
+        self.testing_path = testing_path
+        self.testing_subjects = testing_subjects
+        self.image_based = image_based
+        self.training_ds, self.training_steps = _get_dataset(
+            data_path=data_path,
+            subjects=training_subjects,
+            breathing_type=breathing_type,
+            wavelet_type=wavelet_type,
+            ecg_labels=ecg_labels,
+            log_transform=log_transform,
+            batch_size=batch_size,
+            image_based=image_based,
+            single_channel=single_channel,
+        )
+        self.validation_ds, self.validation_steps = _get_dataset(
+            data_path=data_path,
+            subjects=validation_subjects,
+            breathing_type=breathing_type,
+            wavelet_type=wavelet_type,
+            ecg_labels=ecg_labels,
+            log_transform=log_transform,
+            batch_size=batch_size,
+            image_based=image_based,
+            single_channel=single_channel,
+        )
+        self.ecg_labels = ecg_labels
+        self.log_transform = log_transform
+        self.breathing_type = breathing_type
+        self.training_subjects = training_subjects
+        self.validation_subjects = validation_subjects
+        self.wavelet_type = wavelet_type
+        self.batch_size = batch_size
+
+        model_name = f"d02_{wavelet_type}_{epochs}"
+        if image_based:
+            model_name += "_image_based"
+        if single_channel:
+            model_name += "_single_channel"
+        if ecg_labels:
+            model_name += "_ecg"
+        if log_transform and single_channel:
+            model_name += "_log"
+
+        # Initialize the model
+        self.model = UNetWaveletTF(
+            learning_rate=learning_rate,
+            epochs=epochs,
+            model_name=model_name,
+            training_steps=self.training_steps,
+            validation_steps=self.validation_steps,
+            training_ds=self.training_ds,
+            validation_ds=self.validation_ds,
+            batch_size=self.batch_size,
+            image_based=image_based,
+        )
+
+    # def prepare_data(
+    #     self,
+    #     training_data: D02Dataset,
+    #     validation_data: D02Dataset,
+    #     testing_data: D02Dataset,
+    #     path: str = "/home/woody/iwso/iwso116h/Data",
+    #     image_based: bool = False,
+    # ):
+    #     print("Extracting features and Labels")
+    #     self.feature_extractor.generate_training_inputs_and_labels(training_data, path, image_based)
+    #     print("Generating Validation Set")
+    #     self.feature_extractor.generate_training_inputs_and_labels(validation_data, path, image_based)
+    #     print("Generating Testing Set")
+    #     self.feature_extractor.generate_training_inputs_and_labels(testing_data, path, image_based)
+    #     return self
+
+    def self_optimize(self):
+        self.wavelet_model.self_optimize()
         return self
 
-    def self_optimize(
-        self,
-        dataset: D02Dataset,
-        validation: D02Dataset,
-        path: str = "/home/woody/iwso/iwso116h/Data",
-        image_based: bool = False,
-        model_path: str = None,
-        start_epoch: int = 0,
-        remaining_epochs: int = 0,
-    ) -> Self:
-        self.feature_extractor = self.feature_extractor.clone()
-        self.cnn = self.cnn.clone()
-        print("Optimizing CNN")
-        training_subjects = dataset.subjects
-        validation_subjects = validation.subjects
-        self.cnn.self_optimize(
-            path,
-            image_based,
-            training_subjects,
-            validation_subjects,
-            model_path=model_path,
-            start_epoch=start_epoch,
-            remaining_epochs=remaining_epochs,
+    def run(self, testing_subjects: list = None, path: str = "/home/woody/iwso/iwso116h/TestDataRef") -> Self:
+        input_folder_name = f"inputs_wavelet_array_{self.wavelet_type}"
+        if self.log_transform:
+            input_folder_name += "_log"
+        if self.image_based:
+            input_folder_name = input_folder_name.replace("array", "image")
+
+        self.model.predict(
+            testing_subjects=self.testing_subjects,
+            data_path=self.testing_path,
+            input_folder_name=input_folder_name,
         )
         return self
 
-    def return_self_optimize(self):
-        pass
+    def score(self, testing_path: str):
+        true_positives = 0
+        total_gt_peaks = 0
+        total_pred_peaks = 0
 
-    def run(self, testing_subjects: list = None, path: str = "/home/woody/iwso/iwso116h/TestDataRef") -> Self:
-        print("Run")
-        self.cnn.predict(testing_subjects=testing_subjects)
-        return self
+        for subject in testing_path.iterdir():
+            if not subject.is_dir():
+                continue
+            if subject.name not in self.testing_subjects:
+                continue
+            print(f"subject {subject}")
+            for phase in subject.iterdir():
+                if not phase.is_dir():
+                    continue
+                if phase.name == "logs" or phase.name == "raw":
+                    continue
+                print(f"phase {phase}")
+                prediction_path = phase
+                prediction_path = Path(
+                    str(prediction_path).replace("TestDataRef", "Predictions/predictions_mse_0001_25_epochs_ref")
+                )
+                label_path = phase / "labels_gaussian"
+                prediction_files = sorted(path.name for path in prediction_path.iterdir() if path.is_file())
+                f1RPeakScore = RPeakF1Score(max_deviation_ms=100)
+                for prediction_file in prediction_files:
+                    prediction = np.load(prediction_path / prediction_file)
+                    label = np.load(label_path / prediction_file)
+                    f1RPeakScore.compute_predictions(prediction, label)
+                    true_positives += f1RPeakScore.tp_
+                    total_gt_peaks += f1RPeakScore.total_peaks_
+                    total_pred_peaks += f1RPeakScore.pred_peaks_
+
+        # Save the Model
+        self.model.save_model()
+
+        if total_pred_peaks == 0:
+            print("No Peaks detected")
+            return {
+                "abs_hr_error": 0,
+                "mean_instantaneous_error": 0,
+                "f1_score": 0,
+                "mean_relative_error_hr": 0,
+                "mean_absolute_error": 0,
+            }
+
+        precision = true_positives / total_pred_peaks
+        recall = true_positives / total_gt_peaks
+        f1_score = 2 * (precision * recall) / (precision + recall)
+        print(f"f1 Score {f1_score}")

@@ -3,12 +3,14 @@ import pathlib
 from itertools import zip_longest
 from pathlib import Path
 import shutil
+
+import click
 import numpy as np
 from sklearn.model_selection import train_test_split
 
 from rbm_robust.data_loading.datasets import D02Dataset
 from rbm_robust.models.cnn import CNN
-from rbm_robust.pipelines.cnnLstmPipeline import CnnPipeline
+from rbm_robust.pipelines.cnnLstmPipeline import D02Pipeline
 from rbm_robust.pipelines.preprocessing_pipeline import run_d02, run_radarcadia
 from rbm_robust.pipelines.radarcadia_pipeline import RadarcadiaPipeline
 from rbm_robust.pipelines.waveletPipeline import WaveletPipeline
@@ -20,7 +22,63 @@ from rbm_robust.validation.scoring_pipeline import training_and_testing_pipeline
 from rbm_robust.validation.wavelet_scoring import waveletPipelineScoring
 
 
-def main():
+@click.command()
+@click.option("--epochs", default=50, help="Number of epochs to train the model")
+@click.option("--learning_rate", default=0.001, help="Learning rate for the model")
+@click.option("--image_based", default=False, help="Whether the model is image based")
+@click.option("--datasource", default="radarcadia", help="The datasource to use")
+@click.option("--breathing_type", default=None, help="Type of breathing to use")
+@click.option("--label_type", default="guassian", help="Type of labels to use. Possible values are ecg and gaussian")
+@click.option("--log", default=False, help="Whether to use log transformed data")
+@click.option("--dual_channel", default=False, help="Whether to use log transformed data and not log transformed data")
+def main(epochs, learning_rate, image_based, datasource, breathing_type, label_type, log, dual_channel):
+    if datasource == "radarcadia":
+        ml_radarcadia(
+            epochs=epochs,
+            learning_rate=learning_rate,
+            image_based=image_based,
+            breathing_type=breathing_type,
+            label_type=label_type,
+            log=log,
+            dual_channel=dual_channel,
+        )
+    elif datasource == "d02":
+        ml_d02()
+    else:
+        raise ValueError("Datasource not found")
+
+
+def ml_d02(learning_rate: float = 0.001, epochs: int = 50, image_based: bool = False):
+    path = os.getenv("TMPDIR") + "/Data"
+    testing_path = os.getenv("WORK") + "/TestData"
+    data_path = Path(path)
+    testing_path = Path(testing_path)
+    possible_subjects = [path.name for path in data_path.iterdir() if path.is_dir()]
+    testing_subjects = [path.name for path in Path(testing_path).iterdir() if path.is_dir()]
+    training_subjects, validation_subjects = train_test_split(possible_subjects, test_size=0.2, random_state=42)
+    pipeline = D02Pipeline(
+        learning_rate=learning_rate,
+        data_path=path,
+        testing_path=testing_path,
+        epochs=epochs,
+        training_subjects=training_subjects,
+        validation_subjects=validation_subjects,
+        testing_subjects=testing_subjects,
+        breathing_type="all",
+        image_based=image_based,
+    )
+    training_and_testing_pipeline(pipeline=pipeline, testing_path=path, image_based=image_based)
+
+
+def ml_radarcadia(
+    learning_rate: float = 0.001,
+    epochs: int = 50,
+    image_based: bool = False,
+    breathing_type: str = "all",
+    label_type: str = "guassian",
+    log: bool = False,
+    dual_channel: bool = False,
+):
     print("Starting")
     # path = "/Users/simonmeske/Desktop/TestOrdner/data_per_subject"
     # path = "/Users/simonmeske/Desktop/Masterarbeit/Radarcadia/Processed_Files"
@@ -33,20 +91,23 @@ def main():
     possible_subjects = [path.name for path in data_path.iterdir() if path.is_dir()]
     testing_subjects = [path.name for path in Path(testing_path).iterdir() if path.is_dir()]
 
+    use_ecg_labels = label_type == "ecg"
+
     # Split Data
     training_subjects, validation_subjects = train_test_split(possible_subjects, test_size=0.2, random_state=42)
-
-    image_based = False
     pipeline = RadarcadiaPipeline(
-        learning_rate=0.001,
+        learning_rate=learning_rate,
         data_path=path,
         testing_path=testing_path,
-        epochs=300,
+        epochs=epochs,
         training_subjects=training_subjects,
         validation_subjects=validation_subjects,
         testing_subjects=testing_subjects,
-        breathing_type="all",
+        breathing_type=breathing_type,
         image_based=image_based,
+        ecg_labels=use_ecg_labels,
+        log_transform=log,
+        dual_channel=dual_channel,
     )
     training_and_testing_pipeline(pipeline=pipeline, testing_path=path, image_based=image_based)
 
