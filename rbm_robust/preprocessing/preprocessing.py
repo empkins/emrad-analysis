@@ -296,7 +296,20 @@ class WaveletTransformer(Algorithm):
         return self
 
     def _calculate_single_signal(self, signal, segment, base_path, subject_id, phase, img_based, identity):
-        wavelet_types = ["morl", "gaus5"]
+        wavelet_types = [
+            "morl",
+            "gaus1",
+            "gaus2",
+            "gaus3",
+            "gaus4",
+            "gaus5",
+            "gaus6",
+            "gaus7",
+            "gaus8",
+            "mexh",
+            "shan1-1",
+            "fbsp",
+        ]
         for wavelet_type in wavelet_types:
             path = self.get_path(
                 base_path=base_path, subject_id=subject_id, phase=phase, identity=identity, create_dir=False
