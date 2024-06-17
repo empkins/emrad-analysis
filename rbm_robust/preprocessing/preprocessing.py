@@ -298,13 +298,13 @@ class WaveletTransformer(Algorithm):
     def _calculate_single_signal(self, signal, segment, base_path, subject_id, phase, img_based, identity):
         wavelet_types = [
             "morl",
-            "gaus1",
-            "gaus2",
-            "gaus3",
-            "gaus4",
-            "gaus5",
-            "mexh",
-            "shan1-1",
+            # "gaus1",
+            # "gaus2",
+            # "gaus3",
+            # "gaus4",
+            # "gaus5",
+            # "mexh",
+            # "shan1-1",
         ]
         for wavelet_type in wavelet_types:
             path = self.get_path(
@@ -388,9 +388,9 @@ class WaveletTransformer(Algorithm):
     def get_path(self, base_path: str, subject_id: str, phase: str, identity: bool = False, create_dir: bool = True):
         if identity:
             if phase is not None:
-                path = f"{base_path}/{subject_id}/{phase}/inputs_wavlab"
+                path = f"{base_path}/{subject_id}/{phase}/inputs_identity_array"
             else:
-                path = f"{base_path}/{subject_id}/inputs_wavlab"
+                path = f"{base_path}/{subject_id}/inputs_identity_array"
         else:
             if phase is not None:
                 path = f"{base_path}/{subject_id}/{phase}/inputs_wavelet_array"

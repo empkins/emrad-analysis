@@ -22,6 +22,7 @@ def _get_dataset(
     log_transform: bool = False,
     image_based: bool = False,
     dual_channel: bool = False,
+    identity: bool = False,
 ) -> (tf.data.Dataset, int):
     ds_factory = DatasetFactory()
     dataset, steps = ds_factory.get_wavelet_dataset_for_subjects_radarcadia(
@@ -34,6 +35,7 @@ def _get_dataset(
         log_transform=log_transform,
         image_based=image_based,
         dual_channel=dual_channel,
+        identity=identity,
     )
     return dataset, steps
 
@@ -56,9 +58,10 @@ class RadarcadiaPipeline(OptimizablePipeline):
     wavelet_type: str
     batch_size: int
     image_based: bool
-    loss_func: str
     prediction_folder_name: str
     dual_channel: bool
+    identity: bool
+    loss: str
 
     def __init__(
         self,
@@ -75,10 +78,13 @@ class RadarcadiaPipeline(OptimizablePipeline):
         log_transform: bool = False,
         batch_size: int = 8,
         image_based: bool = False,
-        loss_func: str = "bce",
         dual_channel: bool = False,
+        identity: bool = False,
+        loss: str = "bce",
     ):
         # Set the different fields
+        self.loss = loss
+        self.identity = identity
         self.learning_rate = learning_rate
         self.epochs = epochs
         self.data_path = data_path
@@ -96,6 +102,7 @@ class RadarcadiaPipeline(OptimizablePipeline):
             batch_size=batch_size,
             image_based=image_based,
             dual_channel=dual_channel,
+            identity=identity,
         )
         self.validation_ds, self.validation_steps = _get_dataset(
             data_path=data_path,
@@ -107,6 +114,7 @@ class RadarcadiaPipeline(OptimizablePipeline):
             batch_size=batch_size,
             image_based=image_based,
             dual_channel=dual_channel,
+            identity=identity,
         )
         self.ecg_labels = ecg_labels
         self.log_transform = log_transform
@@ -115,10 +123,9 @@ class RadarcadiaPipeline(OptimizablePipeline):
         self.validation_subjects = validation_subjects
         self.wavelet_type = wavelet_type
         self.batch_size = batch_size
-        self.loss_func = loss_func
 
         learning_rate_txt = str(learning_rate).replace(".", "_")
-        model_name = f"radarcadia_{wavelet_type}_{breathing_type}_{epochs}_{learning_rate_txt}_{loss_func}"
+        model_name = f"radarcadia_{wavelet_type}_{breathing_type}_{epochs}_{learning_rate_txt}_{loss}"
         if ecg_labels:
             model_name += "_ecg"
         if log_transform:
@@ -142,7 +149,7 @@ class RadarcadiaPipeline(OptimizablePipeline):
             validation_ds=self.validation_ds,
             batch_size=self.batch_size,
             image_based=image_based,
-            loss_func=loss_func,
+            loss=loss,
             dual_channel=dual_channel,
         )
 
@@ -150,12 +157,14 @@ class RadarcadiaPipeline(OptimizablePipeline):
         self.wavelet_model.self_optimize()
         return self
 
-    def run(self, path_to_save_predictions: str, image_based: bool = False):
+    def run(self, path_to_save_predictions: str, image_based: bool = False, identity: bool = False):
         input_folder_name = f"inputs_wavelet_array_{self.wavelet_type}"
         if self.log_transform and not self.dual_channel:
             input_folder_name += "_log"
         if self.image_based:
             input_folder_name = input_folder_name.replace("array", "image")
+        if identity:
+            input_folder_name = input_folder_name.replace("wavelet", "identity")
 
         self.wavelet_model.predict(
             testing_subjects=self.testing_subjects,

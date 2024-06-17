@@ -26,7 +26,7 @@ class UNetWaveletTF(Algorithm):
     _model = Optional[keras.Sequential]
     batch_size: int
     image_based: bool
-    loss_func: str
+    loss: str
     dual_channel: bool
 
     def __init__(
@@ -40,7 +40,7 @@ class UNetWaveletTF(Algorithm):
         validation_steps: int = 0,
         batch_size: int = 8,
         image_based=False,
-        loss_func: str = "bce",
+        loss: str = "bce",
         dual_channel: bool = False,
     ):
         self.learning_rate = learning_rate
@@ -52,18 +52,18 @@ class UNetWaveletTF(Algorithm):
         self.validation_steps = validation_steps
         self.batch_size = batch_size
         self.image_based = image_based
-        self.loss_func = loss_func
+        self.loss = loss
         self.dual_channel = dual_channel
 
     def self_optimize(
         self,
     ):
         self._create_model()
-        log_dir = os.getenv("WORK") + f"/Runs/logs/fit/{self.model_name}"
-        if not os.path.exists(log_dir):
-            os.makedirs(log_dir)
+        # log_dir = os.getenv("WORK") + f"/Runs/logs/fit/{self.model_name}"
+        # if not os.path.exists(log_dir):
+        #     os.makedirs(log_dir)
 
-        tensorboard_callback = keras.callbacks.TensorBoard(log_dir=log_dir, write_graph=False, update_freq="epoch")
+        # tensorboard_callback = keras.callbacks.TensorBoard(log_dir=log_dir, write_graph=False, update_freq="epoch")
         print("Fitting")
         history = self._model.fit(
             self.training_ds,
@@ -74,14 +74,14 @@ class UNetWaveletTF(Algorithm):
             validation_data=self.validation_ds,
             validation_steps=self.validation_steps,
             verbose=1,
-            callbacks=[tensorboard_callback],
+            # callbacks=[tensorboard_callback],
         )
 
-        history_path = os.getenv("WORK") + "/Runs/History/"
-        if not os.path.exists(history_path):
-            os.makedirs(history_path)
-        history_path += self.model_name + "_history.pkl"
-        pickle.dump(history.history, open(history_path, "wb"))
+        # history_path = os.getenv("WORK") + "/Runs/History/"
+        # if not os.path.exists(history_path):
+        #     os.makedirs(history_path)
+        # history_path += self.model_name + "_history.pkl"
+        # pickle.dump(history.history, open(history_path, "wb"))
         self.save_model()
         return self
 
@@ -103,8 +103,8 @@ class UNetWaveletTF(Algorithm):
         self._model.add(layers.Conv2D(filters=1, kernel_size=(256, 1), activation="sigmoid"))
         self._model.add(layers.Flatten())
         loss_func = None
-        if self.loss_func == "bce":
-            loss_func = keras.losses.BinaryCrossentropy(from_logits=False, reduction="sum_over_batch_size")
+        if self.loss == "bce":
+            loss_func = keras.losses.BinaryCrossentropy(from_logits=False, reduction="none")
         else:
             loss_func = keras.losses.MeanSquaredError(reduction="sum_over_batch_size")
         self._model.compile(optimizer=keras.optimizers.Adam(learning_rate=self.learning_rate), loss=loss_func)

@@ -16,8 +16,15 @@ class DatasetFactory:
             input_file = np.load(input_path)
             # input_file = np.absolute(input_file)
             # Normalize the input file
-            input_file = (input_file - np.min(input_file)) / (np.max(input_file) - np.min(input_file))
+            # input_file = np.zeros_like(input_file)
+            counter = input_file - np.min(input_file)
+            divider = np.max(input_file) - np.min(input_file)
+            if divider == 0:
+                input_file = np.zeros_like(input_file)
+            else:
+                input_file = counter / divider
             label_file = np.load(label_path)
+            # Normalize
             return input_file, label_file
         except Exception as e:
             print(f"Exception: {e}")
@@ -392,6 +399,7 @@ class DatasetFactory:
         log_transform=False,
         image_based=False,
         dual_channel=False,
+        identity=False,
     ):
         if dual_channel:
             return self._get_wavelet_dataset_radarcadia_dual_channel(
@@ -402,6 +410,7 @@ class DatasetFactory:
                 wavelet_type=wavelet_type,
                 ecg_labels=ecg_labels,
                 image_based=image_based,
+                identity=identity,
             )
         else:
             return self._get_wavelet_dataset_radarcadia_single_channel(
@@ -413,6 +422,7 @@ class DatasetFactory:
                 ecg_labels=ecg_labels,
                 log_transform=log_transform,
                 image_based=image_based,
+                identity=identity,
             )
 
     def _get_wavelet_dataset_radarcadia_dual_channel(
@@ -424,6 +434,7 @@ class DatasetFactory:
         wavelet_type="morl",
         ecg_labels=False,
         image_based=False,
+        identity=False,
     ):
         input_paths, input_log_paths, label_paths = self._get_all_wavelet_input_and_label_paths_radarcadia_dual_channel(
             base_path=base_path,
@@ -432,6 +443,7 @@ class DatasetFactory:
             wavelet_type=wavelet_type,
             ecg_labels=ecg_labels,
             image_based=image_based,
+            identity=identity,
         )
         if not image_based:
             dataset = self._build_wavelet_dual_array_dataset(
@@ -451,16 +463,17 @@ class DatasetFactory:
         wavelet_type="morl",
         ecg_labels=False,
         image_based=False,
+        identity=False,
     ):
         base_path = Path(base_path)
         input_paths = []
         input_log_paths = []
         label_paths = []
         input_folder_name = self._get_input_folder_name_radarcadia(
-            wavelet_type=wavelet_type, log_transform=False, image_based=image_based
+            wavelet_type=wavelet_type, log_transform=False, image_based=image_based, identity=identity
         )
         input_folder_name_log = self._get_input_folder_name_radarcadia(
-            wavelet_type=wavelet_type, log_transform=True, image_based=image_based
+            wavelet_type=wavelet_type, log_transform=True, image_based=image_based, identity=identity
         )
         label_folder_name = self._get_label_folder_name_radarcadia(ecg_labels)
         input_datatype = "png" if image_based else "npy"
@@ -511,6 +524,7 @@ class DatasetFactory:
         ecg_labels=False,
         log_transform=False,
         image_based=False,
+        identity=False,
     ):
         input_paths, label_paths = self._get_all_wavelet_input_and_label_paths_radarcadia(
             base_path=base_path,
@@ -520,6 +534,7 @@ class DatasetFactory:
             ecg_labels=ecg_labels,
             log_transform=log_transform,
             image_based=image_based,
+            identity=identity,
         )
         if not image_based:
             dataset = self._build_wavelet_single_array_dataset(input_paths, label_paths, batch_size)
@@ -536,12 +551,13 @@ class DatasetFactory:
         ecg_labels=False,
         log_transform=False,
         image_based=False,
+        identity=False,
     ):
         base_path = Path(base_path)
         input_paths = []
         label_paths = []
         input_folder_name = self._get_input_folder_name_radarcadia(
-            wavelet_type=wavelet_type, log_transform=log_transform, image_based=image_based
+            wavelet_type=wavelet_type, log_transform=log_transform, image_based=image_based, identity=identity
         )
         label_folder_name = self._get_label_folder_name_radarcadia(ecg_labels)
         input_datatype = "png" if image_based else "npy"
@@ -588,8 +604,10 @@ class DatasetFactory:
             if not Path(label_path).exists():
                 raise FileNotFoundError(f"Label path: {label_path} does not exist")
 
-    def _get_input_folder_name_radarcadia(self, wavelet_type="morl", log_transform=False, image_based=False):
-        input_folder_name = "inputs_wavelet_"
+    def _get_input_folder_name_radarcadia(
+        self, wavelet_type="morl", log_transform=False, image_based=False, identity=False
+    ):
+        input_folder_name = "inputs_wavelet_" if not identity else "inputs_identity_"
         if image_based:
             input_folder_name += "image_"
         else:

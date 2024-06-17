@@ -200,9 +200,9 @@ class LabelProcessor(Algorithm):
         # processed_ecg = blip_algo_clone.compute(raw_ecg).blips_
 
         # Wavelet Transform Label
-        # wavelet_transform_clone.transform(
-        #     processed_ecg, subject_id, phase, segment, base_path, single_signal=True, identity=True
-        # ).transformed_signal_
+        wavelet_transform_clone.transform(
+            processed_ecg, subject_id, phase, segment, base_path, single_signal=True, identity=True
+        ).transformed_signal_
 
         # Save the labels
         path = self.get_path(subject_id, phase, base_path) + f"/{segment}.npy"
@@ -425,15 +425,15 @@ class InputAndLabelGenerator(Algorithm):
                     print(f"Location {location}")
                     # Create Inputs
                     for j in range(len(segments_radar)):
-                        pre_processor_clone.preprocess(
-                            segments_radar[j],
-                            sampling_rate,
-                            subjects[0],
-                            location + "_" + breath,
-                            j,
-                            base_path,
-                            image_based,
-                        )
+                        # pre_processor_clone.preprocess(
+                        #     segments_radar[j],
+                        #     sampling_rate,
+                        #     subjects[0],
+                        #     location + "_" + breath,
+                        #     j,
+                        #     base_path,
+                        #     image_based,
+                        # )
                         label_processor_clone.label_generation(
                             segments_ecg[j],
                             sampling_rate,

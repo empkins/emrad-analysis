@@ -27,12 +27,26 @@ from rbm_robust.validation.wavelet_scoring import waveletPipelineScoring
 @click.option("--learning_rate", default=0.001, help="Learning rate for the model")
 @click.option("--image_based", default=False, help="Whether the model is image based")
 @click.option("--datasource", default="radarcadia", help="The datasource to use")
-@click.option("--breathing_type", default=None, help="Type of breathing to use")
+@click.option("--breathing_type", default="all", help="Type of breathing to use")
 @click.option("--label_type", default="guassian", help="Type of labels to use. Possible values are ecg and gaussian")
 @click.option("--log", default=False, help="Whether to use log transformed data")
 @click.option("--dual_channel", default=False, help="Whether to use log transformed data and not log transformed data")
 @click.option("--wavelet", default="morl", help="Type of wavelet to use: morl, gaus5")
-def main(epochs, learning_rate, image_based, datasource, breathing_type, label_type, log, dual_channel, wavelet):
+@click.option("--identity", default=False, help="Whether to use identity check")
+@click.option("--loss", default="bce", help="The used loss function. Valid values are bce and mse")
+def main(
+    epochs,
+    learning_rate,
+    image_based,
+    datasource,
+    breathing_type,
+    label_type,
+    log,
+    dual_channel,
+    wavelet,
+    identity,
+    loss,
+):
     if datasource == "radarcadia":
         ml_radarcadia(
             epochs=epochs,
@@ -42,6 +56,9 @@ def main(epochs, learning_rate, image_based, datasource, breathing_type, label_t
             label_type=label_type,
             log=log,
             dual_channel=dual_channel,
+            wavelet=wavelet,
+            identity=identity,
+            loss=loss,
         )
     elif datasource == "d02":
         ml_d02()
@@ -80,13 +97,15 @@ def ml_radarcadia(
     log: bool = False,
     dual_channel: bool = False,
     wavelet: str = "morl",
+    identity: bool = False,
+    loss: str = "bce",
 ):
     print("Starting")
     # path = "/Users/simonmeske/Desktop/TestOrdner/data_per_subject"
-    # path = "/Users/simonmeske/Desktop/Masterarbeit/Radarcadia/Processed_Files"
-    # testing_path = "/Users/simonmeske/Desktop/Masterarbeit/RadarcadiaTestData"
-    path = os.getenv("TMPDIR") + "/Data/DataRadarcadia"
-    testing_path = os.getenv("HPCVAULT") + "/TestDataRadarcadia"
+    path = "/Users/simonmeske/Desktop/Masterarbeit/Radarcadia/Processed_Files"
+    testing_path = "/Users/simonmeske/Desktop/Masterarbeit/RadarcadiaTestData"
+    # path = os.getenv("TMPDIR") + "/Data/DataRadarcadia"
+    # testing_path = os.getenv("HPCVAULT") + "/TestDataRadarcadia"
     # Get Training and Testing Subjects
     data_path = Path(path)
     testing_path = Path(testing_path)
@@ -111,6 +130,8 @@ def ml_radarcadia(
         log_transform=log,
         dual_channel=dual_channel,
         wavelet_type=wavelet,
+        identity=identity,
+        loss=loss,
     )
     training_and_testing_pipeline(pipeline=pipeline, testing_path=path, image_based=image_based)
 
@@ -144,10 +165,10 @@ def preprocessing():
 
 
 def preprocessing_radarcadia():
-    base_path = Path("/home/vault/empkins/tpD/D03/Data/MA_Simon_Meske/2023_radarcardia_study")
-    target_path = os.getenv("HPCVAULT") + "/DataRadarcadia"
-    # base_path = Path("/Users/simonmeske/Desktop/Masterarbeit/Radarcadia")
-    # target_path = "/Users/simonmeske/Desktop/Masterarbeit/Radarcadia/Processed_Files"
+    # base_path = Path("/home/vault/empkins/tpD/D03/Data/MA_Simon_Meske/2023_radarcardia_study")
+    # target_path = os.getenv("HPCVAULT") + "/DataRadarcadia"
+    base_path = Path("/Users/simonmeske/Desktop/Masterarbeit/Radarcadia")
+    target_path = "/Users/simonmeske/Desktop/Masterarbeit/Radarcadia/Processed_Files"
     run_radarcadia(base_path, target_path)
     # check_for_empty_arrays()
 
@@ -367,9 +388,9 @@ if __name__ == "__main__":
     #     if args[2] == "-epochs":
     #         remaining_epochs = int(args[3])
     # main(model_path, remaining_epochs)
-    main()
+    # main()
     # preprocessing()
-    # preprocessing_radarcadia()
+    preprocessing_radarcadia()
     # get_data_set_radarcadia()
     # move_training_data()
     # wavelet_training(None, 0)

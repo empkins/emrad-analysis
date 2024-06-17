@@ -15,7 +15,7 @@ module add tensorrt/8.6.1.6-cuda12.0-cudnn8.9
 rsync -r $HPCVAULT/DataRadarcadia $TMPDIR/Data
 
 cd "$HOME"/emrad-analysis || exit
-poetry run python main.py --epochs 50 --learning_rate 0.0001 --image_based False --datasource radarcadia --breathing_type all --label_type ecg --dual_channel False --log False --wavelet gaus1
+poetry run python main.py --epochs 50 --learning_rate 0.0001 --image_based False --datasource radarcadia --breathing_type all --label_type ecg --dual_channel False --log False --wavelet gaus1 --loss mse
 poetry run python main.py --epochs 50 --learning_rate 0.0001 --image_based False --datasource radarcadia --breathing_type all --label_type gaussian --dual_channel False --log True --wavelet gaus1
 poetry run python main.py --epochs 50 --learning_rate 0.0001 --image_based False --datasource radarcadia --breathing_type all --label_type ecg --dual_channel True --wavelet gaus1
 
