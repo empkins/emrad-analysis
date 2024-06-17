@@ -308,7 +308,6 @@ class WaveletTransformer(Algorithm):
             "gaus8",
             "mexh",
             "shan1-1",
-            "fbsp",
         ]
         for wavelet_type in wavelet_types:
             path = self.get_path(
