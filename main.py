@@ -102,10 +102,10 @@ def ml_radarcadia(
 ):
     print("Starting")
     # path = "/Users/simonmeske/Desktop/TestOrdner/data_per_subject"
-    path = "/Users/simonmeske/Desktop/Masterarbeit/Radarcadia/Processed_Files"
-    testing_path = "/Users/simonmeske/Desktop/Masterarbeit/RadarcadiaTestData"
-    # path = os.getenv("TMPDIR") + "/Data/DataRadarcadia"
-    # testing_path = os.getenv("HPCVAULT") + "/TestDataRadarcadia"
+    # path = "/Users/simonmeske/Desktop/Masterarbeit/Radarcadia/Processed_Files"
+    # testing_path = "/Users/simonmeske/Desktop/Masterarbeit/RadarcadiaTestData"
+    path = os.getenv("TMPDIR") + "/Data/DataRadarcadia"
+    testing_path = os.getenv("HPCVAULT") + "/TestDataRadarcadia"
     # Get Training and Testing Subjects
     data_path = Path(path)
     testing_path = Path(testing_path)
@@ -165,10 +165,10 @@ def preprocessing():
 
 
 def preprocessing_radarcadia():
-    # base_path = Path("/home/vault/empkins/tpD/D03/Data/MA_Simon_Meske/2023_radarcardia_study")
-    # target_path = os.getenv("HPCVAULT") + "/DataRadarcadia"
-    base_path = Path("/Users/simonmeske/Desktop/Masterarbeit/Radarcadia")
-    target_path = "/Users/simonmeske/Desktop/Masterarbeit/Radarcadia/Processed_Files"
+    base_path = Path("/home/vault/empkins/tpD/D03/Data/MA_Simon_Meske/2023_radarcardia_study")
+    target_path = os.getenv("HPCVAULT") + "/DataRadarcadia"
+    # base_path = Path("/Users/simonmeske/Desktop/Masterarbeit/Radarcadia")
+    # target_path = "/Users/simonmeske/Desktop/Masterarbeit/Radarcadia/Processed_Files"
     run_radarcadia(base_path, target_path)
     # check_for_empty_arrays()
 
