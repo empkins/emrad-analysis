@@ -1,8 +1,8 @@
 #!/bin/bash -l
 #
-#SBATCH --job-name=uNetRadarcadiaImage50WaveletTypes
+#SBATCH --job-name=uNetRadarcadiaImage50Identities
 #SBATCH --nodes=1
-#SBATCH --time=8:30:00
+#SBATCH --time=11:30:00
 #SBATCH --gres=gpu:1
 
 
