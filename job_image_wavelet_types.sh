@@ -2,7 +2,7 @@
 #
 #SBATCH --job-name=uNetRadarcadiaImage50Gaus5
 #SBATCH --nodes=1
-#SBATCH --time=5:30:00
+#SBATCH --time=8:30:00
 #SBATCH --gres=gpu:1
 
 
