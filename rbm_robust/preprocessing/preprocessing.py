@@ -302,9 +302,6 @@ class WaveletTransformer(Algorithm):
             "morl",
             "gaus1",
             "gaus2",
-            "gaus3",
-            "gaus4",
-            "gaus5",
             "mexh",
             "shan1-1",
         ]
