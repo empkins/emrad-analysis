@@ -250,6 +250,7 @@ class WaveletTransformer(Algorithm):
         img_based: bool = False,
         single_signal: bool = False,
         identity: bool = False,
+        diff: bool = False,
     ):
         """Transform the input signal using a wavelet transform
 

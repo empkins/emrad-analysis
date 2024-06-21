@@ -89,6 +89,7 @@ class PreProcessor(Algorithm):
         segment: int,
         base_path: str = "/home/woody/iwso/iwso116h/Data",
         image_based: bool = False,
+        diff: bool = False,
     ):
         """Preprocess the input signal using a bandpass filter
 
@@ -108,7 +109,12 @@ class PreProcessor(Algorithm):
 
         # Calculate Power
         if raw_radar.shape[0] == 2:
-            radar_mag = RadarPreprocessor().calculate_power(i=raw_radar["I"], q=raw_radar["Q"])
+            if diff:
+                i_diff = np.diff(raw_radar["I"])
+                q_diff = np.diff(raw_radar["Q"])
+                radar_mag = RadarPreprocessor().calculate_power(i=i_diff, q=q_diff)
+            else:
+                radar_mag = RadarPreprocessor().calculate_power(i=raw_radar["I"], q=raw_radar["Q"])
         else:
             radar_mag = raw_radar
         # Bandpass Filter

@@ -59,11 +59,11 @@ class UNetWaveletTF(Algorithm):
         self,
     ):
         self._create_model()
-        # log_dir = os.getenv("WORK") + f"/Runs/logs/fit/{self.model_name}"
-        # if not os.path.exists(log_dir):
-        #     os.makedirs(log_dir)
+        log_dir = os.getenv("HPCVAULT") + f"/Runs/logs/fit/{self.model_name}"
+        if not os.path.exists(log_dir):
+            os.makedirs(log_dir)
 
-        # tensorboard_callback = keras.callbacks.TensorBoard(log_dir=log_dir, write_graph=False, update_freq="epoch")
+        tensorboard_callback = keras.callbacks.TensorBoard(log_dir=log_dir, write_graph=False, update_freq="epoch")
         print("Fitting")
         history = self._model.fit(
             self.training_ds,
@@ -74,14 +74,14 @@ class UNetWaveletTF(Algorithm):
             validation_data=self.validation_ds,
             validation_steps=self.validation_steps,
             verbose=1,
-            # callbacks=[tensorboard_callback],
+            callbacks=[tensorboard_callback],
         )
 
-        # history_path = os.getenv("WORK") + "/Runs/History/"
-        # if not os.path.exists(history_path):
-        #     os.makedirs(history_path)
-        # history_path += self.model_name + "_history.pkl"
-        # pickle.dump(history.history, open(history_path, "wb"))
+        history_path = os.getenv("WORK") + "/Runs/History/"
+        if not os.path.exists(history_path):
+            os.makedirs(history_path)
+        history_path += self.model_name + "_history.pkl"
+        pickle.dump(history.history, open(history_path, "wb"))
         self.save_model()
         return self
 
@@ -106,7 +106,7 @@ class UNetWaveletTF(Algorithm):
         if self.loss == "bce":
             loss_func = keras.losses.BinaryCrossentropy(from_logits=False, reduction="none")
         else:
-            loss_func = keras.losses.MeanSquaredError(reduction="sum_over_batch_size")
+            loss_func = keras.losses.MeanSquaredError(reduction="none")
         self._model.compile(optimizer=keras.optimizers.Adam(learning_rate=self.learning_rate), loss=loss_func)
         return self
 

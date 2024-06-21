@@ -134,6 +134,8 @@ class RadarcadiaPipeline(OptimizablePipeline):
             model_name += "_image"
         if dual_channel:
             model_name += "_dual"
+        if identity:
+            model_name += "_identity"
 
         time = datetime.now().strftime("%Y%m%d_%H%M%S")
         self.prediction_folder_name = f"predictions_{model_name}_{time}"
