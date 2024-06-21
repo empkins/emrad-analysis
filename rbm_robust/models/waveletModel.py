@@ -77,7 +77,7 @@ class UNetWaveletTF(Algorithm):
             callbacks=[tensorboard_callback],
         )
 
-        history_path = os.getenv("WORK") + "/Runs/History/"
+        history_path = os.getenv("HPCVAULT") + "/Runs/History/"
         if not os.path.exists(history_path):
             os.makedirs(history_path)
         history_path += self.model_name + "_history.pkl"
