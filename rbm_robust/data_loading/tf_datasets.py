@@ -17,13 +17,13 @@ class DatasetFactory:
             input_file = np.load(input_path)
             # input_file = np.absolute(input_file)
             # Normalize the input file
-            input_file = np.zeros_like(input_file)
-            counter = input_file - np.min(input_file)
-            divider = np.max(input_file) - np.min(input_file)
-            if divider == 0:
-                input_file = np.zeros_like(input_file)
-            else:
-                input_file = counter / divider
+            # input_file = np.zeros_like(input_file)
+            # counter = input_file - np.min(input_file)
+            # divider = np.max(input_file) - np.min(input_file)
+            # if divider == 0:
+            #     input_file = np.zeros_like(input_file)
+            # else:
+            #     input_file = counter / divider
             # scaler = MinMaxScaler()
             # input_file = scaler.transform(input_file)
             label_file = np.load(label_path)
