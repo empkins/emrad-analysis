@@ -11,6 +11,7 @@ from PIL.Image import Image
 from PyEMD import EMD
 from matplotlib import pyplot as plt
 from scipy.signal import filtfilt, butter
+from sklearn.preprocessing import MinMaxScaler, FunctionTransformer
 from tpcp import Algorithm, Parameter, make_action_safe, cf
 
 import pandas as pd
@@ -299,13 +300,13 @@ class WaveletTransformer(Algorithm):
     def _calculate_single_signal(self, signal, segment, base_path, subject_id, phase, img_based, identity):
         wavelet_types = [
             "morl",
-            # "gaus1",
-            # "gaus2",
-            # "gaus3",
-            # "gaus4",
-            # "gaus5",
-            # "mexh",
-            # "shan1-1",
+            "gaus1",
+            "gaus2",
+            "gaus3",
+            "gaus4",
+            "gaus5",
+            "mexh",
+            "shan1-1",
         ]
         for wavelet_type in wavelet_types:
             path = self.get_path(
@@ -323,12 +324,33 @@ class WaveletTransformer(Algorithm):
             if not os.path.exists(log_path):
                 os.makedirs(log_path)
             coefficients, frequencies = pywt.cwt(signal, scales, wavelet_type, sampling_period=1 / self.sampling_rate)
+            if np.iscomplexobj(coefficients):
+                coefficients = np.abs(coefficients)
             self._save_image(coefficients, frequencies, -1, segment, 0, path.replace("array", "image"))
-            coefficients_reshaped = coefficients.reshape(coefficients.shape[0], coefficients.shape[1], 1)
+            scaler = MinMaxScaler()
+            coefficients_normalized = scaler.fit_transform(coefficients)
+            # coefficients_normalized = self._normalize(coefficients)
+            coefficients_reshaped = coefficients_normalized.reshape(
+                coefficients_normalized.shape[0], coefficients_normalized.shape[1], 1
+            )
             np.save(os.path.join(path, f"{segment}.npy"), coefficients_reshaped)
-            log_transformed_coefficients = np.zeros_like(coefficients_reshaped, dtype=float)
-            non_zero_mask = coefficients_reshaped != 0
-            log_transformed_coefficients[non_zero_mask] = np.log(np.abs(coefficients_reshaped[non_zero_mask]))
+            # log_transformed_coefficients = np.zeros_like(coefficients, dtype=float)
+            # non_zero_mask = coefficients_reshaped != 0
+            # log_transformed_coefficients[non_zero_mask] = np.log(np.abs(coefficients[non_zero_mask]))
+            # log_transformed_coefficients = self._normalize(log_transformed_coefficients)
+            # log_transformed_coefficients = log_transformed_coefficients.reshape(
+            #     log_transformed_coefficients.shape[0], log_transformed_coefficients.shape[1], 1
+            # )
+            coefficients_fit_for_log = np.abs(coefficients)
+            constant_value = coefficients_fit_for_log.min() / 2
+            coefficients_fit_for_log += constant_value
+            log_transformed_coefficients = FunctionTransformer(np.log1p, validate=True).fit_transform(
+                coefficients_fit_for_log
+            )
+            log_transformed_coefficients = scaler.fit_transform(log_transformed_coefficients)
+            log_transformed_coefficients = log_transformed_coefficients.reshape(
+                log_transformed_coefficients.shape[0], log_transformed_coefficients.shape[1], 1
+            )
             np.save(os.path.join(log_path, f"{segment}.npy"), log_transformed_coefficients)
             self._save_image(
                 log_transformed_coefficients, frequencies, -1, segment, 0, log_path.replace("array", "image")

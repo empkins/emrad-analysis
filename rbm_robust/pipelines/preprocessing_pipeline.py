@@ -59,6 +59,8 @@ def run_radarcadia(
         subsets.append(subject_subset)
     num_processes = 4
     print(num_processes)
+    # for subset in subsets:
+    #     process_radarcadia_subset(subset, target_path)
     with Pool(num_processes) as p:
         p.starmap(
             process_radarcadia_subset,
@@ -71,7 +73,7 @@ def process_radarcadia_subset(
     target_path: str,
 ):
     generator = InputAndLabelGenerator()
-    try:
-        generator.generate_training_inputs_and_labels_radarcadia(data_set, target_path)
-    except Exception as e:
-        print(f"Error in processing subset with error {e}")
+    # try:
+    generator.generate_training_inputs_and_labels_radarcadia(data_set, target_path)
+    # except Exception as e:
+    #     print(f"Error in processing subset with error {e}")

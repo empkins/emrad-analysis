@@ -7,7 +7,6 @@ import numpy as np
 from pathlib import Path
 
 from keras.src.utils import img_to_array, load_img
-from sklearn.preprocessing import MinMaxScaler
 
 
 class DatasetFactory:
@@ -15,19 +14,7 @@ class DatasetFactory:
     def read_file(input_path, label_path):
         try:
             input_file = np.load(input_path)
-            # input_file = np.absolute(input_file)
-            # Normalize the input file
-            # input_file = np.zeros_like(input_file)
-            # counter = input_file - np.min(input_file)
-            # divider = np.max(input_file) - np.min(input_file)
-            # if divider == 0:
-            #     input_file = np.zeros_like(input_file)
-            # else:
-            #     input_file = counter / divider
-            # scaler = MinMaxScaler()
-            # input_file = scaler.transform(input_file)
             label_file = np.load(label_path)
-            # Normalize
             return input_file, label_file
         except Exception as e:
             print(f"Exception: {e}")
@@ -37,11 +24,7 @@ class DatasetFactory:
     def read_dual_channel_file(input_path, input_log_path, label_path):
         try:
             input_file = np.load(input_path)
-            input_file = (input_file - np.min(input_file)) / (np.max(input_file) - np.min(input_file))
             input_log_file = np.load(input_log_path)
-            input_log_file = (input_log_file - np.min(input_log_file)) / (
-                np.max(input_log_file) - np.min(input_log_file)
-            )
             label_file = np.load(label_path)
             input_file = np.dstack((input_file, input_log_file))
             return input_file, label_file
@@ -64,7 +47,6 @@ class DatasetFactory:
     @staticmethod
     def read_image_file(input_path, label_path):
         input_file = img_to_array(load_img(input_path, target_size=(256, 1000))) / 255
-        # input_file = np.transpose(input_file, (1, 0, 2))
         label_file = np.load(label_path)
         return input_file, label_file
 
