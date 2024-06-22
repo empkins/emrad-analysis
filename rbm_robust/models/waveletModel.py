@@ -104,9 +104,9 @@ class UNetWaveletTF(Algorithm):
         self._model.add(layers.Flatten())
         loss_func = None
         if self.loss == "bce":
-            loss_func = keras.losses.BinaryCrossentropy(from_logits=False, reduction="none")
+            loss_func = keras.losses.BinaryCrossentropy(from_logits=False, reduction="sum_over_batch_size")
         else:
-            loss_func = keras.losses.MeanSquaredError(reduction="none")
+            loss_func = keras.losses.MeanSquaredError(reduction="sum_over_batch_size")
         self._model.compile(optimizer=keras.optimizers.Adam(learning_rate=self.learning_rate), loss=loss_func)
         return self
 
