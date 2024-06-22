@@ -2,12 +2,10 @@ import os.path
 from typing import Tuple, List
 
 import emrad_toolbox
-import keras.utils
 import numpy
 import numpy as np
 import pywt
 import resampy
-from PIL.Image import Image
 from PyEMD import EMD
 from matplotlib import pyplot as plt
 from scipy.signal import filtfilt, butter
@@ -300,9 +298,9 @@ class WaveletTransformer(Algorithm):
     def _calculate_single_signal(self, signal, segment, base_path, subject_id, phase, img_based, identity):
         wavelet_types = [
             "morl",
-            "gaus1",
-            "mexh",
-            "shan1-1",
+            # "gaus1",
+            # "mexh",
+            # "shan1-1",
         ]
         for wavelet_type in wavelet_types:
             path = self.get_path(

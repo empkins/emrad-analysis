@@ -52,15 +52,12 @@ def run_radarcadia(
     # Get the subjects from the data path
     subjects_dataset = RadarCardiaStudyDataset(pathlib.Path(data_path))
     subsets = []
-    # locations = ["carotis", "aorta_prox", "aorta_med", "aorta_dist"]
     subjects = list(set(subjects_dataset.index["subject"]))
     for subject in subjects:
         subject_subset = subjects_dataset.get_subset(subject=subject)
         subsets.append(subject_subset)
     num_processes = 4
     print(num_processes)
-    # for subset in subsets:
-    #     process_radarcadia_subset(subset, target_path)
     with Pool(num_processes) as p:
         p.starmap(
             process_radarcadia_subset,
@@ -73,7 +70,7 @@ def process_radarcadia_subset(
     target_path: str,
 ):
     generator = InputAndLabelGenerator()
-    # try:
-    generator.generate_training_inputs_and_labels_radarcadia(data_set, target_path)
-    # except Exception as e:
-    #     print(f"Error in processing subset with error {e}")
+    try:
+        generator.generate_training_inputs_and_labels_radarcadia(data_set, target_path)
+    except Exception as e:
+        print(f"Error in processing subset with error {e}")
