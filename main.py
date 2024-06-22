@@ -160,7 +160,7 @@ def preprocessing():
     target_path = "/home/woody/iwso/iwso116h/DataArray"
     # base_path = Path("/Users/simonmeske/Desktop/TestOrdner/data_per_subject")
     # target_path = "/Users/simonmeske/Desktop/TestOrdner/data_per_subject"
-    run_d02(base_path, target_path, process_inputs=True, process_labels=True, process_images=False)
+    run_d02(base_path, target_path, process_inputs=True, process_labels=True, process_images=True)
     # check_for_empty_arrays()
 
 
