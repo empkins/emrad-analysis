@@ -14,6 +14,10 @@ class DatasetFactory:
     def read_file(input_path, label_path):
         try:
             input_file = np.load(input_path)
+            if input_file.shape != (256, 1000):
+                zero_pad = np.zeros((256, 1000))
+                zero_pad[: input_file.shape[0], : input_file.shape[1]] = input_file
+                # input_file = input_file[:256, :1000]
             label_file = np.load(label_path)
             return input_file, label_file
         except Exception as e:
