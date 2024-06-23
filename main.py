@@ -429,6 +429,34 @@ def sanity_check():
     print("Sanity Check successful")
 
 
+def dim_fix():
+    base_path = os.getenv("WORK") + "/DataD02"
+    base_path = Path(base_path)
+    for subject in base_path.iterdir():
+        for phase in subject.iterdir():
+            if "labels" in phase.name:
+                continue
+            if not phase.is_dir():
+                continue
+            for input_file in phase.iterdir():
+                if not input_file.is_file():
+                    continue
+                input_data = np.load(input_file)
+                # if input_data.ndim == 2:
+                # Diff Data is 2D and needs to be 3D
+                # input_data = input_data.reshape(input_data.shape[0], input_data.shape[1], 1)
+                # np.save(input_file, input_data)
+                if input_data.ndim == 3 and input_data.shape != (256, 1000, 1):
+                    print(f"Shape is {input_data.shape}")
+                    print(f"File is {input_file}")
+                    print(f"Subject is {subject}")
+                    print(f"Phase is {phase}")
+                    zero_pad = np.zeros((256, 1000, 1))
+                    zero_pad[: input_file.shape[0], : input_file.shape[1], :] = input_file
+                    input_file = zero_pad
+                    # np.save(input_file, zero_pad)
+
+
 if __name__ == "__main__":
     # devices = tf.config.experimental.list_physical_devices("GPU")
     # tf.config.experimental.set_memory_growth(devices[0], True)
@@ -444,7 +472,8 @@ if __name__ == "__main__":
     #     if args[2] == "-epochs":
     #         remaining_epochs = int(args[3])
     # main(model_path, remaining_epochs)
-    main()
+    # main()
+    dim_fix()
     # preprocessing()
     # move_training_data()
     # preprocessing_radarcadia()
