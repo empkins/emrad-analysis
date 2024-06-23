@@ -438,7 +438,9 @@ def dim_fix():
                 continue
             if not phase.is_dir():
                 continue
+            print(f"Subject is {subject}")
             for input_file in phase.iterdir():
+                print(f"file is {input_file}")
                 if not input_file.is_file():
                     continue
                 input_data = np.load(input_file)
