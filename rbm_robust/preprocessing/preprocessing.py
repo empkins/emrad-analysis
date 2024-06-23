@@ -247,6 +247,7 @@ class WaveletTransformer(Algorithm):
         signal: numpy.array,
         subject_id: str,
         phase: str,
+        segment: int,
         base_path: str = "Data",
         identity: bool = False,
     ):
@@ -262,7 +263,7 @@ class WaveletTransformer(Algorithm):
             num=self.wavelet_coefficients[1] - self.wavelet_coefficients[0],
         )
         coefficients, _ = pywt.cwt(signal, scales, "morl", sampling_period=1 / self.sampling_rate)
-        numpy.save(path, coefficients)
+        np.save(os.path.join(path, f"{segment}.npy"), coefficients)
         self.transformed_signal_ = []
         return self
 
