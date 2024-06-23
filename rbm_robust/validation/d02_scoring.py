@@ -4,6 +4,8 @@ import numpy as np
 import pickle
 from sklearn.model_selection import train_test_split
 from pathlib import Path
+
+from rbm_robust.pipelines.cnnLstmPipeline import D02PipelineImproved
 from rbm_robust.validation.RPeakF1Score import RPeakF1Score
 from rbm_robust.data_loading.datasets import D02Dataset
 from rbm_robust.models.waveletModel import UNetWavelet
@@ -62,7 +64,7 @@ class D02Scoring:
 
 
 def d02PipelineScoring(
-    pipeline: WaveletPipeline,
+    pipeline: D02PipelineImproved,
     dataset: D02Dataset,
     training_and_validation_path: str = "/home/woody/iwso/iwso116h/Data",
     testing_path: str = "/home/woody/iwso/iwso116h/TestData",

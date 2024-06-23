@@ -18,7 +18,7 @@ from rbm_robust.validation.identityScoring import identityScoring
 from rbm_robust.validation.scoring import cnnPipelineScoring
 import os
 
-from rbm_robust.validation.scoring_pipeline import training_and_testing_pipeline
+from rbm_robust.validation.scoring_pipeline import training_and_testing_pipeline, d02_training_and_testing_pipeline
 from rbm_robust.validation.wavelet_scoring import waveletPipelineScoring
 
 
@@ -61,18 +61,45 @@ def main(
             loss=loss,
         )
     elif datasource == "d02":
-        ml_d02()
+        ml_d02(
+            epochs=epochs,
+            learning_rate=learning_rate,
+            image_based=image_based,
+            breathing_type=breathing_type,
+            label_type=label_type,
+            log=log,
+            dual_channel=dual_channel,
+            wavelet=wavelet,
+            identity=identity,
+            loss=loss,
+        )
     else:
         raise ValueError("Datasource not found")
 
 
-def ml_d02(learning_rate: float = 0.001, epochs: int = 50, image_based: bool = False):
-    path = os.getenv("TMPDIR") + "/Data"
-    testing_path = os.getenv("WORK") + "/TestData"
+def ml_d02(
+    learning_rate: float = 0.001,
+    epochs: int = 50,
+    image_based: bool = False,
+    breathing_type: str = "all",
+    label_type: str = "guassian",
+    log: bool = False,
+    dual_channel: bool = False,
+    wavelet: str = "morl",
+    identity: bool = False,
+    loss: str = "bce",
+):
+    path = os.getenv("TMPDIR") + "/Data/DataD02"
+    testing_path = os.getenv("HPCVAULT") + "/TestDataD02"
+    # Get Training and Testing Subjects
     data_path = Path(path)
     testing_path = Path(testing_path)
     possible_subjects = [path.name for path in data_path.iterdir() if path.is_dir()]
     testing_subjects = [path.name for path in Path(testing_path).iterdir() if path.is_dir()]
+
+    use_ecg_labels = label_type == "ecg"
+
+    # Split Data
     training_subjects, validation_subjects = train_test_split(possible_subjects, test_size=0.2, random_state=42)
     pipeline = D02Pipeline(
         learning_rate=learning_rate,
@@ -82,10 +109,36 @@ def ml_d02(learning_rate: float = 0.001, epochs: int = 50, image_based: bool = F
         training_subjects=training_subjects,
         validation_subjects=validation_subjects,
         testing_subjects=testing_subjects,
-        breathing_type="all",
+        breathing_type=breathing_type,
         image_based=image_based,
+        ecg_labels=use_ecg_labels,
+        log_transform=log,
+        dual_channel=dual_channel,
+        wavelet_type=wavelet,
+        identity=identity,
+        loss=loss,
     )
-    training_and_testing_pipeline(pipeline=pipeline, testing_path=path, image_based=image_based)
+    d02_training_and_testing_pipeline(pipeline=pipeline, testing_path=path, image_based=image_based)
+
+    # path = os.getenv("TMPDIR") + "/Data"
+    # testing_path = os.getenv("WORK") + "/TestData"
+    # data_path = Path(path)
+    # testing_path = Path(testing_path)
+    # possible_subjects = [path.name for path in data_path.iterdir() if path.is_dir()]
+    # testing_subjects = [path.name for path in Path(testing_path).iterdir() if path.is_dir()]
+    # training_subjects, validation_subjects = train_test_split(possible_subjects, test_size=0.2, random_state=42)
+    # pipeline = D02Pipeline(
+    #     learning_rate=learning_rate,
+    #     data_path=path,
+    #     testing_path=testing_path,
+    #     epochs=epochs,
+    #     training_subjects=training_subjects,
+    #     validation_subjects=validation_subjects,
+    #     testing_subjects=testing_subjects,
+    #     breathing_type="all",
+    #     image_based=image_based,
+    # )
+    # training_and_testing_pipeline(pipeline=pipeline, testing_path=path, image_based=image_based)
 
 
 def ml_radarcadia(

@@ -639,37 +639,31 @@ class D02PipelineImproved(OptimizablePipeline):
         self.training_ds, self.training_steps = _get_dataset(
             data_path=data_path,
             subjects=training_subjects,
-            breathing_type=breathing_type,
             wavelet_type=wavelet_type,
             ecg_labels=ecg_labels,
             log_transform=log_transform,
             batch_size=batch_size,
-            image_based=image_based,
-            dual_channel=dual_channel,
-            identity=identity,
+            single_channel=not self.dual_channel,
         )
+
         self.validation_ds, self.validation_steps = _get_dataset(
             data_path=data_path,
             subjects=validation_subjects,
-            breathing_type=breathing_type,
             wavelet_type=wavelet_type,
             ecg_labels=ecg_labels,
             log_transform=log_transform,
             batch_size=batch_size,
-            image_based=image_based,
-            dual_channel=dual_channel,
-            identity=identity,
+            single_channel=not self.dual_channel,
         )
         self.ecg_labels = ecg_labels
         self.log_transform = log_transform
-        self.breathing_type = breathing_type
         self.training_subjects = training_subjects
         self.validation_subjects = validation_subjects
         self.wavelet_type = wavelet_type
         self.batch_size = batch_size
 
         learning_rate_txt = str(learning_rate).replace(".", "_")
-        model_name = f"radarcadia_{wavelet_type}_{breathing_type}_{epochs}_{learning_rate_txt}_{loss}"
+        model_name = f"d02_{wavelet_type}_{epochs}_{learning_rate_txt}_{loss}"
         if ecg_labels:
             model_name += "_ecg"
         if log_transform:
@@ -784,7 +778,6 @@ class D02Pipeline(OptimizablePipeline):
     testing_path: str
     ecg_labels: bool
     log_transform: bool
-    breathing_type: str
     training_subjects: list
     validation_subjects: list
     wavelet_type: str
@@ -803,7 +796,6 @@ class D02Pipeline(OptimizablePipeline):
         validation_subjects: list = None,
         testing_subjects: list = None,
         wavelet_type: str = "morl",
-        breathing_type: str = "all",
         ecg_labels: bool = False,
         log_transform: bool = False,
         batch_size: int = 8,
@@ -821,7 +813,6 @@ class D02Pipeline(OptimizablePipeline):
         self.training_ds, self.training_steps = _get_dataset(
             data_path=data_path,
             subjects=training_subjects,
-            breathing_type=breathing_type,
             wavelet_type=wavelet_type,
             ecg_labels=ecg_labels,
             log_transform=log_transform,
@@ -832,7 +823,6 @@ class D02Pipeline(OptimizablePipeline):
         self.validation_ds, self.validation_steps = _get_dataset(
             data_path=data_path,
             subjects=validation_subjects,
-            breathing_type=breathing_type,
             wavelet_type=wavelet_type,
             ecg_labels=ecg_labels,
             log_transform=log_transform,
@@ -842,7 +832,6 @@ class D02Pipeline(OptimizablePipeline):
         )
         self.ecg_labels = ecg_labels
         self.log_transform = log_transform
-        self.breathing_type = breathing_type
         self.training_subjects = training_subjects
         self.validation_subjects = validation_subjects
         self.wavelet_type = wavelet_type
@@ -924,7 +913,7 @@ class D02Pipeline(OptimizablePipeline):
                 print(f"phase {phase}")
                 prediction_path = phase
                 prediction_path = Path(
-                    str(prediction_path).replace("TestDataRef", "Predictions/predictions_mse_0001_25_epochs_ref")
+                    str(prediction_path).replace("TestDataRef", f"Predictions/{self.prediction_folder_name}")
                 )
                 label_path = phase / "labels_gaussian"
                 prediction_files = sorted(path.name for path in prediction_path.iterdir() if path.is_file())
