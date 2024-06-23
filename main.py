@@ -444,6 +444,8 @@ def dim_fix():
                     # print(f"file is {input_file}")
                     if not input_file.is_file():
                         continue
+                    if "png" in input_file.name:
+                        continue
                     try:
                         input_data = np.load(input_file)
                         # if input_data.ndim == 2:
