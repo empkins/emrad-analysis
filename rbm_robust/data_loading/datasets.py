@@ -307,9 +307,14 @@ class D02Dataset(Dataset):
         participant_ids = [pid for pid in participant_ids if pid not in self.EXCLUDE_SUBJECTS]
         # participant_ids = [pid for pid in participant_ids if pid in self.INCLUSION]
         # participant_ids = [pid for pid in participant_ids if pid in self.INCLUDE_SUBJECTS]
-        participant_ids = [pid for pid in participant_ids if pid in self.ALL_SUBJECTS]
+        # participant_ids = [pid for pid in participant_ids if pid in self.ALL_SUBJECTS]
         # participant_ids = [pid for pid in participant_ids if pid not in self.ALR_PROC]
         # participant_ids = [pid for pid in participant_ids if pid in self.REDUCED_SUBEJCTS]
+
+        PROC = [item.name for item in Path("/home/woody/iwso/iwso116h/DataD02").iterdir() if item.is_dir()]
+        TO_PROC = ["308", "120", "156", "320"]
+        PROC = [p for p in PROC if p not in TO_PROC]
+        participant_ids = [pid for pid in participant_ids if pid in PROC]
 
         df = pd.DataFrame({"participant": participant_ids})
         if df.empty:
