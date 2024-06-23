@@ -209,7 +209,7 @@ class Normalizer(Algorithm):
 
 
 class WaveletTransformer(Algorithm):
-    _action_methods = ("transform", "transform_and_return")
+    _action_methods = ("transform", "transform_diff")
 
     # Input Parameters
     wavelet_coefficients: Parameter[Tuple[int, int]]
