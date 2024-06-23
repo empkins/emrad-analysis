@@ -327,7 +327,7 @@ def move_training_data():
             print(f"Source path {source_subject_path} does not exist")
             continue
         print(f"Moving {source_subject_path} to {target_subject_path}")
-        # shutil.move(source_subject_path, target_subject_path)
+        shutil.move(source_subject_path, target_subject_path)
         # for phase in source_subject_path.iterdir():
         #     if not phase.is_dir():
         #         continue
