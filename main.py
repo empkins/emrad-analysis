@@ -160,7 +160,7 @@ def preprocessing():
     target_path = os.getenv("WORK") + "/DataD02"
     # base_path = Path("/Users/simonmeske/Desktop/TestOrdner/data_per_subject")
     # target_path = "/Users/simonmeske/Desktop/TestOrdner/data_per_subject"
-    run_d02(base_path, target_path, process_inputs=True, process_labels=True, process_images=True)
+    run_d02(base_path, target_path, process_inputs=True, process_labels=False, process_images=False)
     # check_for_empty_arrays()
 
 

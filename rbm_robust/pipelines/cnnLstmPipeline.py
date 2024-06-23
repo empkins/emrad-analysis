@@ -109,7 +109,7 @@ class PreProcessor(Algorithm):
         emd_clone = self.emd.clone()
         wavelet_transform_clone = self.wavelet_transform.clone()
         downsampling_clone = self.downsampling.clone()
-
+        radar_mag_diff = None
         # Calculate Power
         if raw_radar.shape[0] == 2:
             i_diff = np.diff(raw_radar["I"])
@@ -120,18 +120,23 @@ class PreProcessor(Algorithm):
             radar_mag = raw_radar
         # Bandpass Filter
         self.preprocessed_signal_ = bandpass_filter_clone.filter(radar_mag, sampling_rate).filtered_signal_
+        diff_processed = bandpass_filter_clone.filter(radar_mag_diff, sampling_rate).filtered_signal_
 
         # Downsampling
         self.preprocessed_signal_ = downsampling_clone.downsample(
             self.preprocessed_signal_, 200, sampling_rate
         ).downsampled_signal_
-        # path = self.get_filtered_radar_path(subject_id, phase) + f"/{segment}.npy"
-        # np.save(path, self.preprocessed_signal_)
+        diff_processed = downsampling_clone.downsample(diff_processed, 200, sampling_rate).downsampled_signal_
 
         # Empirical Mode Decomposition
         # self.preprocessed_signal_ = emd_clone.decompose(self.preprocessed_signal_).imfs_
 
         # Wavelet Transform
+        if radar_mag_diff is not None:
+            wavelet_transform_clone.transform_diff(
+                diff_processed, subject_id, phase, segment, base_path, image_based, single_signal=True, identity=True
+            ).transformed_signal_
+
         self.preprocessed_signal_ = wavelet_transform_clone.transform(
             self.preprocessed_signal_, subject_id, phase, segment, base_path, image_based, single_signal=True
         ).transformed_signal_

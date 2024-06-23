@@ -206,7 +206,7 @@ class Normalizer(Algorithm):
 
 
 class WaveletTransformer(Algorithm):
-    _action_methods = "transform"
+    _action_methods = ("transform", "transform_and_return")
 
     # Input Parameters
     wavelet_coefficients: Parameter[Tuple[int, int]]
@@ -237,6 +237,31 @@ class WaveletTransformer(Algorithm):
         self.window_size = window_size
         self.num_imfs = num_imfs
         self.normalize = normalize
+
+    @make_action_safe
+    def transform_diff(
+        self,
+        signal: numpy.array,
+        subject_id: str,
+        phase: str,
+        base_path: str = "Data",
+        identity: bool = False,
+    ):
+        path = self.get_path(
+            base_path=base_path, subject_id=subject_id, phase=phase, identity=identity, create_dir=False
+        )
+        path = path + f"_diff"
+        if not os.path.exists(path):
+            os.makedirs(path)
+        scales = np.geomspace(
+            self.wavelet_coefficients[0],
+            self.wavelet_coefficients[1],
+            num=self.wavelet_coefficients[1] - self.wavelet_coefficients[0],
+        )
+        coefficients, _ = pywt.cwt(signal, scales, "morl", sampling_period=1 / self.sampling_rate)
+        numpy.save(path, coefficients)
+        self.transformed_signal_ = []
+        return self
 
     @make_action_safe
     def transform(
