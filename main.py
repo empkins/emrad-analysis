@@ -444,20 +444,24 @@ def dim_fix():
                     # print(f"file is {input_file}")
                     if not input_file.is_file():
                         continue
-                    input_data = np.load(input_file)
-                    # if input_data.ndim == 2:
-                    # Diff Data is 2D and needs to be 3D
-                    # input_data = input_data.reshape(input_data.shape[0], input_data.shape[1], 1)
-                    # np.save(input_file, input_data)
-                    if input_data.ndim == 3 and input_data.shape != (256, 1000, 1):
-                        print(f"Shape is {input_data.shape}")
-                        print(f"File is {input_file}")
-                        print(f"Subject is {subject}")
-                        print(f"Phase is {phase}")
-                        zero_pad = np.zeros((256, 1000, 1))
-                        zero_pad[: input_file.shape[0], : input_file.shape[1], :] = input_file
-                        input_file = zero_pad
-                        # np.save(input_file, zero_pad)
+                    try:
+                        input_data = np.load(input_file)
+                        # if input_data.ndim == 2:
+                        # Diff Data is 2D and needs to be 3D
+                        # input_data = input_data.reshape(input_data.shape[0], input_data.shape[1], 1)
+                        # np.save(input_file, input_data)
+                        if input_data.ndim == 3 and input_data.shape != (256, 1000, 1):
+                            print(f"Shape is {input_data.shape}")
+                            print(f"File is {input_file}")
+                            print(f"Subject is {subject}")
+                            print(f"Phase is {phase}")
+                            zero_pad = np.zeros((256, 1000, 1))
+                            zero_pad[: input_file.shape[0], : input_file.shape[1], :] = input_file
+                            input_file = zero_pad
+                            # np.save(input_file, zero_pad)
+                    except Exception as e:
+                        print(f"Error in file {input_file} with error {e}")
+                        continue
 
 
 if __name__ == "__main__":
