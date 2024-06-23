@@ -61,6 +61,26 @@ class D02Dataset(Dataset):
         "161",
         "537",
         "350",
+        "125",  # No Sync Out channel
+        "572",  # No acq
+        "303",  # Too large DS
+        "597",  # No acq file
+        "430",  # No acq file
+        "512",  # Too large DS
+        "158",  # No acq file
+        "567",  # No acq file
+        "324",  # No acq file
+        "131",  # No raw folder
+        "202",  # No raw folder
+        "540",  # No acq file
+        "325",  # Empty
+        "565",  # No acq file
+        "148",  # No acq file
+        "545",  # No acq file
+        "568",  # No acq file
+        "556",  # No acq file
+        "594",  # No acq file
+        "502",  # No acq file
     )
     ALR_PROC = (
         "007",

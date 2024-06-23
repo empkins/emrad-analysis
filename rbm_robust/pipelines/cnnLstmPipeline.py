@@ -617,7 +617,6 @@ class D02PipelineImproved(OptimizablePipeline):
         validation_subjects: list = None,
         testing_subjects: list = None,
         wavelet_type: str = "morl",
-        breathing_type: str = "all",
         ecg_labels: bool = False,
         log_transform: bool = False,
         batch_size: int = 8,

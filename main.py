@@ -10,7 +10,7 @@ from sklearn.model_selection import train_test_split
 
 from rbm_robust.data_loading.datasets import D02Dataset
 from rbm_robust.models.cnn import CNN
-from rbm_robust.pipelines.cnnLstmPipeline import D02Pipeline
+from rbm_robust.pipelines.cnnLstmPipeline import D02Pipeline, D02PipelineImproved
 from rbm_robust.pipelines.preprocessing_pipeline import run_d02, run_radarcadia
 from rbm_robust.pipelines.radarcadia_pipeline import RadarcadiaPipeline
 from rbm_robust.pipelines.waveletPipeline import WaveletPipeline
@@ -101,21 +101,17 @@ def ml_d02(
 
     # Split Data
     training_subjects, validation_subjects = train_test_split(possible_subjects, test_size=0.2, random_state=42)
-    pipeline = D02Pipeline(
+    pipeline = D02PipelineImproved(
         learning_rate=learning_rate,
         data_path=path,
-        testing_path=testing_path,
         epochs=epochs,
         training_subjects=training_subjects,
         validation_subjects=validation_subjects,
         testing_subjects=testing_subjects,
-        breathing_type=breathing_type,
         image_based=image_based,
         ecg_labels=use_ecg_labels,
         log_transform=log,
-        dual_channel=dual_channel,
         wavelet_type=wavelet,
-        identity=identity,
         loss=loss,
     )
     d02_training_and_testing_pipeline(pipeline=pipeline, testing_path=path, image_based=image_based)
@@ -172,7 +168,6 @@ def ml_radarcadia(
     pipeline = RadarcadiaPipeline(
         learning_rate=learning_rate,
         data_path=path,
-        testing_path=testing_path,
         epochs=epochs,
         training_subjects=training_subjects,
         validation_subjects=validation_subjects,
@@ -186,7 +181,7 @@ def ml_radarcadia(
         identity=identity,
         loss=loss,
     )
-    training_and_testing_pipeline(pipeline=pipeline, testing_path=path, image_based=image_based)
+    training_and_testing_pipeline(pipeline=pipeline, testing_path=testing_path, image_based=image_based)
 
 
 def wavelet_training(model_path: str = None, remaining_epochs: int = 0):
@@ -300,10 +295,8 @@ def check_for_empty_arrays():
 
 
 def move_training_data():
-    source_path = os.getenv("WORK") + "/DataWavelet"
-    target_path = os.getenv("WORK") + "/TestData"
-    input_different_wavelet = "inputs_wavelet_1024"
-    labels_ecg = "labels_ecg"
+    source_path = os.getenv("WORK") + "/DataD02"
+    target_path = os.getenv("WORK") + "/TestDataD02"
     subjects = (
         "146",
         "257",
@@ -333,16 +326,18 @@ def move_training_data():
         if not source_subject_path.exists():
             print(f"Source path {source_subject_path} does not exist")
             continue
-        for phase in source_subject_path.iterdir():
-            if not phase.is_dir():
-                continue
-            target_phase_path = target_subject_path / phase.name
-            source_wavelet_path = phase / input_different_wavelet
-            source_ecg_label_path = phase / labels_ecg
-            # print(f"Moving {source_wavelet_path} to {target_phase_path} - source wavelet")
-            # print(f"Moving {source_ecg_label_path} to {target_phase_path} - source ecg")
-            shutil.move(source_wavelet_path, target_phase_path)
-            shutil.move(source_ecg_label_path, target_phase_path)
+        print(f"Moving {source_subject_path} to {target_subject_path}")
+        # shutil.move(source_subject_path, target_subject_path)
+        # for phase in source_subject_path.iterdir():
+        #     if not phase.is_dir():
+        #         continue
+        #     target_phase_path = target_subject_path / phase.name
+        #     source_wavelet_path = phase / input_different_wavelet
+        #     source_ecg_label_path = phase / labels_ecg
+        #     # print(f"Moving {source_wavelet_path} to {target_phase_path} - source wavelet")
+        #     # print(f"Moving {source_ecg_label_path} to {target_phase_path} - source ecg")
+        #     shutil.move(source_wavelet_path, target_phase_path)
+        #     shutil.move(source_ecg_label_path, target_phase_path)
 
 
 def rename_folders():
@@ -442,7 +437,8 @@ if __name__ == "__main__":
     #         remaining_epochs = int(args[3])
     # main(model_path, remaining_epochs)
     # main()
-    preprocessing()
+    # preprocessing()
+    move_training_data()
     # preprocessing_radarcadia()
     # get_data_set_radarcadia()
     # move_training_data()
