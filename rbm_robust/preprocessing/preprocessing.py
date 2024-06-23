@@ -47,7 +47,10 @@ class ButterBandpassFilter(Algorithm):
         Returns:
             _type_: bandpass-filterd signal
         """
-        radar = radar_data.to_numpy().flatten()
+        if isinstance(radar_data, pd.Series):
+            radar = radar_data.to_numpy().flatten()
+        else:
+            radar = radar_data.flatten()
 
         nyq = 0.5 * sample_frequency_hz
         low = self.low_pass_filter_cutoff_hz / nyq

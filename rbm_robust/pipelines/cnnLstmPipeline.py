@@ -111,7 +111,7 @@ class PreProcessor(Algorithm):
         downsampling_clone = self.downsampling.clone()
         radar_mag_diff = None
         # Calculate Power
-        if raw_radar.shape[0] == 2:
+        if raw_radar.shape[1] == 2:
             i_diff = np.diff(raw_radar["I"])
             q_diff = np.diff(raw_radar["Q"])
             radar_mag_diff = RadarPreprocessor().calculate_power(i=i_diff, q=q_diff)
@@ -120,19 +120,19 @@ class PreProcessor(Algorithm):
             radar_mag = raw_radar
         # Bandpass Filter
         self.preprocessed_signal_ = bandpass_filter_clone.filter(radar_mag, sampling_rate).filtered_signal_
-        diff_processed = bandpass_filter_clone.filter(radar_mag_diff, sampling_rate).filtered_signal_
 
         # Downsampling
         self.preprocessed_signal_ = downsampling_clone.downsample(
             self.preprocessed_signal_, 200, sampling_rate
         ).downsampled_signal_
-        diff_processed = downsampling_clone.downsample(diff_processed, 200, sampling_rate).downsampled_signal_
 
         # Empirical Mode Decomposition
         # self.preprocessed_signal_ = emd_clone.decompose(self.preprocessed_signal_).imfs_
 
         # Wavelet Transform
         if radar_mag_diff is not None:
+            diff_processed = bandpass_filter_clone.filter(radar_mag_diff, sampling_rate).filtered_signal_
+            diff_processed = downsampling_clone.downsample(diff_processed, 200, sampling_rate).downsampled_signal_
             wavelet_transform_clone.transform_diff(
                 diff_processed, subject_id, phase, segment, base_path, image_based, single_signal=True, identity=True
             ).transformed_signal_

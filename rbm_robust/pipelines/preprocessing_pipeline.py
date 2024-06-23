@@ -16,8 +16,10 @@ def run_d02(
 ):
     # Get the subjects from the data path
     subjects_dataset = D02Dataset(pathlib.Path(data_path))
-    subsets = [subjects_dataset.get_subset(participant=subject) for subject in subjects_dataset.subjects]
-    num_processes = 4
+    subjects = list(subjects_dataset.subjects)
+    subjects = [s for s in subjects if int(s) % 2 == 0]
+    subsets = [subjects_dataset.get_subset(participant=subject) for subject in subjects]
+    num_processes = 1
     print(num_processes)
     with Pool(num_processes) as p:
         p.starmap(
