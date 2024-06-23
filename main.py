@@ -457,7 +457,7 @@ def dim_fix():
                             zero_pad = np.zeros((256, 1000, 1))
                             zero_pad[: input_data.shape[0], : input_data.shape[1], :] = input_data
                             input_data = zero_pad
-                            np.save(input_data, zero_pad)
+                            np.save(input_file, input_data)
                     except Exception as e:
                         print(f"Error in file {input_file} with error {e}")
                         continue
