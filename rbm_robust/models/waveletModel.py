@@ -134,12 +134,13 @@ class UNetWaveletTF(Algorithm):
     def predict(
         self,
         testing_subjects: list[str] = None,
-        data_path: str = "/home/woody/iwso/iwso116h/TestData",
+        data_path: Path = Path("/home/woody/iwso/iwso116h/TestData"),
         input_folder_name: str = "inputs",
         prediction_folder_name: str = "predictions_unnnamed",
     ):
         print("Prediction started")
-        data_path = Path(data_path)
+        if not isinstance(data_path, Path):
+            data_path = Path(data_path)
         data_folder_name = data_path.name
         print(data_path)
         input_file_type = "npy" if not self.image_based else "png"

@@ -233,10 +233,14 @@ class DatasetFactory:
         wavelet_type: str = "morl",
         log_transform: bool = False,
         ecg_labels: bool = False,
+        diff: bool = False,
     ):
         input_folder_name = (
             f"inputs_wavelet_array_{wavelet_type}_log" if log_transform else f"inputs_wavelet_array_{wavelet_type}"
         )
+        # TODO: Fix this in the future
+        if diff:
+            input_folder_name = f"inputs_wavelet_array_diff"
         label_folder_name = "labels_ecg" if ecg_labels else "labels_gaussian"
         base_path = Path(base_path)
         input_paths = []
@@ -342,6 +346,7 @@ class DatasetFactory:
         wavelet_type="morl",
         log_transform=False,
         ecg_labels=False,
+        diff=False,
     ):
         input_paths, label_paths = self._get_single_wavelet_input_and_label_paths(
             base_path=base_path,
@@ -350,6 +355,7 @@ class DatasetFactory:
             wavelet_type=wavelet_type,
             log_transform=log_transform,
             ecg_labels=ecg_labels,
+            diff=diff,
         )
         dataset = self._build_wavelet_single_array_dataset(input_paths, label_paths, batch_size)
         return dataset, int(len(input_paths) / batch_size)

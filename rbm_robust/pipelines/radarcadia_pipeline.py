@@ -49,7 +49,7 @@ class RadarcadiaPipeline(OptimizablePipeline):
     epochs: int
     learning_rate: float
     data_path: str
-    testing_path: str
+    testing_path: Path
     ecg_labels: bool
     log_transform: bool
     breathing_type: str
@@ -67,7 +67,7 @@ class RadarcadiaPipeline(OptimizablePipeline):
         self,
         learning_rate: float = 0.0001,
         data_path: str = "/home/woody/iwso/iwso116h/Data",
-        testing_path: str = "/home/woody/iwso/iwso116h/TestData",
+        testing_path: Path = Path("/home/woody/iwso/iwso116h/TestData"),
         epochs: int = 50,
         training_subjects: list = None,
         validation_subjects: list = None,

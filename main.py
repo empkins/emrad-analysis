@@ -10,12 +10,11 @@ from sklearn.model_selection import train_test_split
 
 from rbm_robust.data_loading.datasets import D02Dataset
 from rbm_robust.models.cnn import CNN
-from rbm_robust.pipelines.cnnLstmPipeline import D02Pipeline, D02PipelineImproved
+from rbm_robust.pipelines.cnnLstmPipeline import D02PipelineImproved
 from rbm_robust.pipelines.preprocessing_pipeline import run_d02, run_radarcadia
 from rbm_robust.pipelines.radarcadia_pipeline import RadarcadiaPipeline
 from rbm_robust.pipelines.waveletPipeline import WaveletPipeline
 from rbm_robust.validation.identityScoring import identityScoring
-from rbm_robust.validation.scoring import cnnPipelineScoring
 import os
 
 from rbm_robust.validation.scoring_pipeline import training_and_testing_pipeline, d02_training_and_testing_pipeline
@@ -34,6 +33,7 @@ from rbm_robust.validation.wavelet_scoring import waveletPipelineScoring
 @click.option("--wavelet", default="morl", help="Type of wavelet to use: morl, gaus5")
 @click.option("--identity", default=False, help="Whether to use identity check")
 @click.option("--loss", default="bce", help="The used loss function. Valid values are bce and mse")
+@click.option("--diff", default=False, help="Whether to use the first derivative of the radar signal")
 def main(
     epochs,
     learning_rate,
@@ -46,6 +46,7 @@ def main(
     wavelet,
     identity,
     loss,
+    diff,
 ):
     if datasource == "radarcadia":
         ml_radarcadia(
@@ -72,6 +73,7 @@ def main(
             wavelet=wavelet,
             identity=identity,
             loss=loss,
+            diff=diff,
         )
     else:
         raise ValueError("Datasource not found")
@@ -88,9 +90,12 @@ def ml_d02(
     wavelet: str = "morl",
     identity: bool = False,
     loss: str = "bce",
+    diff: bool = False,
 ):
-    path = os.getenv("TMPDIR") + "/Data/DataD02"
-    testing_path = os.getenv("HPCVAULT") + "/TestDataD02"
+    # path = "/Users/simonmeske/Desktop/Masterarbeit/DataD02"
+    # testing_path = "/Users/simonmeske/Desktop/Masterarbeit/TestDataD02"
+    path = os.getenv("TMPDIR") + "/DataD02/DataD02"
+    testing_path = os.getenv("WORK") + "/TestDataD02"
     # Get Training and Testing Subjects
     data_path = Path(path)
     testing_path = Path(testing_path)
@@ -113,6 +118,8 @@ def ml_d02(
         log_transform=log,
         wavelet_type=wavelet,
         loss=loss,
+        testing_path=testing_path,
+        diff=diff,
     )
     d02_training_and_testing_pipeline(pipeline=pipeline, testing_path=path, image_based=image_based)
 
@@ -180,6 +187,7 @@ def ml_radarcadia(
         wavelet_type=wavelet,
         identity=identity,
         loss=loss,
+        testing_path=testing_path,
     )
     training_and_testing_pipeline(pipeline=pipeline, testing_path=testing_path, image_based=image_based)
 

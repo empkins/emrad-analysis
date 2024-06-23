@@ -37,6 +37,7 @@ def _get_dataset(
     ecg_labels: bool = False,
     log_transform: bool = False,
     single_channel: bool = True,
+    diff: bool = False,
 ) -> (tf.data.Dataset, int):
     ds_factory = DatasetFactory()
     if single_channel:
@@ -47,6 +48,7 @@ def _get_dataset(
             wavelet_type=wavelet_type,
             ecg_labels=ecg_labels,
             log_transform=log_transform,
+            diff=diff,
         )
     else:
         return ds_factory.get_dual_channel_wavelet_dataset_for_subjects(
@@ -55,6 +57,7 @@ def _get_dataset(
             batch_size=batch_size,
             wavelet_type=wavelet_type,
             ecg_labels=ecg_labels,
+            diff=diff,
         )
 
 
@@ -593,7 +596,7 @@ class D02PipelineImproved(OptimizablePipeline):
     epochs: int
     learning_rate: float
     data_path: str
-    testing_path: str
+    testing_path: Path
     ecg_labels: bool
     log_transform: bool
     breathing_type: str
@@ -606,12 +609,13 @@ class D02PipelineImproved(OptimizablePipeline):
     dual_channel: bool
     identity: bool
     loss: str
+    diff: bool
 
     def __init__(
         self,
         learning_rate: float = 0.0001,
         data_path: str = "/home/woody/iwso/iwso116h/Data",
-        testing_path: str = "/home/woody/iwso/iwso116h/TestData",
+        testing_path: Path = Path("/home/woody/iwso/iwso116h/TestData"),
         epochs: int = 50,
         training_subjects: list = None,
         validation_subjects: list = None,
@@ -624,8 +628,10 @@ class D02PipelineImproved(OptimizablePipeline):
         dual_channel: bool = False,
         identity: bool = False,
         loss: str = "bce",
+        diff: bool = False,
     ):
         # Set the different fields
+        self.diff = diff
         self.loss = loss
         self.identity = identity
         self.learning_rate = learning_rate
@@ -643,6 +649,7 @@ class D02PipelineImproved(OptimizablePipeline):
             log_transform=log_transform,
             batch_size=batch_size,
             single_channel=not self.dual_channel,
+            diff=diff,
         )
 
         self.validation_ds, self.validation_steps = _get_dataset(
@@ -653,6 +660,7 @@ class D02PipelineImproved(OptimizablePipeline):
             log_transform=log_transform,
             batch_size=batch_size,
             single_channel=not self.dual_channel,
+            diff=diff,
         )
         self.ecg_labels = ecg_labels
         self.log_transform = log_transform
@@ -673,6 +681,8 @@ class D02PipelineImproved(OptimizablePipeline):
             model_name += "_dual"
         if identity:
             model_name += "_identity"
+        if diff:
+            model_name += "_diff"
 
         time = datetime.now().strftime("%Y%m%d_%H%M%S")
         self.prediction_folder_name = f"predictions_{model_name}_{time}"
@@ -704,6 +714,9 @@ class D02PipelineImproved(OptimizablePipeline):
             input_folder_name = input_folder_name.replace("array", "image")
         if identity:
             input_folder_name = input_folder_name.replace("wavelet", "identity")
+
+        if self.diff:
+            input_folder_name = "inputs_wavelet_array_diff"
 
         self.wavelet_model.predict(
             testing_subjects=self.testing_subjects,
