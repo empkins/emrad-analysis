@@ -430,7 +430,7 @@ def sanity_check():
 
 
 def dim_fix():
-    base_path = os.getenv("WORK") + "/DataD02"
+    base_path = os.getenv("TMPDIR") + "/DataD02/DataD02"
     base_path = Path(base_path)
     for subject in base_path.iterdir():
         for phase in subject.iterdir():
@@ -453,14 +453,11 @@ def dim_fix():
                         # input_data = input_data.reshape(input_data.shape[0], input_data.shape[1], 1)
                         # np.save(input_file, input_data)
                         if input_data.ndim == 3 and input_data.shape != (256, 1000, 1):
-                            print(f"Shape is {input_data.shape}")
-                            print(f"File is {input_file}")
-                            print(f"Subject is {subject}")
-                            print(f"Phase is {phase}")
+                            print(f"Shape is {input_data.shape} for file {input_file}")
                             zero_pad = np.zeros((256, 1000, 1))
-                            zero_pad[: input_file.shape[0], : input_file.shape[1], :] = input_file
+                            zero_pad[: input_data.shape[0], : input_data.shape[1], :] = input_data
                             input_file = zero_pad
-                            # np.save(input_file, zero_pad)
+                            np.save(input_file, zero_pad)
                     except Exception as e:
                         print(f"Error in file {input_file} with error {e}")
                         continue
