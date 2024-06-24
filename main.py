@@ -478,8 +478,8 @@ if __name__ == "__main__":
     #     if args[2] == "-epochs":
     #         remaining_epochs = int(args[3])
     # main(model_path, remaining_epochs)
-    # main()
-    dim_fix()
+    # dim_fix()
+    main()
     # preprocessing()
     # move_training_data()
     # preprocessing_radarcadia()
