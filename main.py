@@ -229,6 +229,40 @@ def preprocessing_radarcadia():
     # check_for_empty_arrays()
 
 
+def fix_and_normalize_diff():
+    base_paths = [os.getenv("WORK") + "/DataD02", os.getenv("WORK") + "/TestDataD02"]
+    for base in base_paths:
+        base_path = pathlib.Path(base)
+        for subject_path in base_path.iterdir():
+            for phase_path in subject_path.iterdir():
+                if not phase_path.is_dir():
+                    continue
+                for input_folder in phase_path.iterdir():
+                    if "diff" not in input_folder.name:
+                        continue
+                    for input_file in input_folder.iterdir():
+                        if not input_file.is_file():
+                            continue
+                        if "png" in input_file.name:
+                            continue
+                        try:
+                            input_data = np.load(input_file)
+                            if input_data.ndim == 2:
+                                # Diff Data is 2D and needs to be 3D
+                                # First normalize the data
+                                numerator = input_data - np.min(input_data)
+                                denominator = np.max(input_data) - np.min(input_data)
+                                if denominator == 0:
+                                    input_data = np.zeros((256, 1000))
+                                else:
+                                    input_data = numerator / denominator
+                                input_data = input_data.reshape(input_data.shape[0], input_data.shape[1], 1)
+                                np.save(input_file, input_data)
+                        except Exception as e:
+                            print(f"Error in file {input_file} with error {e}")
+                            continue
+
+
 def input_loading():
     test_validation_subjects = [
         "231",
@@ -481,7 +515,8 @@ if __name__ == "__main__":
     #         remaining_epochs = int(args[3])
     # main(model_path, remaining_epochs)
     # dim_fix()
-    main()
+    # main()
+    fix_and_normalize_diff()
     # preprocessing()
     # move_training_data()
     # preprocessing_radarcadia()
