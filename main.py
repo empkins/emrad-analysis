@@ -430,37 +430,39 @@ def sanity_check():
 
 
 def dim_fix():
-    base_path = os.getenv("TMPDIR") + "/DataD02/DataD02"
-    base_path = Path(base_path)
-    for subject in base_path.iterdir():
-        for phase in subject.iterdir():
-            if "labels" in phase.name:
-                continue
-            if not phase.is_dir():
-                continue
-            # print(f"Subject is {subject}")
-            for input_folder in phase.iterdir():
-                for input_file in input_folder.iterdir():
-                    # print(f"file is {input_file}")
-                    if not input_file.is_file():
-                        continue
-                    if "png" in input_file.name:
-                        continue
-                    try:
-                        input_data = np.load(input_file)
-                        # if input_data.ndim == 2:
-                        # Diff Data is 2D and needs to be 3D
-                        # input_data = input_data.reshape(input_data.shape[0], input_data.shape[1], 1)
-                        # np.save(input_file, input_data)
-                        if input_data.ndim == 3 and input_data.shape != (256, 1000, 1):
-                            print(f"Shape is {input_data.shape} for file {input_file}")
-                            zero_pad = np.zeros((256, 1000, 1))
-                            zero_pad[: input_data.shape[0], : input_data.shape[1], :] = input_data
-                            input_data = zero_pad
-                            np.save(input_file, input_data)
-                    except Exception as e:
-                        print(f"Error in file {input_file} with error {e}")
-                        continue
+    base_paths = [os.getenv("WORK") + "/DataD02", os.getenv("WORK") + "/TestDataD02"]
+    for base in base_paths:
+        base_path = base
+        base_path = Path(base_path)
+        for subject in base_path.iterdir():
+            for phase in subject.iterdir():
+                if "labels" in phase.name:
+                    continue
+                if not phase.is_dir():
+                    continue
+                # print(f"Subject is {subject}")
+                for input_folder in phase.iterdir():
+                    for input_file in input_folder.iterdir():
+                        # print(f"file is {input_file}")
+                        if not input_file.is_file():
+                            continue
+                        if "png" in input_file.name:
+                            continue
+                        try:
+                            input_data = np.load(input_file)
+                            # if input_data.ndim == 2:
+                            # Diff Data is 2D and needs to be 3D
+                            # input_data = input_data.reshape(input_data.shape[0], input_data.shape[1], 1)
+                            # np.save(input_file, input_data)
+                            if input_data.ndim == 3 and input_data.shape != (256, 1000, 1):
+                                print(f"Shape is {input_data.shape} for file {input_file}")
+                                zero_pad = np.zeros((256, 1000, 1))
+                                zero_pad[: input_data.shape[0], : input_data.shape[1], :] = input_data
+                                input_data = zero_pad
+                                np.save(input_file, input_data)
+                        except Exception as e:
+                            print(f"Error in file {input_file} with error {e}")
+                            continue
 
 
 if __name__ == "__main__":
@@ -478,8 +480,8 @@ if __name__ == "__main__":
     #     if args[2] == "-epochs":
     #         remaining_epochs = int(args[3])
     # main(model_path, remaining_epochs)
-    # dim_fix()
-    main()
+    dim_fix()
+    # main()
     # preprocessing()
     # move_training_data()
     # preprocessing_radarcadia()
