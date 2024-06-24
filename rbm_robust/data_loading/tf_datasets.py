@@ -244,6 +244,8 @@ class DatasetFactory:
         input_folder_name = (
             f"inputs_wavelet_array_{wavelet_type}_log" if log_transform else f"inputs_wavelet_array_{wavelet_type}"
         )
+        if image_based:
+            input_folder_name = input_folder_name.replace("array", "image")
         # TODO: Fix this in the future
         if diff:
             input_folder_name = f"inputs_wavelet_array_diff"
