@@ -230,8 +230,8 @@ class DatasetFactory:
                 raise FileNotFoundError(f"Input Log path: {input_log_path} does not exist")
         return input_paths, input_log_paths, label_paths
 
-    @staticmethod
     def _get_single_wavelet_input_and_label_paths(
+        self,
         base_path,
         subject_list,
         training_phase: str = None,
@@ -278,16 +278,17 @@ class DatasetFactory:
                 ]
                 input_paths += input_files
                 label_paths += label_files
+        self._sanity_check_radarcadia(input_paths, label_paths, input_folder_name, label_folder_name, image_based)
         # Sanity Check
-        all_paths = list(zip(input_paths, label_paths))
-        for input_path, label_path in all_paths:
-            modified_input_path = input_path.replace(input_folder_name, label_folder_name)
-            if modified_input_path != label_path:
-                raise ValueError(f"Input path: {input_path} does not match label path: {label_path}")
-            if not Path(input_path).exists():
-                raise FileNotFoundError(f"Input path: {input_path} does not exist")
-            if not Path(label_path).exists():
-                raise FileNotFoundError(f"Label path: {label_path} does not exist")
+        # all_paths = list(zip(input_paths, label_paths))
+        # for input_path, label_path in all_paths:
+        #     modified_input_path = input_path.replace(input_folder_name, label_folder_name)
+        #     if modified_input_path != label_path:
+        #         raise ValueError(f"Input path: {input_path} does not match label path: {label_path}")
+        #     if not Path(input_path).exists():
+        #         raise FileNotFoundError(f"Input path: {input_path} does not exist")
+        #     if not Path(label_path).exists():
+        #         raise FileNotFoundError(f"Label path: {label_path} does not exist")
         return input_paths, label_paths
 
     @staticmethod
