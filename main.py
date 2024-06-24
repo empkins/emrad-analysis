@@ -250,6 +250,11 @@ def fix_and_normalize_diff():
                             if input_data.ndim == 2:
                                 # Diff Data is 2D and needs to be 3D
                                 # First normalize the data
+                                if input_data.shape != (256, 1000):
+                                    print(f"Shape is {input_data.shape} for file {input_file}")
+                                    zero_pad = np.zeros((256, 1000))
+                                    zero_pad[: input_data.shape[0], : input_data.shape[1]] = input_data
+                                    input_data = zero_pad
                                 numerator = input_data - np.min(input_data)
                                 denominator = np.max(input_data) - np.min(input_data)
                                 if denominator == 0:
