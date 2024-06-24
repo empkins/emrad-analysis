@@ -239,6 +239,7 @@ class DatasetFactory:
         log_transform: bool = False,
         ecg_labels: bool = False,
         diff: bool = False,
+        image_based=False,
     ):
         input_folder_name = (
             f"inputs_wavelet_array_{wavelet_type}_log" if log_transform else f"inputs_wavelet_array_{wavelet_type}"
@@ -250,6 +251,7 @@ class DatasetFactory:
         base_path = Path(base_path)
         input_paths = []
         label_paths = []
+        input_datatype = "png" if image_based else "npy"
         for subject in subject_list:
             subject_path = base_path / subject
             for phase in subject_path.iterdir():
@@ -261,7 +263,7 @@ class DatasetFactory:
                 label_path = phase / label_folder_name
                 if not input_path.exists() or not label_path.exists():
                     continue
-                input_files = sorted(input_path.glob("*.npy"))
+                input_files = sorted(input_path.glob(f"*.{input_datatype}"))
                 label_files = sorted(label_path.glob("*.npy"))
                 label_filenames = set([label_file.stem for label_file in label_files])
                 input_filenames = set([input_file.stem for input_file in input_files])
@@ -352,6 +354,7 @@ class DatasetFactory:
         log_transform=False,
         ecg_labels=False,
         diff=False,
+        image_based=False,
     ):
         input_paths, label_paths = self._get_single_wavelet_input_and_label_paths(
             base_path=base_path,
@@ -361,8 +364,12 @@ class DatasetFactory:
             log_transform=log_transform,
             ecg_labels=ecg_labels,
             diff=diff,
+            image_based=image_based,
         )
-        dataset = self._build_wavelet_single_array_dataset(input_paths, label_paths, batch_size)
+        if not image_based:
+            dataset = self._build_wavelet_single_array_dataset(input_paths, label_paths, batch_size)
+        else:
+            dataset = self._build_wavelet_dataset_single_image(input_paths, label_paths, batch_size)
         return dataset, int(len(input_paths) / batch_size)
 
     def get_dual_channel_wavelet_dataset_for_subjects(

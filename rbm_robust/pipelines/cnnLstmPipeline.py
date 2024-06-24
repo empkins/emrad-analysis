@@ -38,6 +38,7 @@ def _get_dataset(
     log_transform: bool = False,
     single_channel: bool = True,
     diff: bool = False,
+    image_based: bool = False,
 ) -> (tf.data.Dataset, int):
     ds_factory = DatasetFactory()
     if single_channel:
@@ -49,6 +50,7 @@ def _get_dataset(
             ecg_labels=ecg_labels,
             log_transform=log_transform,
             diff=diff,
+            image_based=image_based,
         )
     else:
         return ds_factory.get_dual_channel_wavelet_dataset_for_subjects(
@@ -58,6 +60,7 @@ def _get_dataset(
             wavelet_type=wavelet_type,
             ecg_labels=ecg_labels,
             diff=diff,
+            image_based=image_based,
         )
 
 
@@ -650,6 +653,7 @@ class D02PipelineImproved(OptimizablePipeline):
             batch_size=batch_size,
             single_channel=not self.dual_channel,
             diff=diff,
+            image_based=self.image_based,
         )
 
         self.validation_ds, self.validation_steps = _get_dataset(
@@ -661,6 +665,7 @@ class D02PipelineImproved(OptimizablePipeline):
             batch_size=batch_size,
             single_channel=not self.dual_channel,
             diff=diff,
+            image_based=self.image_based,
         )
         self.ecg_labels = ecg_labels
         self.log_transform = log_transform
