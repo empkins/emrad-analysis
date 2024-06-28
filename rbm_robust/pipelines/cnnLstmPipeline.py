@@ -117,7 +117,7 @@ class PreProcessor(Algorithm):
         downsampling_clone = self.downsampling.clone()
         radar_mag_diff = None
         # Calculate Power
-        if raw_radar.shape[1] == 2:
+        if not isinstance(raw_radar, pd.Series) and raw_radar.shape[1] == 2:
             i_diff = np.diff(raw_radar["I"])
             q_diff = np.diff(raw_radar["Q"])
             radar_mag_diff = RadarPreprocessor().calculate_power(i=i_diff, q=q_diff)

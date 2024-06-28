@@ -148,7 +148,7 @@ class Segmentation(Algorithm):
     def segment(self, signal: pd.Series, sampling_rate: float):
         step_size = int(self.window_size_in_seconds - self.window_size_in_seconds * self.overlap)
         total_seconds = (signal.index.max() - signal.index.min()).total_seconds()
-        step_count = int((total_seconds // step_size) - 1)  # - 1
+        step_count = int((total_seconds // step_size))  # - 1
         start_time = signal.index[0]
         time_step = signal.index[1] - signal.index[0]
         segments = []

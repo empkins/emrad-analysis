@@ -72,7 +72,7 @@ def process_radarcadia_subset(
     target_path: str,
 ):
     generator = InputAndLabelGenerator()
-    try:
-        generator.generate_training_inputs_and_labels_radarcadia(data_set, target_path)
-    except Exception as e:
-        print(f"Error in processing subset with error {e}")
+    # try:
+    generator.generate_training_inputs_and_labels_radarcadia(data_set, target_path)
+    # except Exception as e:
+    #     print(f"Error in processing subset with error {e}")
