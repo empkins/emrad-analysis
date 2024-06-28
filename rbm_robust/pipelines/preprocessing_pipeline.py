@@ -58,14 +58,14 @@ def run_radarcadia(
     for subject in subjects:
         subject_subset = subjects_dataset.get_subset(subject=subject)
         subsets.append(subject_subset)
-    process_radarcadia_subset(subjects_dataset, target_path)
-    # num_processes = 4
-    # print(num_processes)
-    # with Pool(num_processes) as p:
-    #     p.starmap(
-    #         process_radarcadia_subset,
-    #         [(subset, target_path) for subset in subsets],
-    #     )
+    # process_radarcadia_subset(subjects_dataset, target_path)
+    num_processes = 4
+    print(num_processes)
+    with Pool(num_processes) as p:
+        p.starmap(
+            process_radarcadia_subset,
+            [(subset, target_path) for subset in subsets],
+        )
 
 
 def process_radarcadia_subset(
