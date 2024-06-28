@@ -164,10 +164,14 @@ class Segmentation(Algorithm):
             if len(data_segment) < self.window_size_in_seconds * sampling_rate:
                 rows_needed = int((pd.Timedelta(seconds=self.window_size_in_seconds) - time_diff) / time_step)
                 # rows_needed = int((pd.Timedelta(seconds=4) - time_diff) / time_step)
-                zero_df = pd.DataFrame(
-                    numpy.zeros((rows_needed, len(data_segment.columns))), columns=data_segment.columns
-                )
-                data_segment = data_segment.append(zero_df, ignore_index=True)
+                if isinstance(data_segment, pd.Series):
+                    zeros = pd.Series(np.zeros(rows_needed))
+                    data_segment = data_segment.append(zeros, ignore_index=True)
+                else:
+                    zero_padded = pd.DataFrame(
+                        numpy.zeros((rows_needed, len(data_segment.columns))), columns=data_segment.columns
+                    )
+                    data_segment = data_segment.append(zero_padded, ignore_index=True)
                 data_segment.index = pd.date_range(
                     start=data_segment.index[0], periods=len(data_segment), freq=time_step
                 )
