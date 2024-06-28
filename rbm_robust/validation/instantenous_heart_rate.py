@@ -8,7 +8,7 @@ from rbm_robust.validation.validationBase import ValidationBase
 
 
 class ScoreCalculator(ValidationBase):
-    def __init__(self, prediction_path, label_path, fs=200, overlap=0.4, label_suffix="labels_ecg"):
+    def __init__(self, prediction_path, label_path, fs=200, overlap=0.2, label_suffix="labels_ecg"):
         self.max_heart_rate = 180
         if isinstance(prediction_path, str):
             prediction_path = Path(prediction_path)

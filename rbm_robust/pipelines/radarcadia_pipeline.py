@@ -197,7 +197,7 @@ class RadarcadiaPipeline(OptimizablePipeline):
         score_calculator = ScoreCalculator(
             prediction_path=prediction_path,
             label_path=label_path,
-            overlap=0.4,
+            overlap=0.2,
             fs=200,
             label_suffix=label_folder_name,
         )

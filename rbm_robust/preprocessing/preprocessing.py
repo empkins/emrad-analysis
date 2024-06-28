@@ -140,7 +140,7 @@ class Segmentation(Algorithm):
     # Results
     segmented_signal_: list
 
-    def __init__(self, window_size_in_seconds: int = 5, overlap: float = 0.4):
+    def __init__(self, window_size_in_seconds: int = 5, overlap: float = 0.2):
         self.window_size_in_seconds = window_size_in_seconds
         self.overlap = overlap
 

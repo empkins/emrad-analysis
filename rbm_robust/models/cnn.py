@@ -56,7 +56,7 @@ class CNN(Algorithm):
         num_epochs: int = 25,
         batch_size: int = 8,
         _model=None,
-        overlap: int = 0.8,
+        overlap: int = 0.2,
         image_based: bool = False,
     ):
         self.groups = groups

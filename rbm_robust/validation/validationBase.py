@@ -13,7 +13,7 @@ class ValidationBase:
     fs: int
 
     def __init__(
-        self, phase: str, subject: str, prediction_path: Path, label_path: Path, overlap: int = 0.4, fs: int = 200
+        self, phase: str, subject: str, prediction_path: Path, label_path: Path, overlap: int = 0.2, fs: int = 200
     ):
         self.phase = phase
         self.subject = subject
