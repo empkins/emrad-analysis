@@ -223,7 +223,7 @@ def preprocessing():
 
 def preprocessing_radarcadia():
     base_path = Path("/home/vault/empkins/tpD/D03/Data/MA_Simon_Meske/2023_radarcardia_study")
-    target_path = os.getenv("WORK") + "/DataRadarcadiaNoOverlap"
+    target_path = os.getenv("WORK") + "/DataRadarcadiaOverlap"
     # base_path = Path("/Users/simonmeske/Desktop/Masterarbeit/Radarcadia")
     # target_path = "/Users/simonmeske/Desktop/Masterarbeit/Radarcadia/Processed_Files"
     run_radarcadia(base_path, target_path)
