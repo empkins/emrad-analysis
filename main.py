@@ -14,6 +14,7 @@ from rbm_robust.pipelines.cnnLstmPipeline import D02PipelineImproved
 from rbm_robust.pipelines.preprocessing_pipeline import run_d02, run_radarcadia
 from rbm_robust.pipelines.radarcadia_pipeline import RadarcadiaPipeline
 from rbm_robust.pipelines.waveletPipeline import WaveletPipeline
+from rbm_robust.validation.correlationCoefficient import CorrelationAllSubjects
 from rbm_robust.validation.identityScoring import identityScoring
 import os
 
@@ -158,10 +159,10 @@ def ml_radarcadia(
 ):
     print("Starting")
     # path = "/Users/simonmeske/Desktop/TestOrdner/data_per_subject"
-    # path = "/Users/simonmeske/Desktop/Masterarbeit/Radarcadia/Processed_Files"
-    # testing_path = "/Users/simonmeske/Desktop/Masterarbeit/RadarcadiaTestData"
-    path = os.getenv("TMPDIR") + "/Data/DataRadarcadia"
-    testing_path = os.getenv("HPCVAULT") + "/TestDataRadarcadia"
+    path = "/Users/simonmeske/Desktop/Masterarbeit/Radarcadia/Processed_Files"
+    testing_path = "/Users/simonmeske/Desktop/Masterarbeit/RadarcadiaTestData"
+    # path = os.getenv("TMPDIR") + "/Data/DataRadarcadia"
+    # testing_path = os.getenv("HPCVAULT") + "/TestDataRadarcadia"
     # Get Training and Testing Subjects
     data_path = Path(path)
     testing_path = Path(testing_path)
@@ -222,7 +223,7 @@ def preprocessing():
 
 def preprocessing_radarcadia():
     base_path = Path("/home/vault/empkins/tpD/D03/Data/MA_Simon_Meske/2023_radarcardia_study")
-    target_path = os.getenv("HPCVAULT") + "/DataRadarcadia"
+    target_path = os.getenv("WORK") + "/DataRadarcadiaNoOverlap"
     # base_path = Path("/Users/simonmeske/Desktop/Masterarbeit/Radarcadia")
     # target_path = "/Users/simonmeske/Desktop/Masterarbeit/Radarcadia/Processed_Files"
     run_radarcadia(base_path, target_path)
@@ -504,6 +505,24 @@ def dim_fix():
                             continue
 
 
+def is_it_right():
+    prediction_path_radarcadia = Path(
+        "/Users/simonmeske/Desktop/Masterarbeit/Predictions2/predictions_radarcadia_morl_all_30_0_0001_bce_20240622_130343"
+    )
+    label_path_radarcadia = Path("/Users/simonmeske/Desktop/Masterarbeit/")
+    # location = "aorta_med_normal"
+    correlation_calculator = CorrelationAllSubjects(
+        prediction_path=prediction_path_radarcadia, label_path=label_path_radarcadia
+    )
+    # subject_corr_dict = correlation_calculator.calculate_correlation_all_subjects_for_phase(location)
+    location_dict = {}
+    locations = ["aorta_med_normal", "aorta_dist_hold", "aorta_dist_normal", "aorta_prox_hold"]
+    for location in locations:
+        subject_corr_dict = correlation_calculator.calculate_correlation_all_subjects_for_phase(location)
+        location_dict[location] = subject_corr_dict["VP_01"]
+    print(location_dict)
+
+
 if __name__ == "__main__":
     # devices = tf.config.experimental.list_physical_devices("GPU")
     # tf.config.experimental.set_memory_growth(devices[0], True)
@@ -520,11 +539,12 @@ if __name__ == "__main__":
     #         remaining_epochs = int(args[3])
     # main(model_path, remaining_epochs)
     # dim_fix()
-    main()
+    # is_it_right()
+    # main()
     # fix_and_normalize_diff()
     # preprocessing()
     # move_training_data()
-    # preprocessing_radarcadia()
+    preprocessing_radarcadia()
     # get_data_set_radarcadia()
     # move_training_data()
     # wavelet_training(None, 0)

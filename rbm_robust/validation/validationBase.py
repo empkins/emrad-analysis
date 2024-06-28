@@ -40,7 +40,8 @@ class ValidationBase:
         return array[start:end]
 
     def _get_ordered_file_paths(self, path: Path):
-        array_path = path / self.subject / self.phase
+        # array_path = path / self.subject / self.phase
+        array_path = path
         if not array_path.exists():
             raise ValueError(f"Path {array_path} does not exist")
         file_paths = list(array_path.iterdir())

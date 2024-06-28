@@ -59,9 +59,14 @@ class UNetWaveletTF(Algorithm):
         self,
     ):
         self._create_model()
-        log_dir = os.getenv("HPCVAULT") + f"/Runs/logs/fit/{self.model_name}"
+        if os.getenv("HPCVAULT") is None:
+            log_dir = "Users/simonmeske/Desktop/Masterarbeit/Runs/logs/fit/"
+        else:
+            log_dir = os.getenv("HPCVAULT") + f"/Runs/logs/fit/{self.model_name}"
+
+        log_dir_path = Path(log_dir)
         if not os.path.exists(log_dir):
-            os.makedirs(log_dir)
+            Path(log_dir).mkdir(parents=True, exist_ok=True)
 
         tensorboard_callback = keras.callbacks.TensorBoard(log_dir=log_dir, write_graph=False, update_freq="epoch")
         print("Fitting")
@@ -77,9 +82,12 @@ class UNetWaveletTF(Algorithm):
             callbacks=[tensorboard_callback],
         )
 
-        history_path = os.getenv("HPCVAULT") + "/Runs/History/"
+        if os.getenv("HPCVAULT") is None:
+            history_path = "Users/simonmeske/Desktop/Masterarbeit/Runs/History/"
+        else:
+            history_path = os.getenv("HPCVAULT") + "/Runs/History/"
         if not os.path.exists(history_path):
-            os.makedirs(history_path)
+            Path(history_path).mkdir(parents=True, exist_ok=True)
         history_path += self.model_name + "_history.pkl"
         pickle.dump(history.history, open(history_path, "wb"))
         self.save_model()

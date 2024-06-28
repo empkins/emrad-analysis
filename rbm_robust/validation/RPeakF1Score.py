@@ -102,8 +102,9 @@ class RPeakF1Score(Algorithm):
 
         minimal_distance_between_peaks = int(1 / (self.max_heart_rate / 60) * self.sampling_rate)
 
-        pred_peaks, _ = find_peaks(predicted_r_peak_signal, distance=minimal_distance_between_peaks, prominence=0.15)
-        gt_peaks, _ = find_peaks(ground_truth_r_peak_signal, distance=minimal_distance_between_peaks, prominence=0.15)
+        # , prominence=0.15
+        pred_peaks, _ = find_peaks(predicted_r_peak_signal, distance=minimal_distance_between_peaks)
+        gt_peaks, _ = find_peaks(ground_truth_r_peak_signal, distance=minimal_distance_between_peaks)
 
         true_positives = 0
 

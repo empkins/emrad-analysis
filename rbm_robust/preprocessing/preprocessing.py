@@ -140,7 +140,7 @@ class Segmentation(Algorithm):
     # Results
     segmented_signal_: list
 
-    def __init__(self, window_size_in_seconds: int = 5, overlap: float = 0.4):
+    def __init__(self, window_size_in_seconds: int = 5, overlap: float = 0):
         self.window_size_in_seconds = window_size_in_seconds
         self.overlap = overlap
 
@@ -148,11 +148,11 @@ class Segmentation(Algorithm):
     def segment(self, signal: pd.Series, sampling_rate: float):
         step_size = int(self.window_size_in_seconds - self.window_size_in_seconds * self.overlap)
         total_seconds = (signal.index.max() - signal.index.min()).total_seconds()
-        step_count = int((total_seconds // step_size) - 1)
+        step_count = int((total_seconds // step_size))  # - 1
         start_time = signal.index[0]
         time_step = signal.index[1] - signal.index[0]
         segments = []
-        for j in range(1, step_count):
+        for j in range(0, step_count):
             end = start_time + pd.Timedelta(seconds=self.window_size_in_seconds)
             # Preprocess the data
             data_segment = signal[start_time:end]

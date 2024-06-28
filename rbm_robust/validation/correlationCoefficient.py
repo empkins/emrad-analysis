@@ -32,11 +32,38 @@ class CorrelationAllSubjects(ValidationBase):
         for subject_path in self.label_path.iterdir():
             if not subject_path.is_dir():
                 continue
+            if subject_path.is_symlink() or subject_path.name == "Runs":
+                continue
             subject = subject_path.name
             if not (subject_path / phase).exists() or not (self.prediction_path / subject / phase).exists():
                 continue
             correlation_calculator = Correlation(
-                phase=phase, subject=subject, prediction_path=self.prediction_path, label_path=self.label_path
+                phase=phase,
+                subject=subject,
+                prediction_path=self.prediction_path,
+                label_path=self.label_path,
+            )
+            subject_corr_dict[subject] = correlation_calculator.calculate_correlation()
+        return subject_corr_dict
+
+
+class CorrelationRadarcadia(ValidationBase):
+    def __init__(self, prediction_path: Path, label_path: Path, overlap: int = 0.4, fs: int = 200):
+        self.prediction_path = prediction_path
+        self.label_path = label_path
+        self.overlap = overlap
+        self.fs = fs
+
+    def calculate_correlation_all_subjects_for_phase(self, location: str):
+        subject_corr_dict = {}
+        for subject_path in self.label_path.iterdir():
+            if not subject_path.is_dir():
+                continue
+            subject = subject_path.name
+            if not (subject_path / location).exists() or not (self.prediction_path / subject / location).exists():
+                continue
+            correlation_calculator = Correlation(
+                phase=location, subject=subject, prediction_path=self.prediction_path, label_path=self.label_path
             )
             subject_corr_dict[subject] = correlation_calculator.calculate_correlation()
         return subject_corr_dict

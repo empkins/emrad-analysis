@@ -1,3 +1,5 @@
+import os
+import pickle
 from datetime import datetime
 from pathlib import Path
 from typing import Union
@@ -9,7 +11,7 @@ from tpcp._dataset import DatasetT
 
 from rbm_robust.data_loading.tf_datasets import DatasetFactory
 from rbm_robust.models.waveletModel import UNetWaveletTF
-from rbm_robust.validation.RPeakF1Score import RPeakF1Score
+from rbm_robust.validation.instantenous_heart_rate import ScoreCalculator
 
 
 def _get_dataset(
@@ -140,6 +142,8 @@ class RadarcadiaPipeline(OptimizablePipeline):
         time = datetime.now().strftime("%Y%m%d_%H%M%S")
         self.prediction_folder_name = f"predictions_{model_name}_{time}"
 
+        # self.prediction_folder_name = "predictions_radarcadia_morl_all_50_0_0001_bce_20240624_131008"
+
         # Initialize the model
         self.wavelet_model = UNetWaveletTF(
             learning_rate=learning_rate,
@@ -185,44 +189,75 @@ class RadarcadiaPipeline(OptimizablePipeline):
         label_folder_name = "labels_gaussian" if not self.ecg_labels else "labels_ecg"
         test_path = Path(self.testing_path)
 
-        for subject in test_path.iterdir():
-            if not subject.is_dir():
-                continue
-            if subject.name not in self.testing_subjects:
-                continue
-            print(f"subject {subject}")
-            for phase in subject.iterdir():
-                if not phase.is_dir():
-                    continue
-                if phase.name == "logs" or phase.name == "raw":
-                    continue
-                print(f"phase {phase}")
-                prediction_path = phase
-                prediction_path = Path(
-                    str(prediction_path).replace(test_data_folder_name, f"Predictions/{self.prediction_folder_name}")
-                )
-                label_path = phase / label_folder_name
-                prediction_files = sorted(path.name for path in prediction_path.iterdir() if path.is_file())
-                f1RPeakScore = RPeakF1Score(max_deviation_ms=100)
-                for prediction_file in prediction_files:
-                    prediction = np.load(prediction_path / prediction_file)
-                    label = np.load(label_path / prediction_file)
-                    f1RPeakScore.compute_predictions(prediction, label)
-                    true_positives += f1RPeakScore.tp_
-                    total_gt_peaks += f1RPeakScore.total_peaks_
-                    total_pred_peaks += f1RPeakScore.pred_peaks_
+        label_path = test_path
+        prediction_path = Path(
+            str(label_path).replace(test_data_folder_name, f"Predictions/{self.prediction_folder_name}")
+        )
 
-        if total_pred_peaks == 0:
-            print("No Peaks detected")
-            return {
-                "abs_hr_error": 0,
-                "mean_instantaneous_error": 0,
-                "f1_score": 0,
-                "mean_relative_error_hr": 0,
-                "mean_absolute_error": 0,
-            }
+        score_calculator = ScoreCalculator(
+            prediction_path=prediction_path,
+            label_path=label_path,
+            overlap=0.4,
+            fs=200,
+            label_suffix=label_folder_name,
+        )
+        scores = score_calculator.calculate_scores()
 
-        precision = true_positives / total_pred_peaks
-        recall = true_positives / total_gt_peaks
-        f1_score = 2 * (precision * recall) / (precision + recall)
-        print(f"f1 Score {f1_score}")
+        if os.getenv("WORK") is None:
+            save_path = Path("/Users/simonmeske/Desktop/Masterarbeit")
+        else:
+            save_path = Path(os.getenv("WORK"))
+
+        save_path = save_path / "Scores" / self.prediction_folder_name
+        if not save_path.exists():
+            save_path.mkdir(parents=True)
+
+        # save the scores in a pickle file
+        scores_path = save_path / f"scores_{self.prediction_folder_name}.pkl"
+        with open(scores_path, "wb") as f:
+            pickle.dump(scores, f)
+
+        print(f"Scores: {scores}")
+        return scores
+
+        # for subject in test_path.iterdir():
+        #     if not subject.is_dir():
+        #         continue
+        #     if subject.name not in self.testing_subjects:
+        #         continue
+        #     print(f"subject {subject}")
+        #     for phase in subject.iterdir():
+        #         if not phase.is_dir():
+        #             continue
+        #         if phase.name == "logs" or phase.name == "raw":
+        #             continue
+        #         print(f"phase {phase}")
+        #         prediction_path = phase
+        #         prediction_path = Path(
+        #             str(prediction_path).replace(test_data_folder_name, f"Predictions/{self.prediction_folder_name}")
+        #         )
+        #         label_path = phase / label_folder_name
+        #         prediction_files = sorted(path.name for path in prediction_path.iterdir() if path.is_file())
+        #         f1RPeakScore = RPeakF1Score(max_deviation_ms=100)
+        #         for prediction_file in prediction_files:
+        #             prediction = np.load(prediction_path / prediction_file)
+        #             label = np.load(label_path / prediction_file)
+        #             f1RPeakScore.compute_predictions(prediction, label)
+        #             true_positives += f1RPeakScore.tp_
+        #             total_gt_peaks += f1RPeakScore.total_peaks_
+        #             total_pred_peaks += f1RPeakScore.pred_peaks_
+        #
+        # if total_pred_peaks == 0:
+        #     print("No Peaks detected")
+        #     return {
+        #         "abs_hr_error": 0,
+        #         "mean_instantaneous_error": 0,
+        #         "f1_score": 0,
+        #         "mean_relative_error_hr": 0,
+        #         "mean_absolute_error": 0,
+        #     }
+        #
+        # precision = true_positives / total_pred_peaks
+        # recall = true_positives / total_gt_peaks
+        # f1_score = 2 * (precision * recall) / (precision + recall)
+        # print(f"f1 Score {f1_score}")
