@@ -295,7 +295,7 @@ class InputAndLabelGenerator(Algorithm):
         normalizer: Normalizer = cf(Normalizer()),
         labelProcessor: LabelProcessor = cf(LabelProcessor()),
         segment_size_in_seconds: int = 5,
-        overlap: float = 0.2,
+        overlap: float = 0.4,
         downsampled_hz: int = 200,
     ):
         self.pre_processor = pre_processor
