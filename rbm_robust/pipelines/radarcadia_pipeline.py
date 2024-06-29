@@ -1,5 +1,7 @@
 import os
 import pickle
+import shutil
+import tarfile
 from datetime import datetime
 from pathlib import Path
 from typing import Union
@@ -142,7 +144,7 @@ class RadarcadiaPipeline(OptimizablePipeline):
         time = datetime.now().strftime("%Y%m%d_%H%M%S")
         self.prediction_folder_name = f"predictions_{model_name}_{time}"
 
-        # self.prediction_folder_name = "predictions_radarcadia_morl_all_50_0_0001_bce_20240624_131008"
+        # self.prediction_folder_name = "predictions_radarcadia_morl_all_30_0_0001_bce_20240622_130343"
 
         # Initialize the model
         self.wavelet_model = UNetWaveletTF(
@@ -197,67 +199,33 @@ class RadarcadiaPipeline(OptimizablePipeline):
         score_calculator = ScoreCalculator(
             prediction_path=prediction_path,
             label_path=label_path,
-            overlap=0.2,
+            overlap=0.4,
             fs=200,
             label_suffix=label_folder_name,
         )
-        scores = score_calculator.calculate_scores()
 
         if os.getenv("WORK") is None:
             save_path = Path("/Users/simonmeske/Desktop/Masterarbeit")
         else:
             save_path = Path(os.getenv("WORK"))
 
-        save_path = save_path / "Scores" / self.prediction_folder_name
-        if not save_path.exists():
-            save_path.mkdir(parents=True)
+        scores = score_calculator.calculate_scores()
+        # Save the scores as a csv file
+        score_path = save_path / "Scores"
+        if not score_path.exists():
+            score_path.mkdir(parents=True)
+        scores.to_csv(score_path / f"scores_{self.prediction_folder_name}.csv")
 
-        # save the scores in a pickle file
-        scores_path = save_path / f"scores_{self.prediction_folder_name}.pkl"
-        with open(scores_path, "wb") as f:
-            pickle.dump(scores, f)
+        # Tar the predictions
+        self.tar_predictions(prediction_path)
+
+        # Delete the prediction Directory
+        shutil.rmtree(prediction_path)
 
         print(f"Scores: {scores}")
         return scores
 
-        # for subject in test_path.iterdir():
-        #     if not subject.is_dir():
-        #         continue
-        #     if subject.name not in self.testing_subjects:
-        #         continue
-        #     print(f"subject {subject}")
-        #     for phase in subject.iterdir():
-        #         if not phase.is_dir():
-        #             continue
-        #         if phase.name == "logs" or phase.name == "raw":
-        #             continue
-        #         print(f"phase {phase}")
-        #         prediction_path = phase
-        #         prediction_path = Path(
-        #             str(prediction_path).replace(test_data_folder_name, f"Predictions/{self.prediction_folder_name}")
-        #         )
-        #         label_path = phase / label_folder_name
-        #         prediction_files = sorted(path.name for path in prediction_path.iterdir() if path.is_file())
-        #         f1RPeakScore = RPeakF1Score(max_deviation_ms=100)
-        #         for prediction_file in prediction_files:
-        #             prediction = np.load(prediction_path / prediction_file)
-        #             label = np.load(label_path / prediction_file)
-        #             f1RPeakScore.compute_predictions(prediction, label)
-        #             true_positives += f1RPeakScore.tp_
-        #             total_gt_peaks += f1RPeakScore.total_peaks_
-        #             total_pred_peaks += f1RPeakScore.pred_peaks_
-        #
-        # if total_pred_peaks == 0:
-        #     print("No Peaks detected")
-        #     return {
-        #         "abs_hr_error": 0,
-        #         "mean_instantaneous_error": 0,
-        #         "f1_score": 0,
-        #         "mean_relative_error_hr": 0,
-        #         "mean_absolute_error": 0,
-        #     }
-        #
-        # precision = true_positives / total_pred_peaks
-        # recall = true_positives / total_gt_peaks
-        # f1_score = 2 * (precision * recall) / (precision + recall)
-        # print(f"f1 Score {f1_score}")
+    def tar_predictions(self, prediction_path):
+        output_filename = str(prediction_path) + ".tar"
+        with tarfile.open(output_filename, "w") as tar:
+            tar.add(prediction_path, arcname=os.path.basename(prediction_path))

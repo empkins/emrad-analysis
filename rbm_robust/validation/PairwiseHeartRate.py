@@ -41,7 +41,7 @@ class PairwiseHeartRate(Algorithm):
 
         minimal_distance_between_peaks = int(1 / (self.max_heart_rate / 60) * self.sampling_rate)
 
-        peaks, _ = find_peaks(input_data, distance=minimal_distance_between_peaks, prominence=0.15)
+        peaks, _ = find_peaks(input_data, distance=minimal_distance_between_peaks, prominence=0.3)
 
         if len(peaks) == 0:
             print("Length of pred peaks (in pairwise heart rate function) is zero")

@@ -159,10 +159,10 @@ def ml_radarcadia(
 ):
     print("Starting")
     # path = "/Users/simonmeske/Desktop/TestOrdner/data_per_subject"
-    path = "/Users/simonmeske/Desktop/Masterarbeit/Radarcadia/Processed_Files"
-    testing_path = "/Users/simonmeske/Desktop/Masterarbeit/RadarcadiaTestData"
-    # path = os.getenv("TMPDIR") + "/Data/DataRadarcadia"
-    # testing_path = os.getenv("HPCVAULT") + "/TestDataRadarcadia"
+    # path = "/Users/simonmeske/Desktop/Masterarbeit/Radarcadia/Processed_Files"
+    # testing_path = "/Users/simonmeske/Desktop/Masterarbeit/RadarcadiaTestData"
+    path = os.getenv("TMPDIR") + "/Data/DataRadarcadia"
+    testing_path = os.getenv("HPCVAULT") + "/TestDataRadarcadia"
     # Get Training and Testing Subjects
     data_path = Path(path)
     testing_path = Path(testing_path)
@@ -540,11 +540,11 @@ if __name__ == "__main__":
     # main(model_path, remaining_epochs)
     # dim_fix()
     # is_it_right()
-    # main()
+    main()
     # fix_and_normalize_diff()
     # preprocessing()
     # move_training_data()
-    preprocessing_radarcadia()
+    # preprocessing_radarcadia()
     # get_data_set_radarcadia()
     # move_training_data()
     # wavelet_training(None, 0)

@@ -13,7 +13,7 @@ class ValidationBase:
     fs: int
 
     def __init__(
-        self, phase: str, subject: str, prediction_path: Path, label_path: Path, overlap: int = 0.2, fs: int = 200
+        self, phase: str, subject: str, prediction_path: Path, label_path: Path, overlap: int = 0.4, fs: int = 200
     ):
         self.phase = phase
         self.subject = subject
@@ -25,18 +25,39 @@ class ValidationBase:
     def _get_collected_array(self, path: Path):
         peak_files = self._get_ordered_file_paths(path)
         beats = np.array([])
-        for peak_file in peak_files:
-            beat = np.load(peak_file)
-            middle = self._get_middle_of_interval(beat)
+        for i in range(len(peak_files)):
+            beat = np.load(peak_files[i])
+            if i == 0:
+                # Start to end of middle
+                middle = self._get_fist_interval(beat)
+            elif i == len(peak_files) - 1:
+                # Start of the middle to end
+                middle = self._get_last_interval(beat)
+            else:
+                middle = self._get_middle_of_interval(beat)
             beats = np.append(beats, middle)
         return beats
 
-    def _get_middle_of_interval(self, array: np.array):
+    def _get_fist_interval(self, array: np.array):
+        if array.ndim != 1:
+            raise ValueError("Array must be 1-dimensional")
+        percentile = (1 - self.overlap) / 2
+        end = int(len(array) / 2 + percentile * len(array))
+        return array[:end]
+
+    def _get_last_interval(self, array: np.array):
         if array.ndim != 1:
             raise ValueError("Array must be 1-dimensional")
         percentile = (1 - self.overlap) / 2
         start = int(len(array) / 2 - percentile * len(array))
-        end = int(len(array) / 2 + percentile * len(array))
+        return array[start:]
+
+    def _get_middle_of_interval(self, array: np.array):
+        if array.ndim != 1:
+            raise ValueError("Array must be 1-dimensional")
+        percentile = self.overlap / 2 * len(array)
+        start = int(percentile)
+        end = int(len(array) - percentile)
         return array[start:end]
 
     def _get_ordered_file_paths(self, path: Path):
