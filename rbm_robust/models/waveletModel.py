@@ -42,6 +42,7 @@ class UNetWaveletTF(Algorithm):
         image_based=False,
         loss: str = "bce",
         dual_channel: bool = False,
+        model_path: str = None,
     ):
         self.learning_rate = learning_rate
         self.training_ds = training_ds
@@ -54,6 +55,7 @@ class UNetWaveletTF(Algorithm):
         self.image_based = image_based
         self.loss = loss
         self.dual_channel = dual_channel
+        self.model_path = model_path
 
     def self_optimize(
         self,
@@ -146,6 +148,9 @@ class UNetWaveletTF(Algorithm):
         input_folder_name: str = "inputs",
         prediction_folder_name: str = "predictions_unnnamed",
     ):
+        if self.model_path is not None:
+            self._model = keras.models.load_model(self.model_path)
+
         print("Prediction started")
         if not isinstance(data_path, Path):
             data_path = Path(data_path)

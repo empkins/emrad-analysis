@@ -162,15 +162,18 @@ class Segmentation(Algorithm):
                 time_diff = data_segment.index[-1] - data_segment.index[0]
             # Zero padding
             if len(data_segment) < self.window_size_in_seconds * sampling_rate:
-                rows_needed = int((pd.Timedelta(seconds=self.window_size_in_seconds) - time_diff) / time_step)
-                # rows_needed = int((pd.Timedelta(seconds=4) - time_diff) / time_step)
+                # # rows_needed = int((pd.Timedelta(seconds=self.window_size_in_seconds) - time_diff) / time_step)
+                # time_diff = data_segment.index.to_series().diff()
+                # threshold = pd.Timedelta(milliseconds=1)
+                # jump_count = sum(time_diff > threshold)
+                # rows_needed = (self.window_size_in_seconds * sampling_rate) - len(data_segment)
+                # # rows_needed = int((pd.Timedelta(seconds=4) - time_diff) / time_step)
                 if isinstance(data_segment, pd.Series):
-                    zeros = pd.Series(np.zeros(rows_needed))
+                    # zeros = pd.Series(np.zeros(rows_needed))
+                    zeros = self.zero_pad_series(data_segment)
                     data_segment = data_segment.append(zeros, ignore_index=True)
                 else:
-                    zero_padded = pd.DataFrame(
-                        numpy.zeros((rows_needed, len(data_segment.columns))), columns=data_segment.columns
-                    )
+                    zero_padded = self.zero_pad_df(data_segment)
                     data_segment = data_segment.append(zero_padded, ignore_index=True)
                 data_segment.index = pd.date_range(
                     start=data_segment.index[0], periods=len(data_segment), freq=time_step
@@ -181,6 +184,24 @@ class Segmentation(Algorithm):
             segments.append(data_segment)
         self.segmented_signal_ = segments
         return self
+
+    def zero_pad_series(self, data_segment):
+        # Get Start Time
+        start_time = data_segment.index[0]
+        end_time = start_time + pd.Timedelta(seconds=self.window_size_in_seconds)
+        index = pd.date_range(start=start_time, end=end_time, freq="1ms")
+        df = pd.Series(0, index=index)
+        df.update(data_segment)
+        return df
+
+    def zero_pad_df(self, data_segment):
+        # Get Start Time
+        start_time = data_segment.index[0]
+        end_time = start_time + pd.Timedelta(seconds=self.window_size_in_seconds)
+        index = pd.date_range(start=start_time, end=end_time, freq="1ms")
+        df = pd.DataFrame(0, index=index, columns=data_segment.columns)
+        df.update(data_segment)
+        return df
 
 
 class Normalizer(Algorithm):

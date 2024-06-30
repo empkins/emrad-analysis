@@ -1,4 +1,6 @@
 import os
+import shutil
+import tarfile
 from datetime import datetime
 from pathlib import Path
 from typing import Union
@@ -10,11 +12,10 @@ from typing_extensions import Self
 import tensorflow as tf
 
 import numpy as np
-from tpcp import Algorithm, make_action_safe, cf, OptimizablePipeline, OptimizableParameter
+from tpcp import Algorithm, make_action_safe, cf, OptimizablePipeline
 from rbm_robust.data_loading.datasets import D02Dataset, RadarCardiaStudyDataset
 from rbm_robust.data_loading.tf_datasets import DatasetFactory
 from rbm_robust.label_generation.label_generation_algorithm import ComputeEcgBlips, ComputeEcgPeakGaussians
-from rbm_robust.models.cnn import CNN
 from rbm_robust.models.waveletModel import UNetWaveletTF
 from rbm_robust.preprocessing.preprocessing import (
     ButterBandpassFilter,
@@ -27,6 +28,7 @@ from rbm_robust.preprocessing.preprocessing import (
 from emrad_toolbox.radar_preprocessing.radar import RadarPreprocessor
 
 from rbm_robust.validation.RPeakF1Score import RPeakF1Score
+from rbm_robust.validation.instantenous_heart_rate import ScoreCalculator
 
 
 def _get_dataset(
@@ -367,6 +369,8 @@ class InputAndLabelGenerator(Algorithm):
             sampling_rate = subject.SAMPLING_RATE_DOWNSAMPLED
             for phase in phases.keys():
                 print(f"Starting phase {phase}")
+                if phase != "ei_1":
+                    continue
                 timezone = pytz.timezone("Europe/Berlin")
                 phase_start = timezone.localize(phases[phase]["start"])
                 phase_end = timezone.localize(phases[phase]["end"])
@@ -588,6 +592,116 @@ class InputAndLabelGenerator(Algorithm):
             label_dict[subject.subjects[0]] = subject_dict
         self.test_label_dict_ = label_dict
         return self
+
+
+class PreTrainedPipeline(OptimizablePipeline):
+    wavelet_model: UNetWaveletTF
+    result_ = np.ndarray
+    testing_subjects: list
+    testing_path: Path
+    ecg_labels: bool
+    log_transform: bool
+    wavelet_type: str
+    batch_size: int
+    image_based: bool
+    prediction_folder_name: str
+    dual_channel: bool
+
+    def __init__(
+        self,
+        wavelet_type: str = "morl",
+        ecg_labels: bool = False,
+        log_transform: bool = False,
+        batch_size: int = 8,
+        image_based: bool = False,
+        dual_channel: bool = False,
+        model_path: str = None,
+        testing_subjects: list = None,
+        testing_path: Path = Path("/home/woody/iwso/iwso116h/TestData"),
+    ):
+        self.ecg_labels = ecg_labels
+        self.log_transform = log_transform
+        self.wavelet_type = wavelet_type
+        self.batch_size = batch_size
+        self.image_based = image_based
+        self.dual_channel = dual_channel
+        self.model_path = model_path
+        self.testing_subjects = testing_subjects
+        self.testing_path = testing_path
+        model_name = Path(model_path).name
+
+        time = datetime.now().strftime("%Y%m%d_%H%M%S")
+        self.prediction_folder_name = f"predictions_pretrained_{model_name}_{time}"
+
+        # Initialize the model
+        self.wavelet_model = UNetWaveletTF(
+            model_name=model_name,
+            batch_size=batch_size,
+            image_based=image_based,
+            dual_channel=dual_channel,
+            model_path=model_path,
+        )
+
+    def run(self, path_to_save_predictions: str, image_based: bool = False, identity: bool = False):
+        input_folder_name = f"inputs_wavelet_array_{self.wavelet_type}"
+        if self.log_transform and not self.dual_channel:
+            input_folder_name += "_log"
+        if self.image_based:
+            input_folder_name = input_folder_name.replace("array", "image")
+        if identity:
+            input_folder_name = input_folder_name.replace("wavelet", "identity")
+
+        self.wavelet_model.predict(
+            testing_subjects=self.testing_subjects,
+            data_path=self.testing_path,
+            input_folder_name=input_folder_name,
+            prediction_folder_name=self.prediction_folder_name,
+        )
+        return self
+
+    def score(self, datapoint: DatasetT) -> Union[float, dict[str, float]]:
+        test_data_folder_name = Path(self.testing_path).name
+        label_folder_name = "labels_gaussian" if not self.ecg_labels else "labels_ecg"
+        test_path = Path(self.testing_path)
+
+        label_path = test_path
+        prediction_path = Path(
+            str(label_path).replace(test_data_folder_name, f"Predictions/{self.prediction_folder_name}")
+        )
+
+        score_calculator = ScoreCalculator(
+            prediction_path=prediction_path,
+            label_path=label_path,
+            overlap=int(0.4),
+            fs=200,
+            label_suffix=label_folder_name,
+        )
+
+        if os.getenv("WORK") is None:
+            save_path = Path("/Users/simonmeske/Desktop/Masterarbeit")
+        else:
+            save_path = Path(os.getenv("WORK"))
+
+        scores = score_calculator.calculate_scores()
+        # Save the scores as a csv file
+        score_path = save_path / "Scores"
+        if not score_path.exists():
+            score_path.mkdir(parents=True)
+        scores.to_csv(score_path / f"scores_{self.prediction_folder_name}.csv")
+
+        # Tar the predictions
+        self.tar_predictions(prediction_path)
+
+        # Delete the prediction Directory
+        shutil.rmtree(prediction_path)
+
+        print(f"Scores: {scores}")
+        return scores
+
+    def tar_predictions(self, prediction_path):
+        output_filename = str(prediction_path) + ".tar"
+        with tarfile.open(output_filename, "w") as tar:
+            tar.add(prediction_path, arcname=os.path.basename(prediction_path))
 
 
 class D02PipelineImproved(OptimizablePipeline):

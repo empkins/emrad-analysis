@@ -10,7 +10,7 @@ from sklearn.model_selection import train_test_split
 
 from rbm_robust.data_loading.datasets import D02Dataset
 from rbm_robust.models.cnn import CNN
-from rbm_robust.pipelines.cnnLstmPipeline import D02PipelineImproved
+from rbm_robust.pipelines.cnnLstmPipeline import D02PipelineImproved, PreTrainedPipeline
 from rbm_robust.pipelines.preprocessing_pipeline import run_d02, run_radarcadia
 from rbm_robust.pipelines.radarcadia_pipeline import RadarcadiaPipeline
 from rbm_robust.pipelines.waveletPipeline import WaveletPipeline
@@ -18,11 +18,16 @@ from rbm_robust.validation.correlationCoefficient import CorrelationAllSubjects
 from rbm_robust.validation.identityScoring import identityScoring
 import os
 
-from rbm_robust.validation.scoring_pipeline import training_and_testing_pipeline, d02_training_and_testing_pipeline
+from rbm_robust.validation.scoring_pipeline import (
+    training_and_testing_pipeline,
+    d02_training_and_testing_pipeline,
+    pretrained_training_and_testing_pipeline,
+)
 from rbm_robust.validation.wavelet_scoring import waveletPipelineScoring
 
 
 @click.command()
+@click.option("--model_path", default=None, help="Path to the model already trained")
 @click.option("--epochs", default=50, help="Number of epochs to train the model")
 @click.option("--learning_rate", default=0.001, help="Learning rate for the model")
 @click.option("--image_based", default=False, help="Whether the model is image based")
@@ -36,6 +41,7 @@ from rbm_robust.validation.wavelet_scoring import waveletPipelineScoring
 @click.option("--loss", default="bce", help="The used loss function. Valid values are bce and mse")
 @click.option("--diff", default=False, help="Whether to use the first derivative of the radar signal")
 def main(
+    model_path,
     epochs,
     learning_rate,
     image_based,
@@ -49,7 +55,20 @@ def main(
     loss,
     diff,
 ):
-    if datasource == "radarcadia":
+    model_path = (
+        "/Users/simonmeske/Desktop/Masterarbeit/TrainedModels/radarcadia_morl_all_30_0_0001_bce20240622_132629.keras"
+    )
+    if model_path is not None and os.path.exists(model_path):
+        ml_already_trained(
+            model_path=model_path,
+            image_based=image_based,
+            datasource=datasource,
+            label_type=label_type,
+            log=log,
+            wavelet=wavelet,
+            dual_channel=dual_channel,
+        )
+    elif datasource == "radarcadia":
         ml_radarcadia(
             epochs=epochs,
             learning_rate=learning_rate,
@@ -78,6 +97,31 @@ def main(
         )
     else:
         raise ValueError("Datasource not found")
+
+
+def ml_already_trained(model_path, image_based, datasource, label_type, log, wavelet, dual_channel=False):
+    if datasource == "radarcadia":
+        testing_path = os.getenv("HPCVAULT") + "/TestDataRadarcadia"
+        # testing_path = "/Users/simonmeske/Desktop/Masterarbeit/RadarcadiaTestData"
+    else:
+        testing_path = os.getenv("WORK") + "/TestDataD02"
+        # testing_path = "/Users/simonmeske/Desktop/Masterarbeit/TestDataD02"
+    testing_path = Path(testing_path)
+    testing_subjects = [path.name for path in Path(testing_path).iterdir() if path.is_dir()]
+
+    # Pipeline
+    pipeline = PreTrainedPipeline(
+        wavelet_type=wavelet,
+        image_based=image_based,
+        model_path=model_path,
+        log_transform=log,
+        ecg_labels=label_type == "ecg",
+        dual_channel=dual_channel,
+        testing_subjects=testing_subjects,
+        testing_path=testing_path,
+    )
+    # Predicting and scoring
+    pretrained_training_and_testing_pipeline(pipeline=pipeline, testing_path=testing_path, image_based=image_based)
 
 
 def ml_d02(
@@ -123,27 +167,6 @@ def ml_d02(
         diff=diff,
     )
     d02_training_and_testing_pipeline(pipeline=pipeline, testing_path=path, image_based=image_based)
-
-    # path = os.getenv("TMPDIR") + "/Data"
-    # testing_path = os.getenv("WORK") + "/TestData"
-    # data_path = Path(path)
-    # testing_path = Path(testing_path)
-    # possible_subjects = [path.name for path in data_path.iterdir() if path.is_dir()]
-    # testing_subjects = [path.name for path in Path(testing_path).iterdir() if path.is_dir()]
-    # training_subjects, validation_subjects = train_test_split(possible_subjects, test_size=0.2, random_state=42)
-    # pipeline = D02Pipeline(
-    #     learning_rate=learning_rate,
-    #     data_path=path,
-    #     testing_path=testing_path,
-    #     epochs=epochs,
-    #     training_subjects=training_subjects,
-    #     validation_subjects=validation_subjects,
-    #     testing_subjects=testing_subjects,
-    #     breathing_type="all",
-    #     image_based=image_based,
-    # )
-    # training_and_testing_pipeline(pipeline=pipeline, testing_path=path, image_based=image_based)
-
 
 def ml_radarcadia(
     learning_rate: float = 0.001,
@@ -215,7 +238,7 @@ def alt():
 def preprocessing():
     base_path = Path("/home/vault/empkins/tpD/D03/Data/MA_Simon_Meske/Data_D02/data_per_subject")
     target_path = os.getenv("WORK") + "/DataD02"
-    # base_path = Path("/Users/simonmeske/Desktop/TestOrdner/data_per_subject")
+    # base_path = Path("/Users/simonmeske/Desktop/Masterarbeit/ArrayLengthTest")
     # target_path = "/Users/simonmeske/Desktop/TestOrdner/data_per_subject"
     run_d02(base_path, target_path, process_inputs=True, process_labels=True, process_images=False)
     # check_for_empty_arrays()
@@ -409,12 +432,6 @@ def rename_folders():
                 return 0
 
 
-def identity_check():
-    # path_to_data = "/Users/simonmeske/Desktop/TestOrdner/data_per_subject"
-    path_to_data = os.getenv("TMPDIR") + "/Data"
-    identityScoring(D02Dataset(path_to_data), path_to_data)
-
-
 def check_testing_and_training_paths():
     training_path = "/home/woody/iwso/iwso116h/DataRef"
     testing_path = "/home/woody/iwso/iwso116h/TestDataRef"
@@ -430,97 +447,6 @@ def check_testing_and_training_paths():
         str(prediction_path).replace("TestDataRef", "Predictions/predictions_mse_0001_25_epochs_ref")
     )
     print(prediction_path)
-
-
-def sanity_check():
-    base_path = os.getenv("TMPDIR") + "/Data"
-    subject_list = [path.name for path in base_path.iterdir() if path.is_dir()]
-    base_path = Path(base_path)
-    input_paths = []
-    label_paths = []
-    for subject in subject_list:
-        subject_path = base_path / subject
-        for phase in subject_path.iterdir():
-            if not phase.is_dir():
-                continue
-            input_path = phase / "inputs"
-            label_path = phase / "labels_gaussian"
-            if not input_path.exists() or not label_path.exists():
-                continue
-            input_files = sorted(input_path.glob("*.npy"))
-            label_files = sorted(label_path.glob("*.npy"))
-            label_filenames = set([label_file.name for label_file in label_files])
-            input_filenames = set([input_file.name for input_file in input_files])
-            filename_intersection = label_filenames.intersection(input_filenames)
-            input_files = [str(input_file) for input_file in input_files if input_file.name in filename_intersection]
-            label_files = [str(label_file) for label_file in label_files if label_file.name in filename_intersection]
-            input_paths += input_files
-            label_paths += label_files
-    # Sanity Check
-    all_paths = list(zip(input_paths, label_paths))
-    for input_path, label_path in all_paths:
-        modified_input_path = input_path.replace("inputs", "labels_gaussian")
-        if modified_input_path != label_path:
-            raise ValueError(f"Input path: {input_path} does not match label path: {label_path}")
-        if not Path(input_path).exists():
-            raise FileNotFoundError(f"Input path: {input_path} does not exist")
-        if not Path(label_path).exists():
-            raise FileNotFoundError(f"Label path: {label_path} does not exist")
-    print("Sanity Check successful")
-
-
-def dim_fix():
-    base_paths = [os.getenv("WORK") + "/DataD02", os.getenv("WORK") + "/TestDataD02"]
-    for base in base_paths:
-        base_path = base
-        base_path = Path(base_path)
-        for subject in base_path.iterdir():
-            for phase in subject.iterdir():
-                if "labels" in phase.name:
-                    continue
-                if not phase.is_dir():
-                    continue
-                # print(f"Subject is {subject}")
-                for input_folder in phase.iterdir():
-                    for input_file in input_folder.iterdir():
-                        # print(f"file is {input_file}")
-                        if not input_file.is_file():
-                            continue
-                        if "png" in input_file.name:
-                            continue
-                        try:
-                            input_data = np.load(input_file)
-                            # if input_data.ndim == 2:
-                            # Diff Data is 2D and needs to be 3D
-                            # input_data = input_data.reshape(input_data.shape[0], input_data.shape[1], 1)
-                            # np.save(input_file, input_data)
-                            if input_data.ndim == 3 and input_data.shape != (256, 1000, 1):
-                                print(f"Shape is {input_data.shape} for file {input_file}")
-                                zero_pad = np.zeros((256, 1000, 1))
-                                zero_pad[: input_data.shape[0], : input_data.shape[1], :] = input_data
-                                input_data = zero_pad
-                                np.save(input_file, input_data)
-                        except Exception as e:
-                            print(f"Error in file {input_file} with error {e}")
-                            continue
-
-
-def is_it_right():
-    prediction_path_radarcadia = Path(
-        "/Users/simonmeske/Desktop/Masterarbeit/Predictions2/predictions_radarcadia_morl_all_30_0_0001_bce_20240622_130343"
-    )
-    label_path_radarcadia = Path("/Users/simonmeske/Desktop/Masterarbeit/")
-    # location = "aorta_med_normal"
-    correlation_calculator = CorrelationAllSubjects(
-        prediction_path=prediction_path_radarcadia, label_path=label_path_radarcadia
-    )
-    # subject_corr_dict = correlation_calculator.calculate_correlation_all_subjects_for_phase(location)
-    location_dict = {}
-    locations = ["aorta_med_normal", "aorta_dist_hold", "aorta_dist_normal", "aorta_prox_hold"]
-    for location in locations:
-        subject_corr_dict = correlation_calculator.calculate_correlation_all_subjects_for_phase(location)
-        location_dict[location] = subject_corr_dict["VP_01"]
-    print(location_dict)
 
 
 if __name__ == "__main__":

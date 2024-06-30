@@ -18,6 +18,7 @@ def run_d02(
     subjects_dataset = D02Dataset(pathlib.Path(data_path))
     subjects = list(subjects_dataset.subjects)
     # subjects = [s for s in subjects if int(s) % 2 == 1]
+    process_d02_subset(subjects_dataset, target_path, process_labels, process_inputs, process_images)
     subsets = [subjects_dataset.get_subset(participant=subject) for subject in subjects]
     num_processes = 4
     print(num_processes)
