@@ -1,6 +1,4 @@
-import gc
 import pathlib
-from itertools import zip_longest
 from pathlib import Path
 import shutil
 
@@ -11,17 +9,17 @@ from sklearn.model_selection import train_test_split
 from rbm_robust.data_loading.datasets import D02Dataset
 from rbm_robust.models.cnn import CNN
 from rbm_robust.pipelines.cnnLstmPipeline import D02PipelineImproved, PreTrainedPipeline
-from rbm_robust.pipelines.preprocessing_pipeline import run_d02, run_radarcadia
+from rbm_robust.pipelines.preprocessing_pipeline import run_d02, run_radarcadia, run_d02_Mag
 from rbm_robust.pipelines.radarcadia_pipeline import RadarcadiaPipeline
+from rbm_robust.pipelines.time_power_pipeline import MagPipeline
 from rbm_robust.pipelines.waveletPipeline import WaveletPipeline
-from rbm_robust.validation.correlationCoefficient import CorrelationAllSubjects
-from rbm_robust.validation.identityScoring import identityScoring
 import os
 
 from rbm_robust.validation.scoring_pipeline import (
     training_and_testing_pipeline,
     d02_training_and_testing_pipeline,
     pretrained_training_and_testing_pipeline,
+    mag_training_and_testing_pipeline,
 )
 from rbm_robust.validation.wavelet_scoring import waveletPipelineScoring
 
@@ -99,6 +97,51 @@ def main(
         raise ValueError("Datasource not found")
 
 
+def ml_time_power(
+    learning_rate: float = 0.001,
+    epochs: int = 50,
+    image_based: bool = False,
+    breathing_type: str = "all",
+    label_type: str = "guassian",
+    log: bool = False,
+    dual_channel: bool = False,
+    wavelet: str = "morl",
+    identity: bool = False,
+    loss: str = "bce",
+    diff: bool = False,
+):
+    # path = "/Users/simonmeske/Desktop/Masterarbeit/DataD02"
+    # testing_path = "/Users/simonmeske/Desktop/Masterarbeit/TestDataD02"
+    path = os.getenv("TMPDIR") + "/DataD02/DataD02"
+    testing_path = os.getenv("WORK") + "/TestDataD02"
+    # Get Training and Testing Subjects
+    data_path = Path(path)
+    testing_path = Path(testing_path)
+    possible_subjects = [path.name for path in data_path.iterdir() if path.is_dir()]
+    testing_subjects = [path.name for path in Path(testing_path).iterdir() if path.is_dir()]
+
+    use_ecg_labels = label_type == "ecg"
+
+    # Split Data
+    training_subjects, validation_subjects = train_test_split(possible_subjects, test_size=0.2, random_state=42)
+    pipeline = MagPipeline(
+        learning_rate=learning_rate,
+        data_path=path,
+        epochs=epochs,
+        training_subjects=training_subjects,
+        validation_subjects=validation_subjects,
+        testing_subjects=testing_subjects,
+        image_based=image_based,
+        ecg_labels=use_ecg_labels,
+        log_transform=log,
+        wavelet_type=wavelet,
+        loss=loss,
+        testing_path=testing_path,
+        diff=diff,
+    )
+    mag_training_and_testing_pipeline(pipeline=pipeline, testing_path=path, image_based=image_based)
+
+
 def ml_already_trained(model_path, image_based, datasource, label_type, log, wavelet, dual_channel=False):
     if datasource == "radarcadia":
         testing_path = os.getenv("HPCVAULT") + "/TestDataRadarcadia"
@@ -168,6 +211,7 @@ def ml_d02(
     )
     d02_training_and_testing_pipeline(pipeline=pipeline, testing_path=path, image_based=image_based)
 
+
 def ml_radarcadia(
     learning_rate: float = 0.001,
     epochs: int = 50,
@@ -214,6 +258,14 @@ def ml_radarcadia(
         testing_path=testing_path,
     )
     training_and_testing_pipeline(pipeline=pipeline, testing_path=testing_path, image_based=image_based)
+
+
+def preprocessing_magnitude():
+    # base_path = Path("/home/vault/empkins/tpD/D03/Data/MA_Simon_Meske/Data_D02/data_per_subject")
+    # target_path = os.getenv("WORK") + "/DataD02"
+    base_path = Path("/Users/simonmeske/Desktop/Masterarbeit/ArrayLengthTest")
+    target_path = "/Users/simonmeske/Desktop/TestOrdner/data_per_subject"
+    run_d02_Mag(base_path, target_path, process_inputs=True, process_labels=True, process_images=False)
 
 
 def wavelet_training(model_path: str = None, remaining_epochs: int = 0):
@@ -466,9 +518,10 @@ if __name__ == "__main__":
     # main(model_path, remaining_epochs)
     # dim_fix()
     # is_it_right()
-    main()
+    # main()
+    # preprocessing_magnitude()
     # fix_and_normalize_diff()
-    # preprocessing()
+    preprocessing()
     # move_training_data()
     # preprocessing_radarcadia()
     # get_data_set_radarcadia()

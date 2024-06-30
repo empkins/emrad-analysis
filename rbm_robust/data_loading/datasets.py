@@ -292,6 +292,30 @@ class D02Dataset(Dataset):
         "212",
     ]
 
+    TEST_SUBJECTS = [
+        "146",
+        "257",
+        "254",
+        "228",
+        "201",
+        "385",
+        "338",
+        "212",
+        "077",
+        "004",
+        "120",
+        "147",
+        "320",
+        "417",
+        "286",
+        "028",
+        "292",
+        "155",
+        "096",
+        "140",
+        "447",
+    ]
+
     RECALCULATE = ("013", "028", "040", "147", "201", "263", "327", "439", "559")
 
     INCLUDE_SUBJECTS = ("338", "251", "310", "094")
@@ -330,6 +354,7 @@ class D02Dataset(Dataset):
         # participant_ids = [pid for pid in participant_ids if pid in self.ALL_SUBJECTS]
         # participant_ids = [pid for pid in participant_ids if pid not in self.ALR_PROC]
         # participant_ids = [pid for pid in participant_ids if pid in self.REDUCED_SUBEJCTS]
+        participant_ids = [pid for pid in participant_ids if pid in self.TEST_SUBJECTS]
 
         # PROC = [item.name for item in Path("/home/woody/iwso/iwso116h/DataD02").iterdir() if item.is_dir()]
         # TO_PROC = ["308", "120", "156", "320"]

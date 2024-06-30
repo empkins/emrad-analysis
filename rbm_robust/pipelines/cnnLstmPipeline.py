@@ -13,6 +13,9 @@ import tensorflow as tf
 
 import numpy as np
 from tpcp import Algorithm, make_action_safe, cf, OptimizablePipeline
+
+from emrad_analysis.feature_extraction.feature_generation_algorithms import ComputeEnvelopeSignal
+from emrad_analysis.preprocessing.pre_processing_algorithms import ButterHighpassFilter, ComputeDecimateSignal
 from rbm_robust.data_loading.datasets import D02Dataset, RadarCardiaStudyDataset
 from rbm_robust.data_loading.tf_datasets import DatasetFactory
 from rbm_robust.label_generation.label_generation_algorithm import ComputeEcgBlips, ComputeEcgPeakGaussians
@@ -67,7 +70,7 @@ def _get_dataset(
 
 
 class PreProcessor(Algorithm):
-    _action_methods = "preprocess"
+    _action_methods = ("preprocess", "preprocess_mag")
 
     bandpass_filter: ButterBandpassFilter
     downsampling: Downsampling
@@ -84,11 +87,71 @@ class PreProcessor(Algorithm):
         downsampling: Downsampling = cf(Downsampling()),
         emd: EmpiricalModeDecomposer = cf(EmpiricalModeDecomposer()),
         wavelet_transform: WaveletTransformer = cf(WaveletTransformer()),
+        highpass_filter: ButterHighpassFilter = cf(ButterHighpassFilter()),
+        envelope_algo: ComputeEnvelopeSignal = cf(ComputeEnvelopeSignal()),
+        decimation_algo: ComputeDecimateSignal = cf(ComputeDecimateSignal(downsampling_factor=10)),
     ):
+        self.highpass_filter = highpass_filter
         self.bandpass_filter = bandpass_filter
         self.downsampling = downsampling
         self.emd = emd
         self.wavelet_transform = wavelet_transform
+        self.envelope_algo = envelope_algo
+        self.decimation_algo = decimation_algo
+
+    @make_action_safe
+    def preprocess_mag(
+        self,
+        raw_radar: np.array,
+        sampling_rate: float,
+        subject_id: str,
+        phase: str,
+        segment: int,
+        base_path: str = "/home/woody/iwso/iwso116h/Data",
+        image_based: bool = False,
+        diff: bool = False,
+    ):
+        # Initializing
+        bandpass_filter_clone = self.bandpass_filter.clone()
+        wavelet_transform_clone = self.wavelet_transform.clone()
+        downsampling_clone = self.downsampling.clone()
+        highpass_filter_clone = self.highpass_filter.clone()
+        envelope_algo_clone = self.envelope_algo.clone()
+        decimation_algo_clone = self.decimation_algo.clone()
+
+        # I, Q, angle, power, envelope
+
+        # Highpass Filter
+        highpassed_radi = highpass_filter_clone.filter(raw_radar["I"], sample_frequency_hz=1000).filtered_signal_
+        highpassed_radq = highpass_filter_clone.filter(raw_radar["Q"], sample_frequency_hz=1000).filtered_signal_
+
+        radar_I = downsampling_clone.downsample(highpassed_radi, 200, sampling_rate).downsampled_signal_
+        radar_Q = downsampling_clone.downsample(highpassed_radq, 200, sampling_rate).downsampled_signal_
+
+        zeroes_angle = np.zeros_like(radar_I)
+        angle = np.diff(np.unwrap(np.arctan2(radar_I, radar_Q)), axis=0)
+        zeroes_angle[: len(angle)] = angle[:]
+        angle = zeroes_angle
+
+        # Compute the radar power from I and Q
+        rad_power = np.sqrt(np.square(radar_I) + np.square(radar_Q))
+
+        # Extract heart sound band and compute the hilbert envelope
+        heart_sound_radar = bandpass_filter_clone.filter(rad_power, 1000).filtered_signal_
+        heart_sound_radar_envelope = envelope_algo_clone.compute(heart_sound_radar).envelope_signal_
+
+        # Get collected Array
+        all_inputs = self.collect_array(radar_I, radar_Q, angle, rad_power, heart_sound_radar_envelope)
+
+        # Save the inputs
+        path = self.get_filtered_radar_path(subject_id, phase, base_path) + f"/{segment}.npy"
+        np.save(path, np.transpose(all_inputs))
+
+        self.preprocessed_signal_ = all_inputs
+        return self
+
+    def collect_array(self, I, Q, angle, power, envelope):
+        return np.array([I, Q, angle, power, envelope])
 
     @make_action_safe
     def preprocess(
@@ -259,6 +322,7 @@ class InputAndLabelGenerator(Algorithm):
         "generate_training_labels",
         "generate_training_inputs_and_labels",
         "generate_training_inputs_and_labels_radarcadia",
+        "generate_training_inputs_and_labels_mag",
     )
 
     # PreProcessing
@@ -387,6 +451,65 @@ class InputAndLabelGenerator(Algorithm):
                 length = min(len(segments_radar), len(segments_ecg))
                 for j in range(length):
                     pre_processor_clone.preprocess(
+                        segments_radar[j],
+                        subject.SAMPLING_RATE_DOWNSAMPLED,
+                        subject.subjects[0],
+                        phase,
+                        j,
+                        base_path,
+                        image_based,
+                    )
+                    label_processor_clone.label_generation(
+                        segments_ecg[j],
+                        subject.SAMPLING_RATE_DOWNSAMPLED,
+                        subject.subjects[0],
+                        phase,
+                        j,
+                        self.downsampled_hz,
+                        base_path,
+                    )
+        self.input_data_path_ = base_path
+        return self
+
+    @make_action_safe
+    def generate_training_inputs_and_labels_mag(
+        self, dataset: D02Dataset, base_path: str = "Data", image_based: bool = False
+    ):
+        # Init Clones
+        pre_processor_clone = self.pre_processor.clone()
+        label_processor_clone = self.labelProcessor.clone()
+        segmentation_clone = self.segmentation.clone()
+        for i in range(len(dataset.subjects)):
+            subject = dataset.get_subset(participant=dataset.subjects[i])
+            print(f"Subject {subject.subjects[0]}")
+            try:
+                radar_data = subject.synced_radar
+                ecg_data = subject.synced_ecg
+            except Exception as e:
+                print(f"Exclude Subject {subject} due to error {e}")
+                continue
+            phases = subject.phases
+            sampling_rate = subject.SAMPLING_RATE_DOWNSAMPLED
+            for phase in phases.keys():
+                print(f"Starting phase {phase}")
+                if phase != "ei_1":
+                    continue
+                timezone = pytz.timezone("Europe/Berlin")
+                phase_start = timezone.localize(phases[phase]["start"])
+                phase_end = timezone.localize(phases[phase]["end"])
+                phase_radar_data = radar_data[phase_start:phase_end]
+                phase_ecg_data = ecg_data[phase_start:phase_end]
+                # Segmentation
+                if len(phase_radar_data) == 0 or len(phase_ecg_data) == 0:
+                    continue
+                segments_radar = segmentation_clone.segment(phase_radar_data, sampling_rate).segmented_signal_
+                segments_ecg = segmentation_clone.segment(phase_ecg_data, sampling_rate).segmented_signal_
+                if len(segments_radar) != len(segments_ecg):
+                    continue
+                # Create Inputs
+                length = min(len(segments_radar), len(segments_ecg))
+                for j in range(length):
+                    pre_processor_clone.preprocess_mag(
                         segments_radar[j],
                         subject.SAMPLING_RATE_DOWNSAMPLED,
                         subject.subjects[0],
@@ -642,14 +765,10 @@ class PreTrainedPipeline(OptimizablePipeline):
             model_path=model_path,
         )
 
-    def run(self, path_to_save_predictions: str, image_based: bool = False, identity: bool = False):
+    def run(self, path_to_save_predictions: str):
         input_folder_name = f"inputs_wavelet_array_{self.wavelet_type}"
         if self.log_transform and not self.dual_channel:
             input_folder_name += "_log"
-        if self.image_based:
-            input_folder_name = input_folder_name.replace("array", "image")
-        if identity:
-            input_folder_name = input_folder_name.replace("wavelet", "identity")
 
         self.wavelet_model.predict(
             testing_subjects=self.testing_subjects,

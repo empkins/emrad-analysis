@@ -36,3 +36,13 @@ def pretrained_training_and_testing_pipeline(pipeline, testing_path: Path, image
     pipeline.run(testing_path, image_based=image_based)
     # Score the predictions
     pipeline.score(testing_path)
+
+
+def mag_training_and_testing_pipeline(pipeline, testing_path: Path, image_based: bool = False):
+    pipeline = pipeline.clone()
+    # Train the model on the training and validation dataset
+    pipeline.self_optimize()
+    # Calculate the predictions for the trained model
+    pipeline.run(testing_path, image_based=image_based)
+    # Score the predictions
+    pipeline.score(testing_path)
