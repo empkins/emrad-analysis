@@ -2,7 +2,7 @@
 #
 #SBATCH --job-name=radarCadiaFirstHalf
 #SBATCH --nodes=1
-#SBATCH --time=19:30:00
+#SBATCH --time=15:30:00
 #SBATCH --gres=gpu:1
 
 
@@ -35,9 +35,3 @@ poetry run python main.py --epochs 50 --learning_rate 0.001 --image_based False 
 poetry run python main.py --epochs 50 --learning_rate 0.0001 --image_based False --datasource radarcadia --breathing_type all --label_type ecg --dual_channel False --log False --loss mse --wavelet gaus1
 poetry run python main.py --epochs 50 --learning_rate 0.001 --image_based False --datasource radarcadia --breathing_type all --label_type ecg --dual_channel False --log False --loss mse --wavelet gaus1
 poetry run python main.py --epochs 50 --learning_rate 0.001 --image_based False --datasource radarcadia --breathing_type all --label_type ecg --dual_channel True --loss mse --wavelet gaus1
-
-
-poetry run python main.py --epochs 50 --learning_rate 0.0001 --image_based False --datasource radarcadia --breathing_type all --label_type gaussian --dual_channel False --log False --loss bce --wavelet mexh
-poetry run python main.py --epochs 50 --learning_rate 0.001 --image_based False --datasource radarcadia --breathing_type all --label_type gaussian --dual_channel False --log False --loss bce --wavelet mexh
-poetry run python main.py --epochs 50 --learning_rate 0.0001 --image_based False --datasource radarcadia --breathing_type all --label_type gaussian --dual_channel True --loss bce --wavelet mexh
-poetry run python main.py --epochs 50 --learning_rate 0.001 --image_based False --datasource radarcadia --breathing_type all --label_type gaussian --dual_channel True --loss bce --wavelet mexh
