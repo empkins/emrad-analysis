@@ -509,7 +509,7 @@ def scoring():
         print(model.stem)
         args = _get_args_from_model_name(model.name)
         print(args)
-        if args["label_type"] == "ecg":
+        if args["label_type"] == "ecg" or args["dual_channel"]:
             continue
         ml_already_trained(
             model_path=str(model),
