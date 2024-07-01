@@ -204,7 +204,7 @@ class RadarcadiaPipeline(OptimizablePipeline):
             label_suffix=label_folder_name,
         )
 
-        if os.getenv("WORK") is None and Path("/Users").exists():
+        if os.getenv("WORK") is None:
             save_path = Path("/Users/simonmeske/Desktop/Masterarbeit")
         else:
             save_path = Path(os.getenv("WORK"))
