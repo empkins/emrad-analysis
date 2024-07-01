@@ -506,7 +506,9 @@ def scoring():
     models = [model for model in model_files if "20240630" in model.name]
     print(models)
     for model in models:
+        print(model.stem)
         args = _get_args_from_model_name(model.name)
+        print(args)
         ml_already_trained(
             model_path=str(model),
             image_based=args["image_based"],
