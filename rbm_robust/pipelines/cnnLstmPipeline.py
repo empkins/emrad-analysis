@@ -747,10 +747,9 @@ class PreTrainedPipeline(OptimizablePipeline):
         self.model_path = model_path
         self.testing_subjects = testing_subjects
         self.testing_path = testing_path
-        model_name = Path(model_path).name
+        model_name = Path(model_path).stem
 
-        time = datetime.now().strftime("%Y%m%d_%H%M%S")
-        self.prediction_folder_name = f"predictions_pretrained_{model_name}_{time}"
+        self.prediction_folder_name = f"predictions_pretrained_{model_name}"
 
         # Initialize the model
         self.wavelet_model = UNetWaveletTF(
