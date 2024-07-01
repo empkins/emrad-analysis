@@ -541,10 +541,10 @@ def _get_args_from_model_name(model_name: str):
     elif "shan1-1" in model_name:
         args["wavelet"] = "shan1-1"
 
-    if "image" in model_name:
-        args["image_based"] = True
-    else:
+    if "array" in model_name:
         args["image_based"] = False
+    else:
+        args["image_based"] = True
 
     if "ecg" in model_name:
         args["label_type"] = "ecg"
