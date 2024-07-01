@@ -499,7 +499,7 @@ def check_testing_and_training_paths():
 
 
 def scoring():
-    base_path_for_models = Path("/emrad-analysis/Models")
+    base_path_for_models = Path("~/emrad-analysis/Models")
     print(base_path_for_models)
     model_files = base_path_for_models.glob("*.keras")
     models = [model for model in model_files if "20240630" in model.name]
