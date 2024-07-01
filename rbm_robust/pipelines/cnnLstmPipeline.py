@@ -765,6 +765,10 @@ class PreTrainedPipeline(OptimizablePipeline):
         input_folder_name = f"inputs_wavelet_array_{self.wavelet_type}"
         if self.log_transform and not self.dual_channel:
             input_folder_name += "_log"
+        if self.image_based:
+            input_folder_name = input_folder_name.replace("array", "image")
+        if self.dual_channel:
+            input_folder_name += "_dual"
 
         self.wavelet_model.predict(
             testing_subjects=self.testing_subjects,

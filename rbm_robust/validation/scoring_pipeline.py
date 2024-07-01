@@ -33,7 +33,7 @@ def d02_training_and_testing_pipeline(pipeline: D02PipelineImproved, testing_pat
 def pretrained_training_and_testing_pipeline(pipeline, testing_path: Path, image_based: bool = False):
     pipeline = pipeline.clone()
     # Calculate the predictions for the trained model
-    pipeline.run(testing_path, image_based=image_based)
+    pipeline.run(testing_path)
     # Score the predictions
     pipeline.score(testing_path)
 
