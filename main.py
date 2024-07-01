@@ -499,11 +499,11 @@ def check_testing_and_training_paths():
 
 
 def scoring():
-    base_path = os.getenv("HOME") + "/emrad-analysis/Models"
+    base_path = os.getenv("HOME") + "/altPreprocessing/emrad-analysis/Models"
     base_path_for_models = Path(base_path)
     print(base_path_for_models)
     model_files = base_path_for_models.glob("*.keras")
-    models = [model for model in model_files if "20240622_135345" in model.name or "20240622_144723" in model.name]
+    models = [model for model in model_files if "20240630" in model.name or "20240701" in model.name]
     print(models)
     for model in models:
         print(model.stem)
