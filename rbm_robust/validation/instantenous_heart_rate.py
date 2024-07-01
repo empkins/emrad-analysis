@@ -1,3 +1,4 @@
+import os
 from pathlib import Path
 
 import numpy as np
@@ -167,7 +168,10 @@ class ScoreCalculator(ValidationBase):
         prediction = self._get_collected_array(prediction_path)
         label = self._get_collected_array(label_path)
 
-        save_path = Path("/Users/simonmeske/Desktop/Masterarbeit/CollectedArrays") / subject_name / phase
+        if os.getenv("WORK") is None:
+            save_path = Path("/Users/simonmeske/Desktop/Masterarbeit/CollectedArrays") / subject_name / phase
+        else:
+            save_path = Path(os.getenv("WORK")) / "CollectedArrays" / subject_name / phase
         if not save_path.exists():
             save_path.mkdir(parents=True)
 
