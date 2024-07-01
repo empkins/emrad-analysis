@@ -1,3 +1,4 @@
+import glob
 import pathlib
 from pathlib import Path
 import shutil
@@ -500,7 +501,7 @@ def check_testing_and_training_paths():
 
 def scoring():
     base_path_for_models = Path("/emrad-analysis/Models")
-    model_files = sorted(base_path_for_models.glob("*.keras"))
+    model_files = glob.glob(os.path.join("/emrad-analysis/Models", "*.keras"))
     models = [model for model in model_files if "20240630" in model.name]
     print(models)
     for model in models:
