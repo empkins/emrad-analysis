@@ -502,6 +502,7 @@ def scoring():
     base_path_for_models = Path("/emrad-analysis/Models")
     model_files = sorted(base_path_for_models.glob("*.keras"))
     models = [model for model in model_files if "20240630" in model.name]
+    print(models)
     for model in models:
         args = _get_args_from_model_name(model.name)
         ml_already_trained(
