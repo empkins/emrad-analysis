@@ -509,6 +509,8 @@ def scoring():
         print(model.stem)
         args = _get_args_from_model_name(model.name)
         print(args)
+        if args["label_type"] == "ecg":
+            continue
         ml_already_trained(
             model_path=str(model),
             image_based=args["image_based"],
@@ -518,16 +520,16 @@ def scoring():
             wavelet=args["wavelet"],
             dual_channel=args["dual_channel"],
         )
-        if args["wavelet"] == "morl" and args["dual_channel"] == False:
-            ml_already_trained(
-                model_path=str(model),
-                image_based=args["image_based"],
-                datasource="d02",
-                label_type=args["label_type"],
-                log=args["log"],
-                wavelet=args["wavelet"],
-                dual_channel=args["dual_channel"],
-            )
+        # if args["wavelet"] == "morl" and not args["dual_channel"]:
+        #     ml_already_trained(
+        #         model_path=str(model),
+        #         image_based=args["image_based"],
+        #         datasource="d02",
+        #         label_type=args["label_type"],
+        #         log=args["log"],
+        #         wavelet=args["wavelet"],
+        #         dual_channel=args["dual_channel"],
+        #     )
 
 
 def _get_args_from_model_name(model_name: str):
