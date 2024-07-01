@@ -53,9 +53,6 @@ def main(
     loss,
     diff,
 ):
-    model_path = (
-        "/Users/simonmeske/Desktop/Masterarbeit/TrainedModels/radarcadia_morl_all_30_0_0001_bce20240622_132629.keras"
-    )
     if model_path is not None and os.path.exists(model_path):
         ml_already_trained(
             model_path=model_path,
@@ -501,6 +498,72 @@ def check_testing_and_training_paths():
     print(prediction_path)
 
 
+def scoring():
+    base_path_for_models = Path("/emrad-analysis/Models")
+    model_files = sorted(base_path_for_models.glob("*.keras"))
+    models = [model for model in model_files if "20240630" in model.name]
+    for model in models:
+        args = _get_args_from_model_name(model.name)
+        ml_already_trained(
+            model_path=str(model),
+            image_based=args["image_based"],
+            datasource=args["datasource"],
+            label_type=args["label_type"],
+            log=args["log"],
+            wavelet=args["wavelet"],
+            dual_channel=args["dual_channel"],
+        )
+        if args["wavelet"] == "morl" and args["dual_channel"] == False:
+            ml_already_trained(
+                model_path=str(model),
+                image_based=args["image_based"],
+                datasource="d02",
+                label_type=args["label_type"],
+                log=args["log"],
+                wavelet=args["wavelet"],
+                dual_channel=args["dual_channel"],
+            )
+
+
+def _get_args_from_model_name(model_name: str):
+    args = {}
+    if "morl" in model_name:
+        args["wavelet"] = "morl"
+    elif "gaus1" in model_name:
+        args["wavelet"] = "gaus1"
+    elif "mexh" in model_name:
+        args["wavelet"] = "mexh"
+    elif "shan1-1" in model_name:
+        args["wavelet"] = "shan1-1"
+
+    if "image" in model_name:
+        args["image_based"] = True
+    else:
+        args["image_based"] = False
+
+    if "ecg" in model_name:
+        args["label_type"] = "ecg"
+    else:
+        args["label_type"] = "guassian"
+
+    if "log" in model_name:
+        args["log"] = True
+    else:
+        args["log"] = False
+
+    if "dual" in model_name:
+        args["dual_channel"] = True
+    else:
+        args["dual_channel"] = False
+
+    if "radarcadia" in model_name:
+        args["datasource"] = "radarcadia"
+    else:
+        args["datasource"] = "d02"
+
+    return args
+
+
 if __name__ == "__main__":
     # devices = tf.config.experimental.list_physical_devices("GPU")
     # tf.config.experimental.set_memory_growth(devices[0], True)
@@ -519,9 +582,10 @@ if __name__ == "__main__":
     # dim_fix()
     # is_it_right()
     # main()
+    scoring()
     # preprocessing_magnitude()
     # fix_and_normalize_diff()
-    preprocessing()
+    # preprocessing()
     # main()
     # move_training_data()
     # preprocessing_radarcadia()

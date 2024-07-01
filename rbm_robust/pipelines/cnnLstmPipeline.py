@@ -1106,22 +1106,6 @@ class D02Pipeline(OptimizablePipeline):
             image_based=image_based,
         )
 
-    # def prepare_data(
-    #     self,
-    #     training_data: D02Dataset,
-    #     validation_data: D02Dataset,
-    #     testing_data: D02Dataset,
-    #     path: str = "/home/woody/iwso/iwso116h/Data",
-    #     image_based: bool = False,
-    # ):
-    #     print("Extracting features and Labels")
-    #     self.feature_extractor.generate_training_inputs_and_labels(training_data, path, image_based)
-    #     print("Generating Validation Set")
-    #     self.feature_extractor.generate_training_inputs_and_labels(validation_data, path, image_based)
-    #     print("Generating Testing Set")
-    #     self.feature_extractor.generate_training_inputs_and_labels(testing_data, path, image_based)
-    #     return self
-
     def self_optimize(self):
         self.wavelet_model.self_optimize()
         return self
