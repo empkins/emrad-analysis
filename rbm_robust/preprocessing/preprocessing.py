@@ -156,6 +156,7 @@ class Segmentation(Algorithm):
             end = start_time + pd.Timedelta(seconds=self.window_size_in_seconds)
             # Preprocess the data
             data_segment = signal[start_time:end]
+            start_time = start_time + pd.Timedelta(seconds=step_size)
             if len(data_segment) == 0:
                 time_diff = pd.Timedelta(seconds=0)
             else:
@@ -169,15 +170,12 @@ class Segmentation(Algorithm):
                 elif isinstance(data_segment, pd.DataFrame) and len(data_segment) > 0:
                     zero_padded = self.zero_pad_df(data_segment)
                     data_segment = data_segment.append(zero_padded, ignore_index=True)
-                else:
+                elif len(data_segment) == 0:
                     print(f"Data segment is empty: {data_segment} in segment {j}")
-                    data_segment = pd.Series(np.zeros(self.window_size_in_seconds * sampling_rate))
+                    continue
                 data_segment.index = pd.date_range(
                     start=data_segment.index[0], periods=len(data_segment), freq=time_step
                 )
-            start_time = start_time + pd.Timedelta(seconds=step_size)
-            if isinstance(data_segment, pd.DataFrame) and "ecg" in data_segment.columns:
-                data_segment = data_segment["ecg"]
             segments.append(data_segment)
         self.segmented_signal_ = segments
         return self

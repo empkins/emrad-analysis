@@ -256,6 +256,9 @@ class LabelProcessor(Algorithm):
         gaussian_clone = self.gaussian.clone()
         wavelet_transform_clone = self.wavelet_transform.clone()
 
+        if isinstance(raw_ecg, pd.DataFrame):
+            raw_ecg = raw_ecg["ecg"]
+
         processed_ecg = raw_ecg
         # Downsample the segment
         processed_ecg = downsampling_clone.downsample(processed_ecg, downsample_hz, sampling_rate).downsampled_signal_
@@ -422,7 +425,7 @@ class InputAndLabelGenerator(Algorithm):
             phases = subject.phases
             sampling_rate = subject.SAMPLING_RATE_DOWNSAMPLED
             for phase in phases.keys():
-                if phase != "ei_2":
+                if phase != "training":
                     continue
                 print(f"Starting phase {phase}")
                 timezone = pytz.timezone("Europe/Berlin")
@@ -433,15 +436,12 @@ class InputAndLabelGenerator(Algorithm):
                 # Segmentation
                 if len(phase_radar_data) == 0 or len(phase_ecg_data) == 0:
                     continue
-                segments_radar = segmentation_clone.segment(phase_radar_data, sampling_rate).segmented_signal_
-                segments_ecg = segmentation_clone.segment(phase_ecg_data, sampling_rate).segmented_signal_
-                if len(segments_radar) != len(segments_ecg):
-                    continue
+                combined_df = pd.concat([phase_radar_data, phase_ecg_data], axis=1, join="outer").fillna(0)
+                combined_df_segmented = segmentation_clone.segment(combined_df, sampling_rate).segmented_signal_
                 # Create Inputs
-                length = min(len(segments_radar), len(segments_ecg))
-                for j in range(length):
+                for j in range(len(combined_df_segmented)):
                     pre_processor_clone.preprocess(
-                        segments_radar[j],
+                        combined_df_segmented[j][list(phase_radar_data.columns)],
                         subject.SAMPLING_RATE_DOWNSAMPLED,
                         subject.subjects[0],
                         phase,
@@ -450,7 +450,7 @@ class InputAndLabelGenerator(Algorithm):
                         image_based,
                     )
                     label_processor_clone.label_generation(
-                        segments_ecg[j],
+                        combined_df_segmented[j][list(phase_ecg_data.columns)],
                         subject.SAMPLING_RATE_DOWNSAMPLED,
                         subject.subjects[0],
                         phase,
