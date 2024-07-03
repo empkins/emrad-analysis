@@ -357,7 +357,7 @@ class D02Dataset(Dataset):
         # participant_ids = [pid for pid in participant_ids if pid in self.REDUCED_SUBEJCTS]
         # participant_ids = [pid for pid in participant_ids if pid in self.TEST_SUBJECTS]
 
-        participant_ids = ["240"]
+        # participant_ids = ["240"]
 
         # PROC = [item.name for item in Path("/home/woody/iwso/iwso116h/DataD02").iterdir() if item.is_dir()]
         # TO_PROC = ["308", "120", "156", "320"]
