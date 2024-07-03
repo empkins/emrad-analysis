@@ -57,15 +57,15 @@ def process_d02_subset(
     process_images: bool = False,
 ):
     generator = InputAndLabelGenerator()
-    # try:
-    if process_inputs and process_labels:
-        generator.generate_training_inputs_and_labels(data_set, target_path, process_images)
-    elif process_inputs:
-        generator.generate_training_inputs(data_set, target_path, process_images)
-    elif process_labels:
-        generator.generate_training_labels(data_set, target_path)
-    # except Exception as e:
-    #     print(f"Error in processing subset {data_set.subjects[0]} with error {e}")
+    try:
+        if process_inputs and process_labels:
+            generator.generate_training_inputs_and_labels(data_set, target_path, process_images)
+        elif process_inputs:
+            generator.generate_training_inputs(data_set, target_path, process_images)
+        elif process_labels:
+            generator.generate_training_labels(data_set, target_path)
+    except Exception as e:
+        print(f"Error in processing subset {data_set.subjects[0]} with error {e}")
 
 
 def process_d02_mag_subset(
