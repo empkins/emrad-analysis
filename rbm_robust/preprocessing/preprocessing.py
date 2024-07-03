@@ -148,7 +148,7 @@ class Segmentation(Algorithm):
     def segment(self, signal: pd.Series, sampling_rate: float):
         step_size = int(self.window_size_in_seconds - self.window_size_in_seconds * self.overlap)
         total_seconds = (signal.index.max() - signal.index.min()).total_seconds()
-        step_count = int((total_seconds // step_size) - 1)
+        step_count = int((total_seconds // step_size))
         start_time = signal.index[0]
         time_step = signal.index[1] - signal.index[0]
         segments = []
@@ -166,9 +166,12 @@ class Segmentation(Algorithm):
                     # zeros = pd.Series(np.zeros(rows_needed))
                     zeros = self.zero_pad_series(data_segment)
                     data_segment = data_segment.append(zeros, ignore_index=True)
-                else:
+                elif isinstance(data_segment, pd.DataFrame) and len(data_segment) > 0:
                     zero_padded = self.zero_pad_df(data_segment)
                     data_segment = data_segment.append(zero_padded, ignore_index=True)
+                else:
+                    print(f"Data segment is empty: {data_segment} in segment {j}")
+                    data_segment = pd.Series(np.zeros(self.window_size_in_seconds * sampling_rate))
                 data_segment.index = pd.date_range(
                     start=data_segment.index[0], periods=len(data_segment), freq=time_step
                 )
