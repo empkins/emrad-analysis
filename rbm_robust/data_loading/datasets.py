@@ -81,6 +81,7 @@ class D02Dataset(Dataset):
         "556",  # No acq file
         "594",  # No acq file
         "502",  # No acq file
+        "566",  # No acq file
     )
     ALR_PROC = (
         "007",
@@ -355,6 +356,8 @@ class D02Dataset(Dataset):
         # participant_ids = [pid for pid in participant_ids if pid not in self.ALR_PROC]
         # participant_ids = [pid for pid in participant_ids if pid in self.REDUCED_SUBEJCTS]
         # participant_ids = [pid for pid in participant_ids if pid in self.TEST_SUBJECTS]
+
+        participant_ids = ["240"]
 
         # PROC = [item.name for item in Path("/home/woody/iwso/iwso116h/DataD02").iterdir() if item.is_dir()]
         # TO_PROC = ["308", "120", "156", "320"]
