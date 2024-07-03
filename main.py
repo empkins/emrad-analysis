@@ -286,7 +286,7 @@ def alt():
 
 def preprocessing():
     base_path = Path("/home/vault/empkins/tpD/D03/Data/MA_Simon_Meske/Data_D02/data_per_subject")
-    target_path = os.getenv("WORK") + "/TestDataD02"
+    target_path = os.getenv("WORK") + "/DataD02"
     # base_path = Path("/Users/simonmeske/Desktop/Masterarbeit/ArrayLengthTest")
     # target_path = "/Users/simonmeske/Desktop/TestOrdner/data_per_subject"
     run_d02(base_path, target_path, process_inputs=True, process_labels=True, process_images=False)
