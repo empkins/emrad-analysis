@@ -263,8 +263,8 @@ class LabelProcessor(Algorithm):
         processed_ecg = normalization_clone.normalize(processed_ecg).normalized_signal_
 
         # Save normalized signal
-        path = self.get_ecg_path(subject_id, phase, base_path) + f"/{segment}.npy"
-        np.save(path, processed_ecg)
+        # path = self.get_ecg_path(subject_id, phase, base_path) + f"/{segment}.npy"
+        # np.save(path, processed_ecg)
 
         # Compute the gaussian
         processed_ecg = gaussian_clone.compute(processed_ecg, downsample_hz).peak_gaussians_
