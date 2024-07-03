@@ -290,7 +290,6 @@ def preprocessing():
     # base_path = Path("/Users/simonmeske/Desktop/Masterarbeit/ArrayLengthTest")
     # target_path = "/Users/simonmeske/Desktop/TestOrdner/data_per_subject"
     run_d02(base_path, target_path, process_inputs=True, process_labels=True, process_images=False)
-    # check_for_empty_arrays()
 
 
 def preprocessing_radarcadia():
@@ -591,10 +590,10 @@ if __name__ == "__main__":
     # dim_fix()
     # is_it_right()
     # main()
-    scoring()
+    # scoring()
     # preprocessing_magnitude()
     # fix_and_normalize_diff()
-    # preprocessing()
+    preprocessing()
     # main()
     # move_training_data()
     # preprocessing_radarcadia()

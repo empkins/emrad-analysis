@@ -180,12 +180,10 @@ class PreProcessor(Algorithm):
         emd_clone = self.emd.clone()
         wavelet_transform_clone = self.wavelet_transform.clone()
         downsampling_clone = self.downsampling.clone()
-        radar_mag_diff = None
         # Calculate Power
         if not isinstance(raw_radar, pd.Series) and raw_radar.shape[1] == 2:
             i_diff = np.diff(raw_radar["I"])
             q_diff = np.diff(raw_radar["Q"])
-            radar_mag_diff = RadarPreprocessor().calculate_power(i=i_diff, q=q_diff)
             radar_mag = RadarPreprocessor().calculate_power(i=raw_radar["I"], q=raw_radar["Q"])
         else:
             radar_mag = raw_radar
@@ -201,13 +199,6 @@ class PreProcessor(Algorithm):
         # self.preprocessed_signal_ = emd_clone.decompose(self.preprocessed_signal_).imfs_
 
         # Wavelet Transform
-        if radar_mag_diff is not None:
-            diff_processed = bandpass_filter_clone.filter(radar_mag_diff, sampling_rate).filtered_signal_
-            diff_processed = downsampling_clone.downsample(diff_processed, 200, sampling_rate).downsampled_signal_
-            wavelet_transform_clone.transform_diff(
-                diff_processed, subject_id, phase, segment, base_path, identity=False
-            ).transformed_signal_
-
         self.preprocessed_signal_ = wavelet_transform_clone.transform(
             self.preprocessed_signal_, subject_id, phase, segment, base_path, image_based, single_signal=True
         ).transformed_signal_
@@ -278,7 +269,6 @@ class LabelProcessor(Algorithm):
         # Compute the gaussian
         processed_ecg = gaussian_clone.compute(processed_ecg, downsample_hz).peak_gaussians_
 
-        # TODO: Test this after normalization
         # # Compute the blips
         # processed_ecg = blip_algo_clone.compute(raw_ecg).blips_
 

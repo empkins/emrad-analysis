@@ -148,7 +148,7 @@ class Segmentation(Algorithm):
     def segment(self, signal: pd.Series, sampling_rate: float):
         step_size = int(self.window_size_in_seconds - self.window_size_in_seconds * self.overlap)
         total_seconds = (signal.index.max() - signal.index.min()).total_seconds()
-        step_count = int((total_seconds // step_size))  # - 1
+        step_count = int((total_seconds // step_size) - 1)
         start_time = signal.index[0]
         time_step = signal.index[1] - signal.index[0]
         segments = []
@@ -162,12 +162,6 @@ class Segmentation(Algorithm):
                 time_diff = data_segment.index[-1] - data_segment.index[0]
             # Zero padding
             if len(data_segment) < self.window_size_in_seconds * sampling_rate:
-                # # rows_needed = int((pd.Timedelta(seconds=self.window_size_in_seconds) - time_diff) / time_step)
-                # time_diff = data_segment.index.to_series().diff()
-                # threshold = pd.Timedelta(milliseconds=1)
-                # jump_count = sum(time_diff > threshold)
-                # rows_needed = (self.window_size_in_seconds * sampling_rate) - len(data_segment)
-                # # rows_needed = int((pd.Timedelta(seconds=4) - time_diff) / time_step)
                 if isinstance(data_segment, pd.Series):
                     # zeros = pd.Series(np.zeros(rows_needed))
                     zeros = self.zero_pad_series(data_segment)
@@ -352,9 +346,9 @@ class WaveletTransformer(Algorithm):
     def _calculate_single_signal(self, signal, segment, base_path, subject_id, phase, img_based, identity):
         wavelet_types = [
             "morl",
-            # "gaus1",
-            # "mexh",
-            # "shan1-1",
+            "gaus1",
+            "mexh",
+            "shan1-1",
         ]
         for wavelet_type in wavelet_types:
             path = self.get_path(
@@ -374,7 +368,7 @@ class WaveletTransformer(Algorithm):
             coefficients, frequencies = pywt.cwt(signal, scales, wavelet_type, sampling_period=1 / self.sampling_rate)
             if np.iscomplexobj(coefficients):
                 coefficients = np.abs(coefficients)
-            self._save_image(coefficients, frequencies, -1, segment, 0, path.replace("array", "image"))
+            # self._save_image(coefficients, frequencies, -1, segment, 0, path.replace("array", "image"))
             scaler = MinMaxScaler()
             coefficients_normalized = scaler.fit_transform(coefficients)
             # coefficients_normalized = self._normalize(coefficients)
@@ -382,13 +376,7 @@ class WaveletTransformer(Algorithm):
                 coefficients_normalized.shape[0], coefficients_normalized.shape[1], 1
             )
             np.save(os.path.join(path, f"{segment}.npy"), coefficients_reshaped)
-            # log_transformed_coefficients = np.zeros_like(coefficients, dtype=float)
-            # non_zero_mask = coefficients_reshaped != 0
-            # log_transformed_coefficients[non_zero_mask] = np.log(np.abs(coefficients[non_zero_mask]))
-            # log_transformed_coefficients = self._normalize(log_transformed_coefficients)
-            # log_transformed_coefficients = log_transformed_coefficients.reshape(
-            #     log_transformed_coefficients.shape[0], log_transformed_coefficients.shape[1], 1
-            # )
+
             coefficients_fit_for_log = np.abs(coefficients)
             constant_value = coefficients_fit_for_log.min() / 2
             coefficients_fit_for_log += constant_value
@@ -400,9 +388,9 @@ class WaveletTransformer(Algorithm):
                 log_transformed_coefficients.shape[0], log_transformed_coefficients.shape[1], 1
             )
             np.save(os.path.join(log_path, f"{segment}.npy"), log_transformed_coefficients)
-            self._save_image(
-                log_transformed_coefficients, frequencies, -1, segment, 0, log_path.replace("array", "image")
-            )
+            # self._save_image(
+            #     log_transformed_coefficients, frequencies, -1, segment, 0, log_path.replace("array", "image")
+            # )
 
     def _normalize(self, coefficients):
         normalizer_clone = self.normalizer.clone()
