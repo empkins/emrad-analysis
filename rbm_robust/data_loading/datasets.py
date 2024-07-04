@@ -359,13 +359,14 @@ class D02Dataset(Dataset):
         # participant_ids = [pid for pid in participant_ids if pid in self.REDUCED_SUBEJCTS]
         # participant_ids = [pid for pid in participant_ids if pid in self.TEST_SUBJECTS]
 
+        participant_ids = [pid for pid in participant_ids if int(pid) % 2 == 0]
         # participant_ids = ["240"]
 
-        PROC = [item.name for item in Path("/home/woody/iwso/iwso116h/DataD02").iterdir() if item.is_dir()]
+        # PROC = [item.name for item in Path("/home/woody/iwso/iwso116h/DataD02").iterdir() if item.is_dir()]
         # TO_PROC = ["308", "120", "156", "320"]
         # PROC = [p for p in PROC if p not in TO_PROC]
         # print(PROC)
-        participant_ids = [pid for pid in participant_ids if pid not in PROC]
+        # participant_ids = [pid for pid in participant_ids if pid not in PROC]
 
         df = pd.DataFrame({"participant": participant_ids})
         if df.empty:
