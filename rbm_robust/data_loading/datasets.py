@@ -51,6 +51,7 @@ class D02Dataset(Dataset):
         },  # hier kann es auch training_trial_end sein
     }
     EXCLUDE_SUBJECTS = (
+        "005",
         "074",
         "044",
         "115",
@@ -108,6 +109,7 @@ class D02Dataset(Dataset):
         "438",
         "389",
         "511",
+        "553"
     )
     ALR_PROC = (
         "007",
