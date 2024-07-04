@@ -348,7 +348,7 @@ class WaveletTransformer(Algorithm):
         wavelet_types = [
             "morl",
             "gaus1",
-            "mexh",
+            # "mexh",
             "shan1-1",
         ]
         for wavelet_type in wavelet_types:
