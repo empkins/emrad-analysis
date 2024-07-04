@@ -371,7 +371,7 @@ class D02Dataset(Dataset):
         # print(PROC)
         participant_ids = [pid for pid in participant_ids if pid not in PROC]
 
-        participant_ids = ["221"]
+        participant_ids = ["120"]
 
         df = pd.DataFrame({"participant": participant_ids})
         if df.empty:
