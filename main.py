@@ -416,29 +416,30 @@ def check_for_empty_arrays():
 def move_training_data():
     source_path = os.getenv("WORK") + "/DataD02"
     target_path = os.getenv("WORK") + "/TestDataD02"
-    subjects = (
-        "146",
-        "257",
-        "254",
-        "228",
-        "201",
-        "385",
+    subjects = [
+        "130",
+        "268",
         "338",
-        "212",
-        "077",
-        "004",
-        "120",
-        "147",
-        "320",
-        "417",
-        "286",
-        "028",
-        "292",
-        "155",
-        "096",
+        "173",
+        "242",
+        "273",
+        "008",
+        "241",
+        "198",
+        "439",
+        "272",
+        "143",
+        "199",
+        "249",
         "140",
-        "447",
-    )
+        "230",
+        "111",
+        "155",
+        "213",
+        "203",
+        "310",
+        "300",
+    ]
     for subject in subjects:
         source_subject_path = Path(source_path) / subject
         target_subject_path = Path(target_path)
@@ -595,20 +596,20 @@ if __name__ == "__main__":
     # fix_and_normalize_diff()
     # preprocessing()
     # main()
-    data_path = Path("/home/woody/iwso/iwso116h/DataD02")
-    possible_subjects = [path.name for path in data_path.iterdir() if path.is_dir()]
-
-    # Split Data
-    train_val, testing_subjects = train_test_split(possible_subjects, test_size=0.2, random_state=42)
-
-    print(f"Training and Validation Subjects: {train_val}")
-    print(f"Testing Subjects: {testing_subjects}")
-
-    train, val = train_test_split(train_val, test_size=0.2, random_state=42)
-
-    print(f"Training Subjects: {train}")
-    print(f"Validation Subjects: {val}")
-    # move_training_data()
+    # data_path = Path("/home/woody/iwso/iwso116h/DataD02")
+    # possible_subjects = [path.name for path in data_path.iterdir() if path.is_dir()]
+    #
+    # # Split Data
+    # train_val, testing_subjects = train_test_split(possible_subjects, test_size=0.2, random_state=42)
+    #
+    # print(f"Training and Validation Subjects: {train_val}")
+    # print(f"Testing Subjects: {testing_subjects}")
+    #
+    # train, val = train_test_split(train_val, test_size=0.2, random_state=42)
+    #
+    # print(f"Training Subjects: {train}")
+    # print(f"Validation Subjects: {val}")
+    move_training_data()
     # preprocessing_radarcadia()
     # get_data_set_radarcadia()
     # move_training_data()
