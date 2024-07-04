@@ -349,7 +349,7 @@ class WaveletTransformer(Algorithm):
             "morl",
             "gaus1",
             # "mexh",
-            "shan1-1",
+            # "shan1-1",
         ]
         for wavelet_type in wavelet_types:
             path = self.get_path(
