@@ -179,7 +179,7 @@ def ml_d02(
 ):
     # path = "/Users/simonmeske/Desktop/Masterarbeit/DataD02"
     # testing_path = "/Users/simonmeske/Desktop/Masterarbeit/TestDataD02"
-    path = os.getenv("TMPDIR") + "/DataD02/DataD02"
+    path = os.getenv("TMPDIR") + "/DataD02"
     testing_path = os.getenv("WORK") + "/TestDataD02"
     # Get Training and Testing Subjects
     data_path = Path(path)
@@ -593,8 +593,21 @@ if __name__ == "__main__":
     # scoring()
     # preprocessing_magnitude()
     # fix_and_normalize_diff()
-    preprocessing()
+    # preprocessing()
     # main()
+    data_path = Path("/home/woody/iwso/iwso116h/DataD02")
+    possible_subjects = [path.name for path in data_path.iterdir() if path.is_dir()]
+
+    # Split Data
+    train_val, testing_subjects = train_test_split(possible_subjects, test_size=0.2, random_state=42)
+
+    print(f"Training and Validation Subjects: {train_val}")
+    print(f"Testing Subjects: {testing_subjects}")
+
+    train, val = train_test_split(train_val, test_size=0.2, random_state=42)
+
+    print(f"Training Subjects: {train}")
+    print(f"Validation Subjects: {val}")
     # move_training_data()
     # preprocessing_radarcadia()
     # get_data_set_radarcadia()
