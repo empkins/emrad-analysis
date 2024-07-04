@@ -112,11 +112,7 @@ class UNetWaveletTF(Algorithm):
         )
         self._model.add(layers.Conv2D(filters=1, kernel_size=(256, 1), activation="sigmoid"))
         self._model.add(layers.Flatten())
-        loss_func = None
-        if self.loss == "bce":
-            loss_func = keras.losses.BinaryCrossentropy(from_logits=False, reduction="sum_over_batch_size")
-        else:
-            loss_func = keras.losses.MeanSquaredError(reduction="sum_over_batch_size")
+        loss_func = keras.losses.BinaryCrossentropy(from_logits=False, reduction="sum_over_batch_size")
         self._model.compile(optimizer=keras.optimizers.Adam(learning_rate=self.learning_rate), loss=loss_func)
         return self
 
@@ -174,10 +170,6 @@ class UNetWaveletTF(Algorithm):
                 prediction_path.mkdir(parents=True, exist_ok=True)
                 input_files = sorted(input_path.glob(f"*.{input_file_type}"))
                 for input_file in input_files:
-                    if not self.image_based:
-                        img_input = np.load(input_file)
-                    else:
-                        img_input = img_to_array(load_img(input_file, target_size=(256, 1000))) / 255
                     img_input = self._get_input_array(input_file)
                     img_input = np.array([img_input])
                     pred = self._model.predict(img_input, verbose=0)

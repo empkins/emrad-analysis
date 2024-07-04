@@ -3,7 +3,7 @@
 #SBATCH --job-name=uNetD02MorlLog
 #SBATCH --nodes=1
 #SBATCH --time=22:30:00
-#SBATCH --gres=gpu:1
+#SBATCH --gres=gpu:rtx2080ti:1
 
 
 module unload python

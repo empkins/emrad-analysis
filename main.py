@@ -205,6 +205,7 @@ def ml_d02(
         loss=loss,
         testing_path=testing_path,
         diff=diff,
+        dual_channel=dual_channel,
     )
     d02_training_and_testing_pipeline(pipeline=pipeline, testing_path=path, image_based=image_based)
 
@@ -590,7 +591,7 @@ if __name__ == "__main__":
     # main(model_path, remaining_epochs)
     # dim_fix()
     # is_it_right()
-    # main()
+    main()
     # scoring()
     # preprocessing_magnitude()
     # fix_and_normalize_diff()
@@ -609,7 +610,7 @@ if __name__ == "__main__":
     #
     # print(f"Training Subjects: {train}")
     # print(f"Validation Subjects: {val}")
-    move_training_data()
+    # move_training_data()
     # preprocessing_radarcadia()
     # get_data_set_radarcadia()
     # move_training_data()
