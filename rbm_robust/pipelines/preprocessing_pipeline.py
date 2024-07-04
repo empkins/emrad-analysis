@@ -18,14 +18,14 @@ def run_d02(
     subjects_dataset = D02Dataset(pathlib.Path(data_path))
     subjects = list(subjects_dataset.subjects)
     subsets = [subjects_dataset.get_subset(participant=subject) for subject in subjects]
-    # process_d02_subset(subjects_dataset, target_path, process_labels, process_inputs, process_images)
-    num_processes = 3
-    print(num_processes)
-    with Pool(num_processes) as p:
-        p.starmap(
-            process_d02_subset,
-            [(subset, target_path, process_labels, process_inputs, process_images) for subset in subsets],
-        )
+    process_d02_subset(subjects_dataset, target_path, process_labels, process_inputs, process_images)
+    # num_processes = 3
+    # print(num_processes)
+    # with Pool(num_processes) as p:
+    #     p.starmap(
+    #         process_d02_subset,
+    #         [(subset, target_path, process_labels, process_inputs, process_images) for subset in subsets],
+    #     )
 
 
 def run_d02_Mag(

@@ -85,6 +85,8 @@ class D02Dataset(Dataset):
         "403",
         "516",
         "132",
+        "093",
+        "123",
     )
     ALR_PROC = (
         "007",
@@ -368,6 +370,8 @@ class D02Dataset(Dataset):
         PROC = [p for p in PROC if p not in TO_PROC]
         # print(PROC)
         participant_ids = [pid for pid in participant_ids if pid not in PROC]
+
+        participant_ids = ["221"]
 
         df = pd.DataFrame({"participant": participant_ids})
         if df.empty:
