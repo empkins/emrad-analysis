@@ -2,7 +2,7 @@
 #
 #SBATCH --job-name=uNetD02Morl40Epochs
 #SBATCH --nodes=1
-#SBATCH --time=22:30:00
+#SBATCH --time=23:30:00
 #SBATCH --gres=gpu:rtx3080ti:1
 
 
