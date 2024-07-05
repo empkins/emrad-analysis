@@ -54,7 +54,6 @@ def _get_dataset(
             wavelet_type=wavelet_type,
             ecg_labels=ecg_labels,
             log_transform=log_transform,
-            diff=diff,
             image_based=image_based,
         )
     else:
@@ -64,8 +63,6 @@ def _get_dataset(
             batch_size=batch_size,
             wavelet_type=wavelet_type,
             ecg_labels=ecg_labels,
-            diff=diff,
-            image_based=image_based,
         )
 
 
