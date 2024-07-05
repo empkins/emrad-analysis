@@ -1,6 +1,6 @@
 #!/bin/bash -l
 #
-#SBATCH --job-name=uNetD02Gaus1Log_0001_40Epochs
+#SBATCH --job-name=uNetD02Gaus1Log_001_40Epochs
 #SBATCH --nodes=1
 #SBATCH --time=17:30:00
 #SBATCH --gres=gpu:rtx2080ti:1
@@ -16,4 +16,4 @@ rsync -r $WORK/DataD02 $TMPDIR
 
 cd "$HOME"/emrad-analysis || exit
 
-poetry run python main.py --epochs 40 --learning_rate 0.0001 --image_based False --datasource d02 --log True --label_type gaussian --dual_channel False --wavelet gaus1
+poetry run python main.py --epochs 40 --learning_rate 0.001 --image_based False --datasource d02 --log True --label_type gaussian --dual_channel False --wavelet gaus1
