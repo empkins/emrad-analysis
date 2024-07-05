@@ -1,9 +1,9 @@
 #!/bin/bash -l
 #
-#SBATCH --job-name=uNetD02Gaus1
+#SBATCH --job-name=uNetD02Gaus1_40Epochs
 #SBATCH --nodes=1
 #SBATCH --time=23:30:00
-#SBATCH --gres=gpu:rtx3080ti:1
+#SBATCH --gres=gpu:rtx3080:1
 
 
 module unload python

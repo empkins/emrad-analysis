@@ -1,9 +1,9 @@
 #!/bin/bash -l
 #
-#SBATCH --job-name=uNetD02MorlLog40Epochs
+#SBATCH --job-name=uNetD02MorlLog40EpochsLR0001
 #SBATCH --nodes=1
-#SBATCH --time=23:30:00
-#SBATCH --gres=gpu:rtx3080ti:1
+#SBATCH --time=17:30:00
+#SBATCH --gres=gpu:rtx2080ti:1
 
 
 module unload python
@@ -17,4 +17,3 @@ rsync -r $WORK/DataD02 $TMPDIR
 cd "$HOME"/emrad-analysis || exit
 
 poetry run python main.py --epochs 40 --learning_rate 0.0001 --image_based False --datasource d02 --log True --label_type gaussian --dual_channel False --wavelet morl
-poetry run python main.py --epochs 40 --learning_rate 0.001 --image_based False --datasource d02 --log True --label_type gaussian --dual_channel False --wavelet morl
