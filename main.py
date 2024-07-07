@@ -662,6 +662,7 @@ def _collect_and_score(prediction_base_path, label_base_path, label_folder_name,
             continue
         if not prediction_folder.is_dir():
             continue
+        print(f"Collecting and scoring {prediction_folder.name}")
         if "_40_" not in prediction_folder.name or "_30_" not in prediction_folder.name:
             continue
         print(f"Collecting and scoring {prediction_folder.name}")
