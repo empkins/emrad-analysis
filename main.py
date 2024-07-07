@@ -112,10 +112,10 @@ def ml_time_power(
     wavelet: str = "morl",
     loss: str = "bce",
 ):
-    path = "/Users/simonmeske/Desktop/TestOrdner/Time_power"
-    testing_path = "/Users/simonmeske/Desktop/TestOrdner/Time_power"
-    # path = os.getenv("TMPDIR") + "/DataD02/DataD02"
-    # testing_path = os.getenv("WORK") + "/TestDataD02"
+    # path = "/Users/simonmeske/Desktop/TestOrdner/Time_power"
+    # testing_path = "/Users/simonmeske/Desktop/TestOrdner/Time_power"
+    path = os.getenv("TMPDIR") + "/DataD02/DataD02"
+    testing_path = os.getenv("WORK") + "/TestDataD02"
     # Get Training and Testing Subjects
     data_path = Path(path)
     testing_path = Path(testing_path)
@@ -125,13 +125,13 @@ def ml_time_power(
     use_ecg_labels = False
 
     # Split Data
-    # training_subjects, validation_subjects = train_test_split(possible_subjects, test_size=0.2, random_state=42)
+    training_subjects, validation_subjects = train_test_split(possible_subjects, test_size=0.2, random_state=42)
     pipeline = MagPipeline(
         learning_rate=learning_rate,
         data_path=path,
         epochs=epochs,
-        training_subjects=possible_subjects,
-        validation_subjects=possible_subjects,
+        training_subjects=training_subjects,
+        validation_subjects=validation_subjects,
         testing_subjects=testing_subjects,
         image_based=image_based,
         ecg_labels=use_ecg_labels,
@@ -181,10 +181,10 @@ def ml_d02(
     loss: str = "bce",
     diff: bool = False,
 ):
-    path = "/Users/simonmeske/Desktop/Masterarbeit/DataD02"
-    testing_path = "/Users/simonmeske/Desktop/Masterarbeit/TestDataD02"
-    # path = os.getenv("TMPDIR") + "/DataD02"
-    # testing_path = os.getenv("WORK") + "/TestDataD02"
+    # path = "/Users/simonmeske/Desktop/Masterarbeit/DataD02"
+    # testing_path = "/Users/simonmeske/Desktop/Masterarbeit/TestDataD02"
+    path = os.getenv("TMPDIR") + "/DataD02"
+    testing_path = os.getenv("WORK") + "/TestDataD02"
     # Get Training and Testing Subjects
     data_path = Path(path)
     testing_path = Path(testing_path)
