@@ -166,6 +166,9 @@ class RPeakF1Score(Algorithm):
         precision = true_positives / len(pred_peaks)
 
         recall = true_positives / len(gt_peaks)
+        if precision + recall == 0:
+            self.f1_score_ = 0
+            return self
 
         self.f1_score_ = 2 * ((precision * recall) / (precision + recall))
 

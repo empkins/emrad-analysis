@@ -703,7 +703,7 @@ def collect_and_score_arrays_radarcadia():
 
 if __name__ == "__main__":
     collect_and_score_arrays_d02()
-    # collect_and_score_arrays_radarcadia()
+    collect_and_score_arrays_radarcadia()
     # main()
     # scoring()
     # preprocessing_magnitude()
