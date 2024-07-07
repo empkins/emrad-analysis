@@ -55,6 +55,9 @@ class ScoreCalculator(ValidationBase):
 
             prediction = self._get_collected_array(prediction_path)
             label = self._get_collected_array(label_path)
+        if len(prediction) != len(label):
+            print(f"Prediction and label length do not match for {subject_name} in phase {phase}")
+            return None
         return np.corrcoef(prediction, label)[0, 1]
 
     def _calculate_ihr_for_subject_and_phase(
