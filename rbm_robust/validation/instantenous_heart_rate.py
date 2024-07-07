@@ -140,6 +140,8 @@ class ScoreCalculator(ValidationBase):
 
     def _get_scores_for_subject_and_phase(self, subject_name, phase):
         prediction, label = self.save_collected_array(subject_name, phase)
+        if prediction is None or label is None:
+            return None
         f1_score_100, f1_score_50 = self._calculate_f1_score_for_subject_and_phase(
             subject_name, phase, prediction, label
         )
@@ -194,7 +196,7 @@ class ScoreCalculator(ValidationBase):
 
         # Check if the paths exist
         if not prediction_path.exists() or not label_path.exists():
-            return None
+            return None, None
 
         prediction = self._get_collected_array(prediction_path)
         label = self._get_collected_array(label_path)
