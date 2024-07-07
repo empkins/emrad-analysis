@@ -664,6 +664,7 @@ def _collect_and_score(prediction_base_path, label_base_path, label_folder_name,
             continue
         if "_40_" not in prediction_folder.name or "_30_" not in prediction_folder.name:
             continue
+        print(f"Collecting and scoring {prediction_folder.name}")
         prominences = [round(i, 2) for i in np.arange(0.1, 0.31, 0.05)]
         for prominence in prominences:
             score_calculator = ScoreCalculator(
@@ -699,7 +700,7 @@ def collect_and_score_arrays_radarcadia():
 
 if __name__ == "__main__":
     collect_and_score_arrays_d02()
-    collect_and_score_arrays_radarcadia()
+    # collect_and_score_arrays_radarcadia()
     # main()
     # scoring()
     # preprocessing_magnitude()
