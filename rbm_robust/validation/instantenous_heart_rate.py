@@ -131,6 +131,7 @@ class ScoreCalculator(ValidationBase):
                     continue
                 phase_name = phase.name
                 scores[subject_name][phase_name] = self._get_scores_for_subject_and_phase(subject_name, phase_name)
+        print(scores)
         df = pd.DataFrame.from_dict(
             {(subject, phase): value for subject, inner_dict in scores.items() for phase, value in inner_dict.items()},
             orient="index",
