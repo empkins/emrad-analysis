@@ -136,6 +136,9 @@ class ScoreCalculator(ValidationBase):
             {(subject, phase): value for subject, inner_dict in scores.items() for phase, value in inner_dict.items()},
             orient="index",
         )
+        if len(df.columns) != 5:
+            print(df)
+            return df
         df.columns = ["F1_score_100", "F1_score_50", "correlation", "ihr_predicted_median", "ihr_label_median"]
         return df
 
