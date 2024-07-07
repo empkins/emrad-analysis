@@ -162,7 +162,7 @@ class ScoreCalculator(ValidationBase):
             beat = np.load(peak_files[i])
             if i == 0:
                 # Start to end of middle
-                middle = self._get_fist_interval(beat)
+                middle = self._get_first_interval(beat)
             elif i == len(peak_files) - 1:
                 # Start of the middle to end
                 middle = self._get_last_interval(beat)
@@ -171,7 +171,7 @@ class ScoreCalculator(ValidationBase):
             beats = np.append(beats, middle)
         return beats
 
-    def _get_fist_interval(self, array: np.array):
+    def _get_first_interval(self, array: np.array):
         if array.ndim != 1:
             raise ValueError("Array must be 1-dimensional")
         percentile = self.overlap / 2 * len(array)
@@ -197,6 +197,8 @@ class ScoreCalculator(ValidationBase):
     def save_collected_array(self, subject_name, phase):
         prediction_path = self.prediction_path / subject_name / phase
         label_path = self.label_path / subject_name / phase / self.label_suffix
+
+        print(f"in Save collected array: Pred path {prediction_path},Label path {label_path}")
 
         # Check if the paths exist
         if not prediction_path.exists() or not label_path.exists():
