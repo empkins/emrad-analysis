@@ -1,4 +1,5 @@
 import pathlib
+import tarfile
 from pathlib import Path
 import shutil
 
@@ -270,25 +271,6 @@ def preprocessing_magnitude():
     run_d02_Mag(base_path, target_path, process_inputs=True, process_labels=True, process_images=False)
 
 
-def wavelet_training(model_path: str = None, remaining_epochs: int = 0):
-    path = os.getenv("TMPDIR") + "/Data"
-    # path = "/Users/simonmeske/Desktop/Masterarbeit/TestSubjects"
-    dataset = D02Dataset(path)
-    wavelet_pipeline = WaveletPipeline()
-    waveletPipelineScoring(
-        pipeline=wavelet_pipeline,
-        dataset=dataset,
-        training_and_validation_path=path,
-        model_path=model_path,
-        remaining_epochs=remaining_epochs,
-    )
-
-
-def alt():
-    cnn = CNN()
-    cnn.self_optimize("/Users/simonmeske/PycharmProjects/emrad-analysis/tests/DataImg")
-
-
 def preprocessing():
     base_path = Path("/home/vault/empkins/tpD/D03/Data/MA_Simon_Meske/Data_D02/data_per_subject")
     target_path = os.getenv("WORK") + "/DataD02"
@@ -303,7 +285,31 @@ def preprocessing_radarcadia():
     # base_path = Path("/Users/simonmeske/Desktop/Masterarbeit/Radarcadia")
     # target_path = "/Users/simonmeske/Desktop/Masterarbeit/Radarcadia/Processed_Files"
     run_radarcadia(base_path, target_path)
-    # check_for_empty_arrays()
+
+
+def pretrained():
+    base_path = os.getenv("HOME") + "/altPreprocessing/emrad-analysis/Models"
+    base_path_for_models = Path(base_path)
+    for model in base_path_for_models.glob("*.keras"):
+        if "radarcadia" not in model.name:
+            continue
+        if "mse" in model.name:
+            continue
+        args = _get_args_from_model_name(model.name)
+        print(args)
+        if args["label_type"] == "ecg":
+            continue
+        if not args["dual_channel"]:
+            continue
+        ml_already_trained(
+            model_path=str(model),
+            image_based=args["image_based"],
+            datasource=args["datasource"],
+            label_type=args["label_type"],
+            log=args["log"],
+            wavelet=args["wavelet"],
+            dual_channel=args["dual_channel"],
+        )
 
 
 def fix_and_normalize_diff():
@@ -527,16 +533,50 @@ def scoring():
             wavelet=args["wavelet"],
             dual_channel=args["dual_channel"],
         )
-        # if args["wavelet"] == "morl" and not args["dual_channel"]:
-        #     ml_already_trained(
-        #         model_path=str(model),
-        #         image_based=args["image_based"],
-        #         datasource="d02",
-        #         label_type=args["label_type"],
-        #         log=args["log"],
-        #         wavelet=args["wavelet"],
-        #         dual_channel=args["dual_channel"],
-        #     )
+
+
+def untar_file(tar_path, extract_path):
+    with tarfile.open(tar_path, "r") as tar:
+        tar.extractall(path=extract_path)
+    print(f"Extracted tar file to {extract_path}")
+
+
+def calculate_scores():
+    prediction_path = Path("/home/vault/iwso/iwso116h/Predictions")
+    label_path = Path("/home/vault/iwso/iwso116h/TestDataRadarcadia")
+    label_folder_name = "labels_gaussian"
+
+    for prediction_tar in prediction_path.iterdir():
+        if not prediction_tar.is_file():
+            continue
+        if "tar" in prediction_tar.suffix:
+            prediction_folder_name = prediction_tar.stem
+            # Untar
+            untar_file(prediction_tar, prediction_path)
+        # Calculate Scores
+        prominences = range(0.1, 0.35, 0.05)
+        for prominence in prominences:
+            score_calculator = ScoreCalculator(
+                prediction_path=prediction_path,
+                label_path=label_path,
+                overlap=int(0.4),
+                fs=200,
+                label_suffix=label_folder_name,
+                prominence=prominence,
+            )
+
+            if os.getenv("WORK") is None:
+                save_path = Path("/Users/simonmeske/Desktop/Masterarbeit")
+            else:
+                save_path = Path(os.getenv("WORK"))
+
+            scores = score_calculator.calculate_scores()
+            # Save the scores as a csv file
+            score_path = save_path / "Scores"
+            if not score_path.exists():
+                score_path.mkdir(parents=True)
+            scores.to_csv(score_path / f"scores_{prediction_folder_name}_{prominence}.csv")
+            print(f"Scores: {scores}")
 
 
 def _get_args_from_model_name(model_name: str):
@@ -591,7 +631,7 @@ def score(prediction_path: str, prediction_folder_name: str):
         score_calculator = ScoreCalculator(
             prediction_path=prediction_path,
             label_path=label_path,
-            overlap=0.4,
+            overlap=int(0.4),
             fs=200,
             label_suffix=label_folder_name,
             prominence=prominence,
@@ -613,8 +653,56 @@ def score(prediction_path: str, prediction_folder_name: str):
     return scores
 
 
+def collect_and_score_arrays_d02():
+    prediction_base_path = Path("/home/woody/iwso/iwso116h/Predictions")
+    label_base_path = Path("/home/woody/iwso/iwso116h/TestDataD02")
+    label_folder_name = "labels_gaussian"
+    _collect_and_score(prediction_base_path, label_base_path, label_folder_name, "d02")
+
+
+def _collect_and_score(prediction_base_path, label_base_path, label_folder_name, dataset: str = None):
+    for prediction_folder in prediction_base_path.iterdir():
+        if dataset not in prediction_folder.name:
+            continue
+        if not prediction_folder.is_dir():
+            continue
+        prominences = range(0.1, 0.4, 0.05)
+        for prominence in prominences:
+            score_calculator = ScoreCalculator(
+                prediction_path=prediction_folder,
+                label_path=label_base_path,
+                overlap=int(0.4),
+                fs=200,
+                label_suffix=label_folder_name,
+                prominence=prominence,
+            )
+
+            if os.getenv("WORK") is None:
+                save_path = Path("/Users/simonmeske/Desktop/Masterarbeit")
+            else:
+                save_path = Path(os.getenv("WORK"))
+
+            scores = score_calculator.calculate_scores()
+            # Save the scores as a csv file
+            score_path = save_path / "Scores"
+            if not score_path.exists():
+                score_path.mkdir(parents=True)
+            scores.to_csv(score_path / f"scores_{prediction_folder.name}_prominence_{prominence}.csv")
+
+            print(f"Scores: {scores}")
+
+
+def collect_and_score_arrays_radarcadia():
+    prediction_base_path = Path("/home/vault/iwso/iwso116h/Predictions")
+    label_base_path = Path("/home/vault/iwso/iwso116h/TestDataRadarcadia")
+    label_folder_name = "labels_gaussian"
+    _collect_and_score(prediction_base_path, label_base_path, label_folder_name, "radarcadia")
+
+
 if __name__ == "__main__":
-    main()
+    collect_and_score_arrays_d02()
+    collect_and_score_arrays_radarcadia()
+    # main()
     # scoring()
     # preprocessing_magnitude()
     # preprocessing()

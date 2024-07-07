@@ -768,33 +768,36 @@ class PreTrainedPipeline(OptimizablePipeline):
             str(label_path).replace(test_data_folder_name, f"Predictions/{self.prediction_folder_name}")
         )
 
-        score_calculator = ScoreCalculator(
-            prediction_path=prediction_path,
-            label_path=label_path,
-            overlap=int(0.4),
-            fs=200,
-            label_suffix=label_folder_name,
-        )
+        prominences = range(0.1, 0.35, 0.05)
+        for prominence in prominences:
+            score_calculator = ScoreCalculator(
+                prediction_path=prediction_path,
+                label_path=label_path,
+                overlap=int(0.4),
+                fs=200,
+                label_suffix=label_folder_name,
+                prominence=prominence,
+            )
 
-        if os.getenv("WORK") is None:
-            save_path = Path("/Users/simonmeske/Desktop/Masterarbeit")
-        else:
-            save_path = Path(os.getenv("WORK"))
+            if os.getenv("WORK") is None:
+                save_path = Path("/Users/simonmeske/Desktop/Masterarbeit")
+            else:
+                save_path = Path(os.getenv("WORK"))
 
-        scores = score_calculator.calculate_scores()
-        # Save the scores as a csv file
-        score_path = save_path / "Scores"
-        if not score_path.exists():
-            score_path.mkdir(parents=True)
-        scores.to_csv(score_path / f"scores_{self.prediction_folder_name}.csv")
+            scores = score_calculator.calculate_scores()
+            # Save the scores as a csv file
+            score_path = save_path / "Scores"
+            if not score_path.exists():
+                score_path.mkdir(parents=True)
+            scores.to_csv(score_path / f"scores_{self.prediction_folder_name}_{prominence}.csv")
 
-        # Tar the predictions
-        self.tar_predictions(prediction_path)
+            # Tar the predictions
+            self.tar_predictions(prediction_path)
 
-        # Delete the prediction Directory
-        shutil.rmtree(prediction_path)
+            # Delete the prediction Directory
+            shutil.rmtree(prediction_path)
 
-        print(f"Scores: {scores}")
+            print(f"Scores: {scores}")
         return scores
 
     def tar_predictions(self, prediction_path):

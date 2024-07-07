@@ -23,51 +23,60 @@ class ScoreCalculator(ValidationBase):
         self.label_suffix = label_suffix
         self.prominence = prominence
 
-    def _calculate_f1_score_for_subject_and_phase(self, subject_name, phase):
-        # Build the path for the predictions and labels
-        prediction_path = self.prediction_path / subject_name / phase
-        label_path = self.label_path / subject_name / phase / self.label_suffix
+    def _calculate_f1_score_for_subject_and_phase(
+        self, subject_name, phase, prediction: np.array = None, label: np.array = None
+    ):
+        if prediction is None or label is None:
+            # Build the path for the predictions and labels
+            prediction_path = self.prediction_path / subject_name / phase
+            label_path = self.label_path / subject_name / phase / self.label_suffix
 
-        # Check if the paths exist
-        if not prediction_path.exists() or not label_path.exists():
-            return None
+            # Check if the paths exist
+            if not prediction_path.exists() or not label_path.exists():
+                return None
 
-        prediction = self._get_collected_array(prediction_path)
-        label = self._get_collected_array(label_path)
+            prediction = self._get_collected_array(prediction_path)
+            label = self._get_collected_array(label_path)
 
         # Calculate the F1 score
         return self._calculate_f1_score(prediction, label)
 
-    def _calculate_correlation_for_subject_and_phase(self, subject_name, phase):
-        # Build the path for the predictions and labels
-        prediction_path = self.prediction_path / subject_name / phase
-        label_path = self.label_path / subject_name / phase / self.label_suffix
+    def _calculate_correlation_for_subject_and_phase(
+        self, subject_name, phase, prediction: np.array = None, label: np.array = None
+    ):
+        if prediction is None or label is None:
+            # Build the path for the predictions and labels
+            prediction_path = self.prediction_path / subject_name / phase
+            label_path = self.label_path / subject_name / phase / self.label_suffix
 
-        # Check if the paths exist
-        if not prediction_path.exists() or not label_path.exists():
-            return None
+            # Check if the paths exist
+            if not prediction_path.exists() or not label_path.exists():
+                return None
 
-        prediction = self._get_collected_array(prediction_path)
-        label = self._get_collected_array(label_path)
+            prediction = self._get_collected_array(prediction_path)
+            label = self._get_collected_array(label_path)
         return np.corrcoef(prediction, label)[0, 1]
 
-    def _calculate_ihr_for_subject_and_phase(self, subject_name, phase):
-        # Build the path for the predictions and labels
-        prediction_path = self.prediction_path / subject_name / phase
-        label_path = self.label_path / subject_name / phase / self.label_suffix
+    def _calculate_ihr_for_subject_and_phase(
+        self, subject_name, phase, prediction: np.array = None, label: np.array = None
+    ):
+        if prediction is None or label is None:
+            # Build the path for the predictions and labels
+            prediction_path = self.prediction_path / subject_name / phase
+            label_path = self.label_path / subject_name / phase / self.label_suffix
 
-        # Check if the paths exist
-        if not prediction_path.exists() or not label_path.exists():
-            return None
+            # Check if the paths exist
+            if not prediction_path.exists() or not label_path.exists():
+                return None
 
-        peaks_predicted = self._get_collected_array(prediction_path)
-        peaks_label = self._get_collected_array(label_path)
+            prediction = self._get_collected_array(prediction_path)
+            label = self._get_collected_array(label_path)
 
         minimal_distance_between_peaks = int(1 / (self.max_heart_rate / 60) * self.fs)
 
         # Find the peaks
-        peaks_predicted, _ = find_peaks(peaks_predicted, distance=minimal_distance_between_peaks, prominence=0.3)
-        peaks_label, _ = find_peaks(peaks_label, distance=minimal_distance_between_peaks, prominence=0.3)
+        peaks_predicted, _ = find_peaks(prediction, distance=minimal_distance_between_peaks, prominence=0.3)
+        peaks_label, _ = find_peaks(label, distance=minimal_distance_between_peaks, prominence=0.3)
 
         # Calculate the difference
         diff_predicted = np.diff(peaks_predicted)
@@ -86,6 +95,29 @@ class ScoreCalculator(ValidationBase):
         instantaneous_heart_rate_label = 60 / diff_label
 
         return instantaneous_heart_rate_predicted, instantaneous_heart_rate_label
+
+    def calculate_scores_already_collected_arrays(self, base_path):
+        scores = {}
+        for subject in base_path.iterdir():
+            if not subject.is_dir():
+                continue
+            subject_name = subject.name
+            scores[subject_name] = {}
+            for phase in subject.iterdir():
+                if not phase.is_dir():
+                    continue
+                phase_name = phase.name
+                prediction = np.load(phase / "prediction.npy")
+                label = np.load(phase / "label.npy")
+                scores[subject_name][phase_name] = self._get_scores_for_subject_and_phase_already_collected(
+                    subject_name, phase_name, prediction, label
+                )
+        df = pd.DataFrame.from_dict(
+            {(subject, phase): value for subject, inner_dict in scores.items() for phase, value in inner_dict.items()},
+            orient="index",
+        )
+        df.columns = ["F1_score_100", "F1_score_50", "correlation", "ihr_predicted_median", "ihr_label_median"]
+        return df
 
     def calculate_scores(self):
         scores = {}
@@ -107,10 +139,12 @@ class ScoreCalculator(ValidationBase):
         return df
 
     def _get_scores_for_subject_and_phase(self, subject_name, phase):
-        self.save_collected_array(subject_name, phase)
-        f1_score_100, f1_score_50 = self._calculate_f1_score_for_subject_and_phase(subject_name, phase)
-        correlation = self._calculate_correlation_for_subject_and_phase(subject_name, phase)
-        ihr_predicted, ihr_labels = self._calculate_ihr_for_subject_and_phase(subject_name, phase)
+        prediction, label = self.save_collected_array(subject_name, phase)
+        f1_score_100, f1_score_50 = self._calculate_f1_score_for_subject_and_phase(
+            subject_name, phase, prediction, label
+        )
+        correlation = self._calculate_correlation_for_subject_and_phase(subject_name, phase, prediction, label)
+        ihr_predicted, ihr_labels = self._calculate_ihr_for_subject_and_phase(subject_name, phase, prediction, label)
         median_ihr_predicted = np.median(ihr_predicted)
         median_ihr_label = np.median(ihr_labels)
         return [f1_score_100, f1_score_50, correlation, median_ihr_predicted, median_ihr_label]
@@ -166,11 +200,27 @@ class ScoreCalculator(ValidationBase):
         label = self._get_collected_array(label_path)
 
         if os.getenv("WORK") is None:
-            save_path = Path("/Users/simonmeske/Desktop/Masterarbeit/CollectedArrays") / subject_name / phase
+            save_path = (
+                Path("/Users/simonmeske/Desktop/Masterarbeit/CollectedArrays")
+                / self.prediction_path.stem
+                / subject_name
+                / phase
+            )
         else:
-            save_path = Path(os.getenv("WORK")) / "CollectedArrays" / subject_name / phase
+            save_path = Path(os.getenv("WORK")) / "CollectedArrays" / self.prediction_path.stem / subject_name / phase
         if not save_path.exists():
             save_path.mkdir(parents=True)
 
         np.save(save_path / "prediction.npy", prediction)
         np.save(save_path / "label.npy", label)
+        return prediction, label
+
+    def _get_scores_for_subject_and_phase_already_collected(self, subject_name, phase, prediction, label):
+        f1_score_100, f1_score_50 = self._calculate_f1_score_for_subject_and_phase(
+            subject_name, phase, prediction, label
+        )
+        correlation = self._calculate_correlation_for_subject_and_phase(subject_name, phase, prediction, label)
+        ihr_predicted, ihr_labels = self._calculate_ihr_for_subject_and_phase(subject_name, phase, prediction, label)
+        median_ihr_predicted = np.median(ihr_predicted)
+        median_ihr_label = np.median(ihr_labels)
+        return [f1_score_100, f1_score_50, correlation, median_ihr_predicted, median_ihr_label]
