@@ -665,6 +665,8 @@ def _collect_and_score(prediction_base_path, label_base_path, label_folder_name,
         print(f"A Collecting and scoring {prediction_folder.name}")
         if "_40_" not in str(prediction_folder.name):
             continue
+        if "image" in str(prediction_folder.name):
+            continue
         print(f"B Collecting and scoring {prediction_folder.name}")
         prominences = [round(i, 2) for i in np.arange(0.1, 0.31, 0.05)]
         for prominence in prominences:
