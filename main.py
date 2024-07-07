@@ -662,7 +662,7 @@ def _collect_and_score(prediction_base_path, label_base_path, label_folder_name,
             continue
         if not prediction_folder.is_dir():
             continue
-        if "_1_" in prediction_folder.name:
+        if "_40_" not in prediction_folder.name or "_30_" not in prediction_folder.name:
             continue
         prominences = [round(i, 2) for i in np.arange(0.1, 0.31, 0.05)]
         for prominence in prominences:
