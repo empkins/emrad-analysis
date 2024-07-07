@@ -7,13 +7,10 @@ import click
 import numpy as np
 from sklearn.model_selection import train_test_split
 
-from rbm_robust.data_loading.datasets import D02Dataset
-from rbm_robust.models.cnn import CNN
 from rbm_robust.pipelines.cnnLstmPipeline import D02PipelineImproved, PreTrainedPipeline
 from rbm_robust.pipelines.preprocessing_pipeline import run_d02, run_radarcadia, run_d02_Mag
 from rbm_robust.pipelines.radarcadia_pipeline import RadarcadiaPipeline
 from rbm_robust.pipelines.time_power_pipeline import MagPipeline
-from rbm_robust.pipelines.waveletPipeline import WaveletPipeline
 import os
 
 from rbm_robust.validation.instantenous_heart_rate import ScoreCalculator
@@ -23,7 +20,6 @@ from rbm_robust.validation.scoring_pipeline import (
     pretrained_training_and_testing_pipeline,
     mag_training_and_testing_pipeline,
 )
-from rbm_robust.validation.wavelet_scoring import waveletPipelineScoring
 
 
 @click.command()
@@ -666,7 +662,7 @@ def _collect_and_score(prediction_base_path, label_base_path, label_folder_name,
             continue
         if not prediction_folder.is_dir():
             continue
-        prominences = range(0.1, 0.4, 0.05)
+        prominences = [round(i, 2) for i in np.arange(0.1, 0.31, 0.05)]
         for prominence in prominences:
             score_calculator = ScoreCalculator(
                 prediction_path=prediction_folder,
