@@ -15,6 +15,7 @@ from rbm_robust.pipelines.time_power_pipeline import MagPipeline
 from rbm_robust.pipelines.waveletPipeline import WaveletPipeline
 import os
 
+from rbm_robust.validation.instantenous_heart_rate import ScoreCalculator
 from rbm_robust.validation.scoring_pipeline import (
     training_and_testing_pipeline,
     d02_training_and_testing_pipeline,
@@ -90,6 +91,15 @@ def main(
             loss=loss,
             diff=diff,
         )
+    elif datasource == "magnitude":
+        ml_time_power(
+            epochs=epochs,
+            learning_rate=learning_rate,
+            image_based=image_based,
+            log=log,
+            wavelet=wavelet,
+            loss=loss,
+        )
     else:
         raise ValueError("Datasource not found")
 
@@ -98,35 +108,30 @@ def ml_time_power(
     learning_rate: float = 0.001,
     epochs: int = 50,
     image_based: bool = False,
-    breathing_type: str = "all",
-    label_type: str = "guassian",
     log: bool = False,
-    dual_channel: bool = False,
     wavelet: str = "morl",
-    identity: bool = False,
     loss: str = "bce",
-    diff: bool = False,
 ):
-    # path = "/Users/simonmeske/Desktop/Masterarbeit/DataD02"
-    # testing_path = "/Users/simonmeske/Desktop/Masterarbeit/TestDataD02"
-    path = os.getenv("TMPDIR") + "/DataD02/DataD02"
-    testing_path = os.getenv("WORK") + "/TestDataD02"
+    path = "/Users/simonmeske/Desktop/TestOrdner/Time_power"
+    testing_path = "/Users/simonmeske/Desktop/TestOrdner/Time_power"
+    # path = os.getenv("TMPDIR") + "/DataD02/DataD02"
+    # testing_path = os.getenv("WORK") + "/TestDataD02"
     # Get Training and Testing Subjects
     data_path = Path(path)
     testing_path = Path(testing_path)
     possible_subjects = [path.name for path in data_path.iterdir() if path.is_dir()]
     testing_subjects = [path.name for path in Path(testing_path).iterdir() if path.is_dir()]
 
-    use_ecg_labels = label_type == "ecg"
+    use_ecg_labels = False
 
     # Split Data
-    training_subjects, validation_subjects = train_test_split(possible_subjects, test_size=0.2, random_state=42)
+    # training_subjects, validation_subjects = train_test_split(possible_subjects, test_size=0.2, random_state=42)
     pipeline = MagPipeline(
         learning_rate=learning_rate,
         data_path=path,
         epochs=epochs,
-        training_subjects=training_subjects,
-        validation_subjects=validation_subjects,
+        training_subjects=possible_subjects,
+        validation_subjects=possible_subjects,
         testing_subjects=testing_subjects,
         image_based=image_based,
         ecg_labels=use_ecg_labels,
@@ -134,7 +139,6 @@ def ml_time_power(
         wavelet_type=wavelet,
         loss=loss,
         testing_path=testing_path,
-        diff=diff,
     )
     mag_training_and_testing_pipeline(pipeline=pipeline, testing_path=path, image_based=image_based)
 
@@ -177,10 +181,10 @@ def ml_d02(
     loss: str = "bce",
     diff: bool = False,
 ):
-    # path = "/Users/simonmeske/Desktop/Masterarbeit/DataD02"
-    # testing_path = "/Users/simonmeske/Desktop/Masterarbeit/TestDataD02"
-    path = os.getenv("TMPDIR") + "/DataD02"
-    testing_path = os.getenv("WORK") + "/TestDataD02"
+    path = "/Users/simonmeske/Desktop/Masterarbeit/DataD02"
+    testing_path = "/Users/simonmeske/Desktop/Masterarbeit/TestDataD02"
+    # path = os.getenv("TMPDIR") + "/DataD02"
+    # testing_path = os.getenv("WORK") + "/TestDataD02"
     # Get Training and Testing Subjects
     data_path = Path(path)
     testing_path = Path(testing_path)
@@ -574,51 +578,43 @@ def _get_args_from_model_name(model_name: str):
     return args
 
 
+def score(prediction_path: str, prediction_folder_name: str):
+    test_data_folder_name = Path(prediction_path).name
+    label_folder_name = "labels_gaussian"
+    test_path = Path(prediction_path)
+
+    label_path = test_path
+    prediction_path = Path(str(label_path).replace(test_data_folder_name, f"Predictions/{prediction_folder_name}"))
+
+    prominences = range(0.1, 0.4, 0.05)
+    for prominence in prominences:
+        score_calculator = ScoreCalculator(
+            prediction_path=prediction_path,
+            label_path=label_path,
+            overlap=0.4,
+            fs=200,
+            label_suffix=label_folder_name,
+            prominence=prominence,
+        )
+
+        if os.getenv("WORK") is None:
+            save_path = Path("/Users/simonmeske/Desktop/Masterarbeit")
+        else:
+            save_path = Path(os.getenv("WORK"))
+
+        scores = score_calculator.calculate_scores()
+        # Save the scores as a csv file
+        score_path = save_path / "Scores"
+        if not score_path.exists():
+            score_path.mkdir(parents=True)
+        scores.to_csv(score_path / f"scores_{prediction_folder_name}_prominence_{prominence}.csv")
+
+        print(f"Scores: {scores}")
+    return scores
+
+
 if __name__ == "__main__":
-    # devices = tf.config.experimental.list_physical_devices("GPU")
-    # tf.config.experimental.set_memory_growth(devices[0], True)
-    # input_loading()
-    # check_for_empty_arrays()
-    # input_loading()
-    # args = sys.argv[1:]
-    # model_path = None
-    # remaining_epochs = 0
-    # if len(args) > 0:
-    #     if args[0] == "-mp":
-    #         model_path = args[1]
-    #     if args[2] == "-epochs":
-    #         remaining_epochs = int(args[3])
-    # main(model_path, remaining_epochs)
-    # dim_fix()
-    # is_it_right()
     main()
     # scoring()
     # preprocessing_magnitude()
-    # fix_and_normalize_diff()
     # preprocessing()
-    # main()
-    # data_path = Path("/home/woody/iwso/iwso116h/DataD02")
-    # possible_subjects = [path.name for path in data_path.iterdir() if path.is_dir()]
-    #
-    # # Split Data
-    # train_val, testing_subjects = train_test_split(possible_subjects, test_size=0.2, random_state=42)
-    #
-    # print(f"Training and Validation Subjects: {train_val}")
-    # print(f"Testing Subjects: {testing_subjects}")
-    #
-    # train, val = train_test_split(train_val, test_size=0.2, random_state=42)
-    #
-    # print(f"Training Subjects: {train}")
-    # print(f"Validation Subjects: {val}")
-    # move_training_data()
-    # preprocessing_radarcadia()
-    # get_data_set_radarcadia()
-    # move_training_data()
-    # wavelet_training(None, 0)
-    # check_testing_and_training_paths()
-    # identity_check()
-    # dataset_path = Path("/Users/simonmeske/Desktop/TestOrdner/data_per_subject")
-    # dataset = D02Dataset(dataset_path)
-    #
-    # input_label_generator = InputAndLabelGenerator()
-    # input_label_generator.generate_training_inputs_and_labels(dataset)

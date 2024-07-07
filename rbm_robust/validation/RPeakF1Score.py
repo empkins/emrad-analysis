@@ -22,10 +22,17 @@ class RPeakF1Score(Algorithm):
     pred_peaks_: int
     total_peaks_: int
 
-    def __init__(self, max_deviation_ms: int = 100, max_heart_rate: int = 180, sampling_rate: float = 200):
+    def __init__(
+        self,
+        max_deviation_ms: int = 100,
+        max_heart_rate: int = 180,
+        sampling_rate: float = 200,
+        prominence: float = 0.3,
+    ):
         self.max_deviation_ms = max_deviation_ms
         self.max_heart_rate = max_heart_rate
         self.sampling_rate = sampling_rate
+        self.prominence = prominence
 
     @make_action_safe
     def compute_predictions(self, predicted_r_peak_signal: np.ndarray, ground_truth_r_peak_signal: np.ndarray):
@@ -33,8 +40,12 @@ class RPeakF1Score(Algorithm):
 
         minimal_distance_between_peaks = int(1 / (self.max_heart_rate / 60) * self.sampling_rate)
 
-        pred_peaks, _ = find_peaks(predicted_r_peak_signal, distance=minimal_distance_between_peaks, prominence=0.3)
-        gt_peaks, _ = find_peaks(ground_truth_r_peak_signal, distance=minimal_distance_between_peaks, prominence=0.3)
+        pred_peaks, _ = find_peaks(
+            predicted_r_peak_signal, distance=minimal_distance_between_peaks, prominence=self.prominence
+        )
+        gt_peaks, _ = find_peaks(
+            ground_truth_r_peak_signal, distance=minimal_distance_between_peaks, prominence=self.prominence
+        )
 
         true_positives = 0
 
@@ -102,8 +113,12 @@ class RPeakF1Score(Algorithm):
 
         minimal_distance_between_peaks = int(1 / (self.max_heart_rate / 60) * self.sampling_rate)
 
-        pred_peaks, _ = find_peaks(predicted_r_peak_signal, distance=minimal_distance_between_peaks, prominence=0.3)
-        gt_peaks, _ = find_peaks(ground_truth_r_peak_signal, distance=minimal_distance_between_peaks, prominence=0.3)
+        pred_peaks, _ = find_peaks(
+            predicted_r_peak_signal, distance=minimal_distance_between_peaks, prominence=self.prominence
+        )
+        gt_peaks, _ = find_peaks(
+            ground_truth_r_peak_signal, distance=minimal_distance_between_peaks, prominence=self.prominence
+        )
 
         true_positives = 0
 

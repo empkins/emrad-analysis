@@ -10,7 +10,7 @@ from rbm_robust.validation.validationBase import ValidationBase
 
 
 class ScoreCalculator(ValidationBase):
-    def __init__(self, prediction_path, label_path, fs=200, overlap=0.4, label_suffix="labels_ecg"):
+    def __init__(self, prediction_path, label_path, fs=200, overlap=0.4, label_suffix="labels_ecg", prominence=0.3):
         self.max_heart_rate = 180
         if isinstance(prediction_path, str):
             prediction_path = Path(prediction_path)
@@ -21,6 +21,7 @@ class ScoreCalculator(ValidationBase):
         self.overlap = overlap
         self.fs = fs
         self.label_suffix = label_suffix
+        self.prominence = prominence
 
     def _calculate_f1_score_for_subject_and_phase(self, subject_name, phase):
         # Build the path for the predictions and labels
@@ -144,12 +145,8 @@ class ScoreCalculator(ValidationBase):
         return array[start:]
 
     def _calculate_f1_score(self, prediction, label):
-        f1RPeakScore_100 = RPeakF1Score(max_deviation_ms=100)
-        f1RPeakScore_50 = RPeakF1Score(max_deviation_ms=50)
-
-        # Get the collected Arrays
-        # rpeaks_pred = self._get_collected_array(prediction)
-        # rpeaks_label = self._get_collected_array(label)
+        f1RPeakScore_100 = RPeakF1Score(max_deviation_ms=100, prominence=self.prominence)
+        f1RPeakScore_50 = RPeakF1Score(max_deviation_ms=50, prominence=self.prominence)
 
         # Calculate the F1 score
         f1_score_100 = f1RPeakScore_100.compute(prediction, label).f1_score_

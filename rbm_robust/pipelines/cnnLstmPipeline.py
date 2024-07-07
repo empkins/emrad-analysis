@@ -485,15 +485,11 @@ class InputAndLabelGenerator(Algorithm):
                 # Segmentation
                 if len(phase_radar_data) == 0 or len(phase_ecg_data) == 0:
                     continue
-                segments_radar = segmentation_clone.segment(phase_radar_data, sampling_rate).segmented_signal_
-                segments_ecg = segmentation_clone.segment(phase_ecg_data, sampling_rate).segmented_signal_
-                if len(segments_radar) != len(segments_ecg):
-                    continue
-                # Create Inputs
-                length = min(len(segments_radar), len(segments_ecg))
-                for j in range(length):
+                combined_df = pd.concat([phase_radar_data, phase_ecg_data], axis=1, join="outer").fillna(0)
+                combined_df_segmented = segmentation_clone.segment(combined_df, sampling_rate).segmented_signal_
+                for j in range(len(combined_df_segmented)):
                     pre_processor_clone.preprocess_mag(
-                        segments_radar[j],
+                        combined_df_segmented[j][list(phase_radar_data.columns)],
                         subject.SAMPLING_RATE_DOWNSAMPLED,
                         subject.subjects[0],
                         phase,
@@ -502,7 +498,7 @@ class InputAndLabelGenerator(Algorithm):
                         image_based,
                     )
                     label_processor_clone.label_generation(
-                        segments_ecg[j],
+                        combined_df_segmented[j][list(phase_ecg_data.columns)],
                         subject.SAMPLING_RATE_DOWNSAMPLED,
                         subject.subjects[0],
                         phase,
@@ -753,8 +749,6 @@ class PreTrainedPipeline(OptimizablePipeline):
             input_folder_name += "_log"
         if self.image_based:
             input_folder_name = input_folder_name.replace("array", "image")
-        if self.dual_channel:
-            input_folder_name += "_dual"
 
         self.wavelet_model.predict(
             testing_subjects=self.testing_subjects,
@@ -951,55 +945,43 @@ class D02PipelineImproved(OptimizablePipeline):
         return self
 
     def score(self, datapoint: DatasetT) -> Union[float, dict[str, float]]:
-        true_positives = 0
-        total_gt_peaks = 0
-        total_pred_peaks = 0
-
         test_data_folder_name = Path(self.testing_path).name
         label_folder_name = "labels_gaussian" if not self.ecg_labels else "labels_ecg"
         test_path = Path(self.testing_path)
 
-        for subject in test_path.iterdir():
-            if not subject.is_dir():
-                continue
-            if subject.name not in self.testing_subjects:
-                continue
-            print(f"subject {subject}")
-            for phase in subject.iterdir():
-                if not phase.is_dir():
-                    continue
-                if phase.name == "logs" or phase.name == "raw":
-                    continue
-                print(f"phase {phase}")
-                prediction_path = phase
-                prediction_path = Path(
-                    str(prediction_path).replace(test_data_folder_name, f"Predictions/{self.prediction_folder_name}")
-                )
-                label_path = phase / label_folder_name
-                prediction_files = sorted(path.name for path in prediction_path.iterdir() if path.is_file())
-                f1RPeakScore = RPeakF1Score(max_deviation_ms=100)
-                for prediction_file in prediction_files:
-                    prediction = np.load(prediction_path / prediction_file)
-                    label = np.load(label_path / prediction_file)
-                    f1RPeakScore.compute_predictions(prediction, label)
-                    true_positives += f1RPeakScore.tp_
-                    total_gt_peaks += f1RPeakScore.total_peaks_
-                    total_pred_peaks += f1RPeakScore.pred_peaks_
+        label_path = test_path
+        prediction_path = Path(
+            str(label_path).replace(test_data_folder_name, f"Predictions/{self.prediction_folder_name}")
+        )
 
-        if total_pred_peaks == 0:
-            print("No Peaks detected")
-            return {
-                "abs_hr_error": 0,
-                "mean_instantaneous_error": 0,
-                "f1_score": 0,
-                "mean_relative_error_hr": 0,
-                "mean_absolute_error": 0,
-            }
+        score_calculator = ScoreCalculator(
+            prediction_path=prediction_path,
+            label_path=label_path,
+            overlap=0.4,
+            fs=200,
+            label_suffix=label_folder_name,
+        )
 
-        precision = true_positives / total_pred_peaks
-        recall = true_positives / total_gt_peaks
-        f1_score = 2 * (precision * recall) / (precision + recall)
-        print(f"f1 Score {f1_score}")
+        if os.getenv("WORK") is None:
+            save_path = Path("/Users/simonmeske/Desktop/Masterarbeit")
+        else:
+            save_path = Path(os.getenv("WORK"))
+
+        scores = score_calculator.calculate_scores()
+        # Save the scores as a csv file
+        score_path = save_path / "Scores"
+        if not score_path.exists():
+            score_path.mkdir(parents=True)
+        scores.to_csv(score_path / f"scores_{self.prediction_folder_name}.csv")
+
+        # Tar the predictions
+        self.tar_predictions(prediction_path)
+
+        # Delete the prediction Directory
+        shutil.rmtree(prediction_path)
+
+        print(f"Scores: {scores}")
+        return scores
 
 
 class D02Pipeline(OptimizablePipeline):

@@ -37,7 +37,6 @@ class LSTM(Algorithm):
         training_steps: int = 0,
         validation_steps: int = 0,
         batch_size: int = 8,
-        image_based=False,
         loss: str = "bce",
         dual_channel: bool = False,
         model_path: str = None,
@@ -54,7 +53,6 @@ class LSTM(Algorithm):
         self.training_steps = training_steps
         self.validation_steps = validation_steps
         self.batch_size = batch_size
-        self.image_based = image_based
         self.loss = loss
         self.dual_channel = dual_channel
         self.model_path = model_path
@@ -98,16 +96,13 @@ class LSTM(Algorithm):
         return self
 
     def _create_model(self):
-        self._model = keras.Sequential(
-            [
-                tf.keras.layers.Input(shape=(1000, 5)),
-                tf.keras.layers.Bidirectional(tf.keras.layers.LSTM(self.bi_lstm_units, return_sequences=True)),
-                tf.keras.layers.Dropout(self.first_dropout_rate),
-                tf.keras.layers.LSTM(self.mono_lstm_units),
-                tf.keras.layers.Dropout(self.second_dropout_rate),
-                tf.keras.layers.Dense(1000),
-            ]
-        )
+        self._model = keras.Sequential()
+        self._model.add(tf.keras.layers.Input(shape=(1000, 5), dtype=tf.float64))
+        self._model.add(tf.keras.layers.Bidirectional(tf.keras.layers.LSTM(self.bi_lstm_units, return_sequences=True)))
+        self._model.add(tf.keras.layers.Dropout(self.first_dropout_rate))
+        self._model.add(tf.keras.layers.LSTM(self.mono_lstm_units))
+        self._model.add(tf.keras.layers.Dropout(self.second_dropout_rate))
+        self._model.add(tf.keras.layers.Dense(1000))
         self._model.compile(optimizer=keras.optimizers.Adam(self.learning_rate), loss="mse")
         return self
 

@@ -19,26 +19,12 @@ def _get_dataset(
     data_path,
     subjects,
     batch_size: int = 8,
-    breathing_type: str = "all",
-    wavelet_type: str = "morl",
-    ecg_labels: bool = False,
-    log_transform: bool = False,
-    image_based: bool = False,
-    dual_channel: bool = False,
-    identity: bool = False,
 ) -> (tf.data.Dataset, int):
     ds_factory = DatasetFactory()
-    dataset, steps = ds_factory.get_wavelet_dataset_for_subjects_radarcadia(
+    dataset, steps = ds_factory.get_time_power_dataset_for_subjects(
         base_path=data_path,
         subjects=subjects,
         batch_size=batch_size,
-        breathing_type=breathing_type,
-        wavelet_type=wavelet_type,
-        ecg_labels=ecg_labels,
-        log_transform=log_transform,
-        image_based=image_based,
-        dual_channel=dual_channel,
-        identity=identity,
     )
     return dataset, steps
 
@@ -98,26 +84,12 @@ class MagPipeline(OptimizablePipeline):
         self.training_ds, self.training_steps = _get_dataset(
             data_path=data_path,
             subjects=training_subjects,
-            breathing_type=breathing_type,
-            wavelet_type=wavelet_type,
-            ecg_labels=ecg_labels,
-            log_transform=log_transform,
             batch_size=batch_size,
-            image_based=image_based,
-            dual_channel=dual_channel,
-            identity=identity,
         )
         self.validation_ds, self.validation_steps = _get_dataset(
             data_path=data_path,
             subjects=validation_subjects,
-            breathing_type=breathing_type,
-            wavelet_type=wavelet_type,
-            ecg_labels=ecg_labels,
-            log_transform=log_transform,
             batch_size=batch_size,
-            image_based=image_based,
-            dual_channel=dual_channel,
-            identity=identity,
         )
         self.ecg_labels = ecg_labels
         self.log_transform = log_transform
@@ -128,7 +100,7 @@ class MagPipeline(OptimizablePipeline):
         self.batch_size = batch_size
 
         learning_rate_txt = str(learning_rate).replace(".", "_")
-        model_name = f"radarcadia_{wavelet_type}_{breathing_type}_{epochs}_{learning_rate_txt}_{loss}"
+        model_name = f"time_power_{wavelet_type}_{breathing_type}_{epochs}_{learning_rate_txt}_{loss}"
         if ecg_labels:
             model_name += "_ecg"
         if log_transform:
@@ -143,19 +115,24 @@ class MagPipeline(OptimizablePipeline):
         time = datetime.now().strftime("%Y%m%d_%H%M%S")
         self.prediction_folder_name = f"predictions_{model_name}_{time}"
 
-        # self.prediction_folder_name = "predictions_radarcadia_morl_all_30_0_0001_bce_20240622_130343"
+        num_samples = 100  # number of samples in the dataset
+        x_data = np.random.random((num_samples, 1000, 5)).astype(np.float32)
+        y_data = np.random.random((num_samples, 1000)).astype(np.float32)
+
+        # Convert to TensorFlow dataset
+        dataset = tf.data.Dataset.from_tensor_slices((x_data, y_data))
+        dataset = dataset.batch(32)  # batch size of 32
 
         # Initialize the model
         self.biLSTM_model = LSTM(
             learning_rate=learning_rate,
             epochs=epochs,
             model_name=model_name,
-            training_steps=self.training_steps,
-            validation_steps=self.validation_steps,
+            training_steps=3,
+            validation_steps=3,
             training_ds=self.training_ds,
-            validation_ds=self.validation_ds,
-            batch_size=self.batch_size,
-            image_based=image_based,
+            validation_ds=self.training_ds,
+            batch_size=8,
             loss=loss,
             dual_channel=dual_channel,
         )
@@ -165,14 +142,7 @@ class MagPipeline(OptimizablePipeline):
         return self
 
     def run(self, path_to_save_predictions: str, image_based: bool = False, identity: bool = False):
-        input_folder_name = f"inputs_wavelet_array_{self.wavelet_type}"
-        if self.log_transform and not self.dual_channel:
-            input_folder_name += "_log"
-        if self.image_based:
-            input_folder_name = input_folder_name.replace("array", "image")
-        if identity:
-            input_folder_name = input_folder_name.replace("wavelet", "identity")
-
+        input_folder_name = f"filtered_radar"
         self.biLSTM_model.predict(
             testing_subjects=self.testing_subjects,
             data_path=self.testing_path,

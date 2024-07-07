@@ -128,6 +128,46 @@ class UNetWaveletTF(Algorithm):
         else:
             raise ValueError("Invalid combination of dual_channel and image_based")
 
+    def get_fold_indices(self, num_samples, k, fold):
+        fold_size = num_samples // k
+        start_val = fold * fold_size
+        end_val = start_val + fold_size
+        indices = np.arange(num_samples)
+        val_indices = indices[start_val:end_val]
+        train_indices = np.concatenate([indices[:start_val], indices[end_val:]])
+        return train_indices, val_indices
+
+    def kfold_cross_validation(
+        self, k=5, testing_subjects=None, data_path=None, input_folder_name=None, prediction_folder_name=None
+    ):
+        # Assuming each file contains one data point for simplicity
+        num_samples = len(self.training_steps + self.validation_steps)
+
+        for fold in range(k):
+            self._create_model()
+
+            # Get the indices for the training and validation data
+            train_indices, val_indices = self.get_fold_indices(num_samples, k, fold)
+
+            def is_train(index):
+                return tf.reduce_any(tf.equal(train_indices, index))
+
+            def is_val(index):
+                return tf.reduce_any(tf.equal(val_indices, index))
+
+            combined_dataset = self.training_ds.concatenate(self.validation_ds)
+
+            train_dataset = combined_dataset.filter(lambda index, _: is_train(index))
+            val_dataset = combined_dataset.filter(lambda index, _: is_val(index))
+
+            # Fit the model
+            self._model.fit(train_dataset, epochs=self.epochs, validation_data=val_dataset)
+
+            # Evaluate the model
+            self.predict(testing_subjects, data_path, input_folder_name, prediction_folder_name + f"_fold_{fold}")
+            val_loss, val_accuracy = self._model.evaluate(val_dataset)
+            print(f"Fold {fold + 1}, Validation Loss: {val_loss}, Validation Accuracy: {val_accuracy}")
+
     def save_model(self):
         name = self.model_name + datetime.now().strftime("%Y%m%d_%H%M%S")
         if not os.path.exists("Models"):
@@ -345,10 +385,8 @@ class UNetWavelet(Algorithm):
             )
         )
         self._model.add(layers.Conv2D(filters=1, kernel_size=(256, 1), activation="sigmoid"))
-        # self._model.add(layers.Dense(1000, activation="linear"))
         self._model.add(layers.Flatten())
         loss_func_bce = keras.losses.BinaryCrossentropy(from_logits=False, reduction="sum_over_batch_size")
-        # loss_func_mse = keras.losses.MeanSquaredError(reduction="sum_over_batch_size")
         self._model.compile(optimizer=keras.optimizers.Adam(learning_rate=self.learning_rate), loss=loss_func_bce)
         return self
 
