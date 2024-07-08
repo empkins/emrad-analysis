@@ -791,13 +791,12 @@ class PreTrainedPipeline(OptimizablePipeline):
                 score_path.mkdir(parents=True)
             scores.to_csv(score_path / f"scores_{self.prediction_folder_name}_{prominence}.csv")
 
-            # Tar the predictions
-            self.tar_predictions(prediction_path)
+        # Tar the predictions
+        self.tar_predictions(prediction_path)
 
-            # Delete the prediction Directory
-            shutil.rmtree(prediction_path)
+        # Delete the prediction Directory
+        shutil.rmtree(prediction_path)
 
-            print(f"Scores: {scores}")
         return scores
 
     def tar_predictions(self, prediction_path):
