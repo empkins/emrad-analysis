@@ -597,7 +597,7 @@ def _get_args_from_model_name(model_name: str):
     if "ecg" in model_name:
         args["label_type"] = "ecg"
     else:
-        args["label_type"] = "guassian"
+        args["label_type"] = "gaussian"
 
     if "log" in model_name:
         args["log"] = True
