@@ -294,7 +294,7 @@ def pretrained(base_path: str):
         print(args)
         if args["label_type"] == "ecg":
             continue
-        if not args["dual_channel"]:
+        if args["dual_channel"]:
             continue
         ml_already_trained(
             model_path=str(model),
