@@ -299,7 +299,7 @@ def pretrained(base_path: str):
         ml_already_trained(
             model_path=str(model),
             image_based=args["image_based"],
-            datasource=args["datasource"],
+            datasource="d02",
             label_type=args["label_type"],
             log=args["log"],
             wavelet=args["wavelet"],
