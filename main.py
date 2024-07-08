@@ -296,6 +296,10 @@ def pretrained(base_path: str):
             continue
         if args["dual_channel"]:
             continue
+        if args["wavelet"] == "mexh":
+            continue
+        if args["wavelet"] == "shan1-1":
+            continue
         ml_already_trained(
             model_path=str(model),
             image_based=args["image_based"],
