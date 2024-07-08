@@ -768,7 +768,7 @@ class PreTrainedPipeline(OptimizablePipeline):
             str(label_path).replace(test_data_folder_name, f"Predictions/{self.prediction_folder_name}")
         )
 
-        prominences = range(0.1, 0.35, 0.05)
+        prominences = [round(i, 2) for i in np.arange(0.05, 0.36, 0.05)]
         for prominence in prominences:
             score_calculator = ScoreCalculator(
                 prediction_path=prediction_path,
