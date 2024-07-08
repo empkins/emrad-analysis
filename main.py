@@ -283,8 +283,7 @@ def preprocessing_radarcadia():
     run_radarcadia(base_path, target_path)
 
 
-def pretrained():
-    base_path = os.getenv("HOME") + "/altPreprocessing/emrad-analysis/Models"
+def pretrained(base_path: str):
     base_path_for_models = Path(base_path)
     for model in base_path_for_models.glob("*.keras"):
         if "radarcadia" not in model.name:
