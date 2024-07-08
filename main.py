@@ -663,7 +663,7 @@ def _collect_and_score(prediction_base_path, label_base_path, label_folder_name,
         if not prediction_folder.is_dir():
             continue
         print(f"A Collecting and scoring {prediction_folder.name}")
-        if "_40_" not in str(prediction_folder.name) or "_70_" not in str(prediction_folder.name):
+        if "_70_" not in str(prediction_folder.name):
             continue
         if "image" in str(prediction_folder.name):
             continue
