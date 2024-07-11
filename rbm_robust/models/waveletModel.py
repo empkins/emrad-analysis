@@ -98,7 +98,13 @@ class UNetWaveletTF(Algorithm):
     def _create_model(self):
         self._model = Sequential()
         channel_number = self._get_channel_number()
-
+        models.resunet_a_2d(
+            (256, 1000, channel_number),
+            filter_num=[16, 32, 64],
+            n_labels=channel_number,
+            output_activation="linear",
+            activation="sigmoid",
+        )
         self._model.add(
             models.unet_2d(
                 (256, 1000, channel_number),

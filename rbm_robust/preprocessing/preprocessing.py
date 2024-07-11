@@ -164,7 +164,6 @@ class Segmentation(Algorithm):
             # Zero padding
             if len(data_segment) < self.window_size_in_seconds * sampling_rate:
                 if isinstance(data_segment, pd.Series):
-                    # zeros = pd.Series(np.zeros(rows_needed))
                     zeros = self.zero_pad_series(data_segment)
                     data_segment = data_segment.append(zeros, ignore_index=True)
                 elif isinstance(data_segment, pd.DataFrame) and len(data_segment) > 0:
@@ -208,7 +207,7 @@ class Normalizer(Algorithm):
     # Results
     normalized_signal_: pd.Series
 
-    def __init__(self, method: str = "minmax"):
+    def __init__(self, method: str = "zscore"):
         self.method = method
 
     @make_action_safe
@@ -221,11 +220,25 @@ class Normalizer(Algorithm):
         Returns:
             _type_: Normalized signal
         """
-        if self.method == "zscore":
-            self.normalized_signal_ = (signal - signal.mean()) / signal.std()
-        elif self.method == "minmax":
-            self.normalized_signal_ = (signal - signal.min()) / (signal.max() - signal.min())
+        self.normalized_signal_ = self.safe_z_score_normalize(signal)
+        self.normalized_signal_ = self.safe_min_max_normalize(self.normalized_signal_)
         return self
+
+    def safe_z_score_normalize(self, data):
+        mean = np.mean(data)
+        std = np.std(data)
+        if std == 0:
+            return data  # or np.zeros_like(data) if you want to normalize to 0
+        else:
+            return (data - mean) / std
+
+    def safe_min_max_normalize(self, data):
+        min_val = np.min(data)
+        max_val = np.max(data)
+        if max_val == min_val:
+            return np.zeros_like(data)
+        else:
+            return (data - min_val) / (max_val - min_val)
 
 
 class WaveletTransformer(Algorithm):
@@ -346,12 +359,13 @@ class WaveletTransformer(Algorithm):
 
     def _calculate_single_signal(self, signal, segment, base_path, subject_id, phase, img_based, identity):
         wavelet_types = [
-            "morl",
-            "gaus1",
-            # "mexh",
-            # "shan1-1",
+            # "morl",
+            # "gaus1",
+            "mexh",
+            "shan1-1",
         ]
         for wavelet_type in wavelet_types:
+            normalizer_clone = self.normalizer.clone()
             path = self.get_path(
                 base_path=base_path, subject_id=subject_id, phase=phase, identity=identity, create_dir=False
             )
@@ -369,29 +383,22 @@ class WaveletTransformer(Algorithm):
             coefficients, frequencies = pywt.cwt(signal, scales, wavelet_type, sampling_period=1 / self.sampling_rate)
             if np.iscomplexobj(coefficients):
                 coefficients = np.abs(coefficients)
-            # self._save_image(coefficients, frequencies, -1, segment, 0, path.replace("array", "image"))
-            scaler = MinMaxScaler()
-            coefficients_normalized = scaler.fit_transform(coefficients)
-            # coefficients_normalized = self._normalize(coefficients)
+            coefficients_normalized = normalizer_clone.normalize(coefficients).normalized_signal_
             coefficients_reshaped = coefficients_normalized.reshape(
                 coefficients_normalized.shape[0], coefficients_normalized.shape[1], 1
             )
             np.save(os.path.join(path, f"{segment}.npy"), coefficients_reshaped)
-
             coefficients_fit_for_log = np.abs(coefficients)
             constant_value = coefficients_fit_for_log.min() / 2
             coefficients_fit_for_log += constant_value
             log_transformed_coefficients = FunctionTransformer(np.log1p, validate=True).fit_transform(
                 coefficients_fit_for_log
             )
-            log_transformed_coefficients = scaler.fit_transform(log_transformed_coefficients)
+            log_transformed_coefficients = normalizer_clone.normalize(log_transformed_coefficients).normalized_signal_
             log_transformed_coefficients = log_transformed_coefficients.reshape(
                 log_transformed_coefficients.shape[0], log_transformed_coefficients.shape[1], 1
             )
             np.save(os.path.join(log_path, f"{segment}.npy"), log_transformed_coefficients)
-            # self._save_image(
-            #     log_transformed_coefficients, frequencies, -1, segment, 0, log_path.replace("array", "image")
-            # )
 
     def _normalize(self, coefficients):
         normalizer_clone = self.normalizer.clone()

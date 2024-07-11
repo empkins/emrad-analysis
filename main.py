@@ -709,6 +709,6 @@ if __name__ == "__main__":
     # collect_and_score_arrays_radarcadia()
     # main()
     # scoring()
-    pretrained(os.getenv("HOME") + "/emrad-analysis/Models")
+    # pretrained(os.getenv("HOME") + "/emrad-analysis/Models")
     # preprocessing_magnitude()
-    # preprocessing()
+    preprocessing()
