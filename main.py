@@ -711,4 +711,5 @@ if __name__ == "__main__":
     # scoring()
     # pretrained(os.getenv("HOME") + "/emrad-analysis/Models")
     # preprocessing_magnitude()
-    preprocessing()
+    move_training_data()
+    # preprocessing()
