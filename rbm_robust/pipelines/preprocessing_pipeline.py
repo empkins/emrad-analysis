@@ -49,6 +49,28 @@ def run_d02_Mag(
     #     )
 
 
+def process_radarcadia_mag_subset(subjects_dataset, target_path):
+    generator = InputAndLabelGenerator()
+    # try:
+    generator.generate_training_inputs_and_labels_radarcadia_mag(subjects_dataset, target_path)
+
+
+def run_radarcadia_Mag(
+    data_path: str,
+    target_path: str,
+    process_labels: bool = True,
+    process_inputs: bool = True,
+    process_images: bool = False,
+):
+    subjects_dataset = RadarCardiaStudyDataset(pathlib.Path(data_path))
+    subsets = []
+    subjects = list(set(subjects_dataset.index["subject"]))
+    for subject in subjects:
+        subject_subset = subjects_dataset.get_subset(subject=subject)
+        subsets.append(subject_subset)
+    process_radarcadia_mag_subset(subjects_dataset, target_path)
+
+
 def process_d02_subset(
     data_set: D02Dataset,
     target_path: str,
@@ -94,14 +116,14 @@ def run_radarcadia(
     for subject in subjects:
         subject_subset = subjects_dataset.get_subset(subject=subject)
         subsets.append(subject_subset)
-    # process_radarcadia_subset(subjects_dataset, target_path)
-    num_processes = 4
-    print(num_processes)
-    with Pool(num_processes) as p:
-        p.starmap(
-            process_radarcadia_subset,
-            [(subset, target_path) for subset in subsets],
-        )
+    process_radarcadia_subset(subjects_dataset, target_path)
+    # num_processes = 4
+    # print(num_processes)
+    # with Pool(num_processes) as p:
+    #     p.starmap(
+    #         process_radarcadia_subset,
+    #         [(subset, target_path) for subset in subsets],
+    #     )
 
 
 def process_radarcadia_subset(

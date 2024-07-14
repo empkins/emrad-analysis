@@ -313,6 +313,7 @@ class InputAndLabelGenerator(Algorithm):
         "generate_training_inputs_and_labels",
         "generate_training_inputs_and_labels_radarcadia",
         "generate_training_inputs_and_labels_mag",
+        "generate_training_inputs_and_labels_radarcadia_mag",
     )
 
     # PreProcessing
@@ -506,6 +507,66 @@ class InputAndLabelGenerator(Algorithm):
                         self.downsampled_hz,
                         base_path,
                     )
+        self.input_data_path_ = base_path
+        return self
+
+    @make_action_safe
+    def generate_training_inputs_and_labels_radarcadia_mag(
+        self, dataset: RadarCardiaStudyDataset, base_path: str = "Data", image_based: bool = False
+    ):
+        # Init Clones
+        pre_processor_clone = self.pre_processor.clone()
+        label_processor_clone = self.labelProcessor.clone()
+        segmentation_clone = self.segmentation.clone()
+        subjects = list(set(dataset.index["subject"]))
+        for i in range(len(subjects)):
+            print(f"Subject {subjects[i]}")
+            # iterate over different locations
+            for location in ["carotis", "aorta_prox", "aorta_med", "aorta_dist"]:
+                # Check which breathing types are avaialable
+                subject = dataset.get_subset(
+                    subject=subjects[i],
+                    location=location,
+                )
+                breathing_types = list(set(subject.index["breathing"]))
+                for breath in breathing_types:
+                    subject = dataset.get_subset(
+                        subject=subjects[i],
+                        location=location,
+                        breathing=breath,
+                    )
+                    try:
+                        radar_data, radar_sampling_rate = subject.emrad_data
+                        ecg_data = subject.load_data_from_location("biopac_data_preprocessed")["ecg"]
+                    except Exception as e:
+                        print(f"Exclude Subject {subject} due to error {e}")
+                        continue
+                    sampling_rate = subject.sampling_rates["resampled"]
+                    segments_radar = segmentation_clone.segment(radar_data, sampling_rate).segmented_signal_
+                    segments_ecg = segmentation_clone.segment(ecg_data, sampling_rate).segmented_signal_
+                    if len(segments_radar) != len(segments_ecg):
+                        continue
+                    print(f"Location {location}")
+                    # Create Inputs
+                    for j in range(len(segments_radar)):
+                        pre_processor_clone.preprocess_mag(
+                            segments_radar[j],
+                            radar_sampling_rate,
+                            subjects[0],
+                            location + "_" + breath,
+                            j,
+                            base_path,
+                            image_based,
+                        )
+                        label_processor_clone.label_generation(
+                            segments_ecg[j],
+                            sampling_rate,
+                            subjects[0],
+                            location + "_" + breath,
+                            j,
+                            self.downsampled_hz,
+                            base_path,
+                        )
         self.input_data_path_ = base_path
         return self
 

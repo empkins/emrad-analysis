@@ -8,7 +8,7 @@ import numpy as np
 from sklearn.model_selection import train_test_split
 
 from rbm_robust.pipelines.cnnLstmPipeline import D02PipelineImproved, PreTrainedPipeline
-from rbm_robust.pipelines.preprocessing_pipeline import run_d02, run_radarcadia, run_d02_Mag
+from rbm_robust.pipelines.preprocessing_pipeline import run_d02, run_radarcadia, run_d02_Mag, run_radarcadia_Mag
 from rbm_robust.pipelines.radarcadia_pipeline import RadarcadiaPipeline
 from rbm_robust.pipelines.time_power_pipeline import MagPipeline
 import os
@@ -259,12 +259,19 @@ def ml_radarcadia(
     training_and_testing_pipeline(pipeline=pipeline, testing_path=testing_path, image_based=image_based)
 
 
-def preprocessing_magnitude():
+def preprocessing_magnitude(dataset: str = "d02"):
     # base_path = Path("/home/vault/empkins/tpD/D03/Data/MA_Simon_Meske/Data_D02/data_per_subject")
     # target_path = os.getenv("WORK") + "/DataD02"
-    base_path = Path("/Users/simonmeske/Desktop/Masterarbeit/ArrayLengthTest")
-    target_path = "/Users/simonmeske/Desktop/TestOrdner/data_per_subject"
-    run_d02_Mag(base_path, target_path, process_inputs=True, process_labels=True, process_images=False)
+    if dataset == "d02":
+        base_path = Path("/Users/simonmeske/Desktop/Masterarbeit/ArrayLengthTest")
+        target_path = "/Users/simonmeske/Desktop/TestOrdner/data_per_subject"
+        run_d02_Mag(base_path, target_path, process_inputs=True, process_labels=True, process_images=False)
+    else:
+        # base_path = Path("/home/vault/empkins/tpD/D03/Data/MA_Simon_Meske/2023_radarcardia_study")
+        # target_path = os.getenv("WORK") + "/DataRadarcadiaMag"
+        base_path = Path("/Users/simonmeske/Desktop/Masterarbeit/Radarcadia")
+        target_path = "/Users/simonmeske/Desktop/Masterarbeit/Radarcadia/Processed_Files"
+        run_radarcadia_Mag(base_path, target_path, process_inputs=True, process_labels=True, process_images=False)
 
 
 def preprocessing():
@@ -276,10 +283,10 @@ def preprocessing():
 
 
 def preprocessing_radarcadia():
-    base_path = Path("/home/vault/empkins/tpD/D03/Data/MA_Simon_Meske/2023_radarcardia_study")
-    target_path = os.getenv("WORK") + "/DataRadarcadiaOverlap"
-    # base_path = Path("/Users/simonmeske/Desktop/Masterarbeit/Radarcadia")
-    # target_path = "/Users/simonmeske/Desktop/Masterarbeit/Radarcadia/Processed_Files"
+    # base_path = Path("/home/vault/empkins/tpD/D03/Data/MA_Simon_Meske/2023_radarcardia_study")
+    # target_path = os.getenv("WORK") + "/DataRadarcadiaOverlap"
+    base_path = Path("/Users/simonmeske/Desktop/Masterarbeit/Radarcadia")
+    target_path = "/Users/simonmeske/Desktop/Masterarbeit/Radarcadia/Processed_Files"
     run_radarcadia(base_path, target_path)
 
 
@@ -710,6 +717,7 @@ if __name__ == "__main__":
     main()
     # scoring()
     # pretrained(os.getenv("HOME") + "/emrad-analysis/Models")
-    # preprocessing_magnitude()
+    # preprocessing_magnitude(dataset="radarcadia")
     # move_training_data()
     # preprocessing()
+    # preprocessing_radarcadia()
