@@ -112,13 +112,20 @@ class UNetWaveletTF(Algorithm):
         # )
 
         self._model.add(
-            models.unet_2d(
+            models.att_unet_2d(
                 (256, 1000, channel_number),
-                filter_num=[16, 32, 64],
-                n_labels=channel_number,
+                filter_num=[64, 128, 256, 512],
+                n_labels=1,
                 output_activation=None,
                 freeze_backbone=False,
                 freeze_batch_norm=False,
+                activation="Softmax",
+                stack_num_up=2,
+                stack_num_down=2,
+                atten_activation="ReLU",
+                batch_norm=True,
+                pool=False,
+                unpool="bilinear",
             )
         )
         self._model.add(layers.Conv2D(filters=1, kernel_size=(256, 1), activation="sigmoid"))
