@@ -2,7 +2,7 @@
 #
 #SBATCH --job-name=uNetD02MShan50Epochs0001Dual
 #SBATCH --nodes=1
-#SBATCH --time=15:30:00
+#SBATCH --time=22:30:00
 #SBATCH --gres=gpu:rtx3080:1
 
 
@@ -16,4 +16,4 @@ rsync -r $WORK/DataD02 $TMPDIR
 
 cd "$HOME"/emrad-analysis || exit
 
-poetry run python main.py --epochs 50 --learning_rate 0.0001 --image_based False --datasource d02 --log False --label_type gaussian --dual_channel True --wavelet shan1-1
+poetry run python main.py --epochs 40 --learning_rate 0.0001 --image_based False --datasource d02 --log False --label_type gaussian --dual_channel True --wavelet shan1-1

@@ -1046,6 +1046,11 @@ class D02PipelineImproved(OptimizablePipeline):
         print(f"Scores: {scores}")
         return scores
 
+    def tar_predictions(self, prediction_path):
+        output_filename = str(prediction_path) + ".tar"
+        with tarfile.open(output_filename, "w") as tar:
+            tar.add(prediction_path, arcname=os.path.basename(prediction_path))
+
 
 class D02Pipeline(OptimizablePipeline):
     model: UNetWaveletTF
