@@ -17,3 +17,5 @@ cd "$HOME"/modelTest/emrad-analysis || exit
 poetry run python main.py --epochs 50 --learning_rate 0.001 --image_based False --datasource radarcadia --breathing_type all --label_type gaussian --dual_channel False --log False --loss bce --wavelet morl
 poetry run python main.py --epochs 50 --learning_rate 0.001 --image_based False --datasource radarcadia --breathing_type all --label_type ecg --dual_channel False --log False --loss bce --wavelet morl
 
+poetry run python main.py --epochs 50 --learning_rate 0.001 --image_based False --datasource radarcadia --breathing_type all --label_type gaussian --dual_channel False --log True --loss bce --wavelet morl
+poetry run python main.py --epochs 50 --learning_rate 0.001 --image_based False --datasource radarcadia --breathing_type all --label_type ecg --dual_channel False --log True --loss bce --wavelet morl
