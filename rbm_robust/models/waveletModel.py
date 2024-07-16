@@ -99,20 +99,28 @@ class UNetWaveletTF(Algorithm):
         self._model = Sequential()
         channel_number = self._get_channel_number()
 
+        # models.unet_3plus_2d(
+        #     (256, 1000, channel_number),
+        #     filter_num_down=[32, 64, 128, 256],
+        #     n_labels=1,
+        #     filter_num_skip="auto",
+        #     filter_num_aggregate="auto",
+        #     output_activation=None,
+        #     freeze_backbone=False,
+        #     freeze_batch_norm=False,
+        #     pool=True,
+        #     unpool=True,
+        #     activation="ReLU",
+        #     batch_norm=True,
+        # )
         self._model.add(
-            models.unet_3plus_2d(
+            models.unet_2d(
                 (256, 1000, channel_number),
-                filter_num_down=[32, 64, 128, 256],
-                n_labels=1,
-                filter_num_skip="auto",
-                filter_num_aggregate="auto",
-                output_activation=None,
+                filter_num=[16, 32, 64],
                 freeze_backbone=False,
                 freeze_batch_norm=False,
-                pool=True,
-                unpool=True,
-                activation="ReLU",
-                batch_norm=True,
+                output_activation=None,
+                n_labels=channel_number,
             )
         )
         self._model.add(layers.Conv2D(filters=1, kernel_size=(256, 1), activation="sigmoid"))
