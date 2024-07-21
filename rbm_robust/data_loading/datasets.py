@@ -112,6 +112,8 @@ class D02Dataset(Dataset):
         "553",
     )
 
+    AGAIN = ["245", "144", "249", "198", "207"]
+
     def __init__(
         self,
         data_path: Path,
@@ -141,6 +143,12 @@ class D02Dataset(Dataset):
         """
         participant_ids = [item.name for item in Path(self.data_path).iterdir() if item.is_dir()]
         participant_ids = [pid for pid in participant_ids if pid not in self.EXCLUDE_SUBJECTS]
+
+        already = [item.name for item in Path("/home/woody/iwso/iwso116h/DataD02").iterdir() if item.is_dir()]
+        already = [pid for pid in already if pid not in self.AGAIN]
+
+        participant_ids = [pid for pid in participant_ids if pid not in already]
+
         df = pd.DataFrame({"participant": participant_ids})
         if df.empty:
             raise ValueError(
