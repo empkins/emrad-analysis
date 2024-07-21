@@ -39,14 +39,14 @@ def run_d02_Mag(
     subjects_dataset = D02Dataset(pathlib.Path(data_path))
     subjects = list(subjects_dataset.subjects)
     subsets = [subjects_dataset.get_subset(participant=subject) for subject in subjects]
-    process_d02_mag_subset(subjects_dataset, target_path, process_labels, process_inputs, process_images)
-    # num_processes = 4
+    # process_d02_mag_subset(subjects_dataset, target_path, process_labels, process_inputs, process_images)
+    num_processes = 4
     # print(num_processes)
-    # with Pool(num_processes) as p:
-    #     p.starmap(
-    #         process_d02_mag_subset,
-    #         [(subset, target_path, process_labels, process_inputs, process_images) for subset in subsets],
-    #     )
+    with Pool(num_processes) as p:
+        p.starmap(
+            process_d02_mag_subset,
+            [(subset, target_path, process_labels, process_inputs, process_images) for subset in subsets],
+        )
 
 
 def process_radarcadia_mag_subset(subjects_dataset, target_path):
@@ -68,7 +68,14 @@ def run_radarcadia_Mag(
     for subject in subjects:
         subject_subset = subjects_dataset.get_subset(subject=subject)
         subsets.append(subject_subset)
-    process_radarcadia_mag_subset(subjects_dataset, target_path)
+    num_processes = 4
+    print(num_processes)
+    with Pool(num_processes) as p:
+        p.starmap(
+            process_radarcadia_mag_subset,
+            [(subset, target_path) for subset in subsets],
+        )
+    # process_radarcadia_mag_subset(subjects_dataset, target_path)
 
 
 def process_d02_subset(
