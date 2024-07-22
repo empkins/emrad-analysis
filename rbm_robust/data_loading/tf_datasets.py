@@ -397,6 +397,9 @@ class DatasetFactory:
     ):
         input_paths, label_paths = self._get_all_input_and_label_paths(base_path, subjects, time_power=True)
         dataset = self._build_time_power_dataset(input_paths, label_paths, batch_size)
+        print(f"Len Input Paths: {len(input_paths)}")
+        print(f"Len Label Paths: {len(label_paths)}")
+        print(f"Batch Size: {batch_size}")
         return dataset, int(len(input_paths) / batch_size)
 
     def _build_time_power_dataset(self, input_paths, label_paths, batch_size=8):
@@ -408,8 +411,13 @@ class DatasetFactory:
             print(input_data.shape)
             print(label_data.shape)
             # Set the shape of the tensors explicitly
-            input_data = tf.ensure_shape(input_data, (1000, 5))
-            label_data = tf.ensure_shape(label_data, (1000,))
+            input_data = tf.ensure_shape(input_data, [1000, 5])
+            label_data = tf.ensure_shape(
+                label_data,
+                [
+                    1000,
+                ],
+            )
             return input_data, label_data
 
         dataset = tf.data.Dataset.from_tensor_slices((input_paths, label_paths))
