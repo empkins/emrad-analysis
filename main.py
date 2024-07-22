@@ -720,11 +720,11 @@ def collect_and_score_arrays_radarcadia():
 if __name__ == "__main__":
     # collect_and_score_arrays_d02()
     # collect_and_score_arrays_radarcadia()
-    main()
+    # main()
     # scoring()
     # pretrained(os.getenv("HOME") + "/emrad-analysis/Models")
     # pretrained(os.getenv("HOME") + "/altPreprocessing/emrad-analysis/Models")
-    # preprocessing_magnitude(dataset="radarcadia")
+    preprocessing_magnitude(dataset="d02")
     # move_training_data()
     # preprocessing()
     # preprocessing_radarcadia()
