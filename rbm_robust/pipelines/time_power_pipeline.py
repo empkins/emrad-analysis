@@ -117,26 +117,18 @@ class MagPipeline(OptimizablePipeline):
         time = datetime.now().strftime("%Y%m%d_%H%M%S")
         self.prediction_folder_name = f"predictions_{model_name}_{time}"
 
-        num_samples = 100  # number of samples in the dataset
-        x_data = np.random.random((num_samples, 1000, 5)).astype(np.float32)
-        y_data = np.random.random((num_samples, 1000)).astype(np.float32)
-
-        # Convert to TensorFlow dataset
-        dataset = tf.data.Dataset.from_tensor_slices((x_data, y_data))
-        dataset = dataset.batch(32)  # batch size of 32
-
         # Initialize the model
         self.biLSTM_model = LSTM(
             learning_rate=learning_rate,
             epochs=epochs,
             model_name=model_name,
-            training_steps=3,
-            validation_steps=3,
+            training_steps=self.training_steps,
+            validation_steps=self.validation_steps,
             training_ds=self.training_ds,
             validation_ds=self.training_ds,
             batch_size=8,
             loss=loss,
-            dual_channel=dual_channel,
+            dual_channel=False,
         )
 
     def self_optimize(self):

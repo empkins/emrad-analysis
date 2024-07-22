@@ -15,20 +15,6 @@ class DatasetFactory:
         return input_file, label_file
 
     @staticmethod
-    def process_path(input_path, label_path):
-        # input_data, label_data = tf.numpy_function(self.read_file, [input_path, label_path], [tf.float64, tf.float64])
-        input_data = tf.numpy_function(np.load, [input_path], tf.float64)
-        label_data = tf.numpy_function(np.load, [label_path], tf.float64)
-        input_data = tf.ensure_shape(input_data, [1000, 5])
-        label_data = tf.ensure_shape(
-            label_data,
-            [
-                1000,
-            ],
-        )
-        return input_data, label_data
-
-    @staticmethod
     def read_dual_channel_file(input_path, input_log_path, label_path):
         input_file = np.load(input_path)
         input_log_file = np.load(input_log_path)
@@ -403,6 +389,7 @@ class DatasetFactory:
 
     def _build_time_power_dataset(self, input_paths, label_paths, batch_size=8):
         dataset = tf.data.Dataset.from_tensor_slices((input_paths, label_paths))
+
         dataset = (
             dataset.map(
                 lambda input_path, label_path: tf.numpy_function(
@@ -414,6 +401,19 @@ class DatasetFactory:
             .prefetch(tf.data.AUTOTUNE)
         )
         return dataset
+
+    def process_path(self, input_path, label_path):
+        # input_data, label_data = tf.numpy_function(self.read_file, [input_path, label_path], [tf.float64, tf.float64])
+        input_data = np.load(input_path)
+        label_data = np.load(label_path)
+        input_data = tf.ensure_shape(input_data, [1000, 5])
+        label_data = tf.ensure_shape(
+            label_data,
+            [
+                1000,
+            ],
+        )
+        return input_data, label_data
 
     def get_wavelet_dataset_for_subjects_radarcadia(
         self,
