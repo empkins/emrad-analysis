@@ -388,32 +388,27 @@ class DatasetFactory:
         return dataset, int(len(input_paths) / batch_size)
 
     def _build_time_power_dataset(self, input_paths, label_paths, batch_size=8):
-        dataset = tf.data.Dataset.from_tensor_slices((input_paths, label_paths))
-
-        dataset = (
-            dataset.map(
-                lambda input_path, label_path: tf.numpy_function(
-                    self.process_path, [input_path, label_path], [tf.float64, tf.float64]
-                ),
-                num_parallel_calls=tf.data.AUTOTUNE,
+        def process_path(input_path, label_path):
+            input_data, label_data = tf.numpy_function(
+                self.read_file, [input_path, label_path], [tf.float64, tf.float64]
             )
+            # Set the shape of the tensors explicitly
+            input_data = tf.ensure_shape(input_data, [1000, 5])
+            label_data = tf.ensure_shape(
+                label_data,
+                [
+                    1000,
+                ],
+            )
+            return input_data, label_data
+
+        dataset = tf.data.Dataset.from_tensor_slices((input_paths, label_paths))
+        dataset = (
+            dataset.map(process_path, num_parallel_calls=tf.data.AUTOTUNE)
             .batch(batch_size, drop_remainder=True)
             .prefetch(tf.data.AUTOTUNE)
         )
         return dataset
-
-    def process_path(self, input_path, label_path):
-        # input_data, label_data = tf.numpy_function(self.read_file, [input_path, label_path], [tf.float64, tf.float64])
-        input_data = np.load(input_path)
-        label_data = np.load(label_path)
-        input_data = tf.ensure_shape(input_data, [1000, 5])
-        label_data = tf.ensure_shape(
-            label_data,
-            [
-                1000,
-            ],
-        )
-        return input_data, label_data
 
     def get_wavelet_dataset_for_subjects_radarcadia(
         self,
