@@ -86,16 +86,11 @@ class DatasetFactory:
                 if not input_path.exists() or not label_path.exists():
                     print(f"Input Path: {input_path} or Label path: {label_path} does not exist")
                     continue
-                print(f"Input Path: {input_path}")
-                print(f"Label Path: {label_path}")
                 input_files = sorted(input_path.glob("*.npy"))
                 label_files = sorted(label_path.glob("*.npy"))
-                print(f"Input Files: {input_files}")
-                print(f"Label Files: {label_files}")
                 label_filenames = set([label_file.name for label_file in label_files])
                 input_filenames = set([input_file.name for input_file in input_files])
                 filename_intersection = label_filenames.intersection(input_filenames)
-                print(f"Filename Intersection: {filename_intersection}")
                 input_files = [
                     str(input_file) for input_file in input_files if input_file.name in filename_intersection
                 ]
@@ -108,13 +103,6 @@ class DatasetFactory:
         DatasetFactory()._sanity_check_file_paths(
             list(zip(input_paths, label_paths)), input_folder_name, "labels_gaussian", False
         )
-        print(f"Input count: {len(input_paths)}")
-        print(f"Label count: {len(label_paths)}")
-        for input_path, label_path in zip(input_paths, label_paths):
-            input_arr = np.load(input_path)
-            label_arr = np.load(label_path)
-            print(f"Input Shape: {input_arr.shape}")
-            print(f"Label Shape: {label_arr.shape}")
         return input_paths, label_paths
 
     @staticmethod
@@ -397,36 +385,27 @@ class DatasetFactory:
     ):
         input_paths, label_paths = self._get_all_input_and_label_paths(base_path, subjects, time_power=True)
         dataset = self._build_time_power_dataset(input_paths, label_paths, batch_size)
-        print(f"Len Input Paths: {len(input_paths)}")
-        print(f"Len Label Paths: {len(label_paths)}")
-        print(f"Batch Size: {batch_size}")
         return dataset, int(len(input_paths) / batch_size)
 
     def _build_time_power_dataset(self, input_paths, label_paths, batch_size=8):
-        def process_path(input_path, label_path):
-            input_data, label_data = tf.numpy_function(
-                self.read_file, [input_path, label_path], [tf.float64, tf.float64]
-            )
-            print("In process path")
-            print(input_data.shape)
-            print(label_data.shape)
-            # Set the shape of the tensors explicitly
-            input_data = tf.ensure_shape(input_data, [1000, 5])
-            label_data = tf.ensure_shape(
-                label_data,
-                [
-                    1000,
-                ],
-            )
-            return input_data, label_data
-
         dataset = tf.data.Dataset.from_tensor_slices((input_paths, label_paths))
         dataset = (
-            dataset.map(process_path, num_parallel_calls=tf.data.AUTOTUNE)
+            dataset.map(self.process_path, num_parallel_calls=tf.data.AUTOTUNE)
             .batch(batch_size, drop_remainder=True)
             .prefetch(tf.data.AUTOTUNE)
         )
         return dataset
+
+    def process_path(self, input_path, label_path):
+        input_data, label_data = tf.numpy_function(self.read_file, [input_path, label_path], [tf.float64, tf.float64])
+        input_data = tf.ensure_shape(input_data, [1000, 5])
+        label_data = tf.ensure_shape(
+            label_data,
+            [
+                1000,
+            ],
+        )
+        return input_data, label_data
 
     def get_wavelet_dataset_for_subjects_radarcadia(
         self,
