@@ -115,7 +115,7 @@ def ml_time_power(
 ):
     # path = "/Users/simonmeske/Desktop/TestOrdner/Time_power"
     # testing_path = "/Users/simonmeske/Desktop/TestOrdner/Time_power"
-    path = os.getenv("TMPDIR") + "/DataD02/DataD02"
+    path = os.getenv("TMPDIR") + "/Data/DataD02"
     testing_path = os.getenv("WORK") + "/TestDataD02"
     if dataset_type == "radarcadia":
         path = os.getenv("TMPDIR") + "/Data/DataRadarcadiaMag"
