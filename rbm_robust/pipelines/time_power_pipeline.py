@@ -86,12 +86,12 @@ class MagPipeline(OptimizablePipeline):
             subjects=training_subjects,
             batch_size=batch_size,
         )
-        print(f"Training steps: {self.training_steps}")
         self.validation_ds, self.validation_steps = _get_dataset(
             data_path=data_path,
             subjects=validation_subjects,
             batch_size=batch_size,
         )
+        print(f"Training steps: {self.training_steps}")
         print(f"Validation steps: {self.validation_steps}")
         self.ecg_labels = ecg_labels
         self.log_transform = log_transform
