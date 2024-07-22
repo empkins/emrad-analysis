@@ -51,8 +51,19 @@ def main(
     identity,
     loss,
     diff,
+    mag,
 ):
-    if model_path is not None and os.path.exists(model_path):
+    if mag:
+        ml_time_power(
+            epochs=epochs,
+            learning_rate=learning_rate,
+            image_based=image_based,
+            log=log,
+            wavelet=wavelet,
+            loss=loss,
+            dataset_type=datasource,
+        )
+    elif model_path is not None and os.path.exists(model_path):
         ml_already_trained(
             model_path=model_path,
             image_based=image_based,
@@ -88,15 +99,6 @@ def main(
             identity=identity,
             loss=loss,
             diff=diff,
-        )
-    elif datasource == "magnitude":
-        ml_time_power(
-            epochs=epochs,
-            learning_rate=learning_rate,
-            image_based=image_based,
-            log=log,
-            wavelet=wavelet,
-            loss=loss,
         )
     else:
         raise ValueError("Datasource not found")
@@ -437,7 +439,7 @@ def check_for_empty_arrays():
 
 def move_training_data():
     paths = [
-        (os.getenv("WORK") + "/DataD02", os.getenv("WORK") + "/TestDataD02Mag"),
+        # (os.getenv("WORK") + "/DataD02", os.getenv("WORK") + "/TestDataD02Mag"),
         (os.getenv("WORK") + "/DataRadarcadiaMag", os.getenv("WORK") + "/TestDataRadarcadiaMag"),
     ]
     for path_tuple in paths:
@@ -469,6 +471,8 @@ def move_training_data():
             "310",
             "300",
         ]
+        if "Radarcadia" in source_path:
+            subjects = ["VP_01", "VP_15", "VP_11", "VP_03", "VP_18"]
         for subject in subjects:
             source_subject_path = Path(source_path) / subject
             target_subject_path = Path(target_path)
