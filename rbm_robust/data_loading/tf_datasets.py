@@ -90,9 +90,12 @@ class DatasetFactory:
                 print(f"Label Path: {label_path}")
                 input_files = sorted(input_path.glob("*.npy"))
                 label_files = sorted(label_path.glob("*.npy"))
+                print(f"Input Files: {input_files}")
+                print(f"Label Files: {label_files}")
                 label_filenames = set([label_file.name for label_file in label_files])
                 input_filenames = set([input_file.name for input_file in input_files])
                 filename_intersection = label_filenames.intersection(input_filenames)
+                print(f"Filename Intersection: {filename_intersection}")
                 input_files = [
                     str(input_file) for input_file in input_files if input_file.name in filename_intersection
                 ]
