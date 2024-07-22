@@ -108,6 +108,13 @@ class DatasetFactory:
         DatasetFactory()._sanity_check_file_paths(
             list(zip(input_paths, label_paths)), input_folder_name, "labels_gaussian", False
         )
+        print(f"Input count: {len(input_paths)}")
+        print(f"Label count: {len(label_paths)}")
+        for input_path, label_path in zip(input_paths, label_paths):
+            input_arr = np.load(input_path)
+            label_arr = np.load(label_path)
+            print(f"Input Shape: {input_arr.shape}")
+            print(f"Label Shape: {label_arr.shape}")
         return input_paths, label_paths
 
     @staticmethod
