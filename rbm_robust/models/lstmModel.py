@@ -97,7 +97,7 @@ class LSTM(Algorithm):
 
     def _create_model(self):
         self._model = keras.Sequential()
-        self._model.add(tf.keras.layers.Input(shape=(1000, 5), dtype=tf.float64))
+        self._model.add(tf.keras.layers.Input(shape=(5, 1000), dtype=tf.float64))
         self._model.add(tf.keras.layers.Bidirectional(tf.keras.layers.LSTM(self.bi_lstm_units, return_sequences=True)))
         self._model.add(tf.keras.layers.Dropout(self.first_dropout_rate))
         self._model.add(tf.keras.layers.LSTM(self.mono_lstm_units))

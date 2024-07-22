@@ -391,7 +391,7 @@ class DatasetFactory:
                 self.read_file, [input_path, label_path], [tf.float64, tf.float64]
             )
             # Set the shape of the tensors explicitly
-            input_data = tf.ensure_shape(input_data, [1000, 5])
+            input_data = tf.ensure_shape(input_data, [5, 1000])
             label_data = tf.ensure_shape(
                 label_data,
                 [

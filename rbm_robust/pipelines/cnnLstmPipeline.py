@@ -138,17 +138,22 @@ class PreProcessor(Algorithm):
         heart_sound_radar_envelope = envelope_algo_clone.compute(heart_sound_radar).envelope_signal_
 
         # Get collected Array
-        all_inputs = self.collect_array(radar_I, radar_Q, angle, rad_power, heart_sound_radar_envelope)
+        all_inputs = self.collect_and_standardize_array(radar_I, radar_Q, angle, rad_power, heart_sound_radar_envelope)
 
         # Save the inputs
         path = self.get_filtered_radar_path(subject_id, phase, base_path) + f"/{segment}.npy"
-        np.save(path, np.transpose(all_inputs))
+        np.save(path, all_inputs)
 
         self.preprocessed_signal_ = all_inputs
         return self
 
-    def collect_array(self, I, Q, angle, power, envelope):
-        return np.array([I, Q, angle, power, envelope])
+    def collect_and_standardize_array(self, I, Q, angle, power, envelope):
+        I_norm = (I - np.mean(I)) / np.std(I)
+        Q_norm = (Q - np.mean(Q)) / np.std(Q)
+        angle_norm = (angle - np.mean(angle)) / np.std(angle)
+        power_norm = (power - np.mean(power)) / np.std(power)
+        envelope_norm = (envelope - np.mean(envelope)) / np.std(envelope)
+        return np.array([I_norm, Q_norm, angle_norm, power_norm, envelope_norm])
 
     @make_action_safe
     def preprocess(
