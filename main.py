@@ -36,6 +36,7 @@ from rbm_robust.validation.scoring_pipeline import (
 @click.option("--identity", default=False, help="Whether to use identity check")
 @click.option("--loss", default="bce", help="The used loss function. Valid values are bce and mse")
 @click.option("--diff", default=False, help="Whether to use the first derivative of the radar signal")
+@click.option("--mag", default=False, help="Whether to use the magnitude of the radar signal")
 def main(
     model_path,
     epochs,
@@ -108,11 +109,15 @@ def ml_time_power(
     log: bool = False,
     wavelet: str = "morl",
     loss: str = "bce",
+    dataset_type: str = "d02",
 ):
     # path = "/Users/simonmeske/Desktop/TestOrdner/Time_power"
     # testing_path = "/Users/simonmeske/Desktop/TestOrdner/Time_power"
     path = os.getenv("TMPDIR") + "/DataD02/DataD02"
     testing_path = os.getenv("WORK") + "/TestDataD02"
+    if dataset_type == "radarcadia":
+        path = os.getenv("TMPDIR") + "/Data/DataRadarcadiaMag"
+        testing_path = os.getenv("WORK") + "/TestDataRadarcadiaMag"
     # Get Training and Testing Subjects
     data_path = Path(path)
     testing_path = Path(testing_path)
@@ -431,50 +436,47 @@ def check_for_empty_arrays():
 
 
 def move_training_data():
-    source_path = os.getenv("WORK") + "/DataD02"
-    target_path = os.getenv("WORK") + "/TestDataD02"
-    subjects = [
-        "130",
-        "268",
-        "338",
-        "173",
-        "242",
-        "273",
-        "008",
-        "241",
-        "198",
-        "439",
-        "272",
-        "143",
-        "199",
-        "249",
-        "140",
-        "230",
-        "111",
-        "155",
-        "213",
-        "203",
-        "310",
-        "300",
+    paths = [
+        (os.getenv("WORK") + "/DataD02", os.getenv("WORK") + "/TestDataD02Mag"),
+        (os.getenv("WORK") + "/DataRadarcadiaMag", os.getenv("WORK") + "/TestDataRadarcadiaMag"),
     ]
-    for subject in subjects:
-        source_subject_path = Path(source_path) / subject
-        target_subject_path = Path(target_path)
-        if not source_subject_path.exists():
-            print(f"Source path {source_subject_path} does not exist")
-            continue
-        print(f"Moving {source_subject_path} to {target_subject_path}")
-        shutil.move(source_subject_path, target_subject_path)
-        # for phase in source_subject_path.iterdir():
-        #     if not phase.is_dir():
-        #         continue
-        #     target_phase_path = target_subject_path / phase.name
-        #     source_wavelet_path = phase / input_different_wavelet
-        #     source_ecg_label_path = phase / labels_ecg
-        #     # print(f"Moving {source_wavelet_path} to {target_phase_path} - source wavelet")
-        #     # print(f"Moving {source_ecg_label_path} to {target_phase_path} - source ecg")
-        #     shutil.move(source_wavelet_path, target_phase_path)
-        #     shutil.move(source_ecg_label_path, target_phase_path)
+    for path_tuple in paths:
+        source_path = path_tuple[0]
+        target_path = path_tuple[1]
+        # source_path = os.getenv("WORK") + "/DataD02"
+        # target_path = os.getenv("WORK") + "/TestDataD02Mag"
+        subjects = [
+            "130",
+            "268",
+            "338",
+            "173",
+            "242",
+            "273",
+            "008",
+            "241",
+            "198",
+            "439",
+            "272",
+            "143",
+            "199",
+            "249",
+            "140",
+            "230",
+            "111",
+            "155",
+            "213",
+            "203",
+            "310",
+            "300",
+        ]
+        for subject in subjects:
+            source_subject_path = Path(source_path) / subject
+            target_subject_path = Path(target_path)
+            if not source_subject_path.exists():
+                print(f"Source path {source_subject_path} does not exist")
+                continue
+            print(f"Moving {source_subject_path} to {target_subject_path}")
+            shutil.move(source_subject_path, target_subject_path)
 
 
 def rename_folders():
@@ -714,11 +716,11 @@ def collect_and_score_arrays_radarcadia():
 if __name__ == "__main__":
     # collect_and_score_arrays_d02()
     # collect_and_score_arrays_radarcadia()
-    main()
+    # main()
     # scoring()
     # pretrained(os.getenv("HOME") + "/emrad-analysis/Models")
     # pretrained(os.getenv("HOME") + "/altPreprocessing/emrad-analysis/Models")
     # preprocessing_magnitude(dataset="d02")
-    # move_training_data()
+    move_training_data()
     # preprocessing()
     # preprocessing_radarcadia()
