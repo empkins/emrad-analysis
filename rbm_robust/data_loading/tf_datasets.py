@@ -17,8 +17,8 @@ class DatasetFactory:
     @staticmethod
     def process_path(input_path, label_path):
         # input_data, label_data = tf.numpy_function(self.read_file, [input_path, label_path], [tf.float64, tf.float64])
-        input_data = np.load(input_path)
-        label_data = np.load(label_path)
+        input_data = tf.numpy_function(np.load, [input_path], tf.float64)
+        label_data = tf.numpy_function(np.load, [label_path], tf.float64)
         input_data = tf.ensure_shape(input_data, [1000, 5])
         label_data = tf.ensure_shape(
             label_data,
