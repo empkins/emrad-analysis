@@ -130,6 +130,9 @@ def ml_time_power(
 
     # Split Data
     training_subjects, validation_subjects = train_test_split(possible_subjects, test_size=0.2, random_state=42)
+    print(f"Path: {path}")
+    print(f"Training subjects: {training_subjects}")
+    print(f"Training subjects: {training_subjects}")
     pipeline = MagPipeline(
         learning_rate=learning_rate,
         data_path=path,

@@ -74,6 +74,8 @@ class DatasetFactory:
         input_folder_name = "inputs" if not time_power else "filtered_radar"
         for subject in subject_list:
             subject_path = base_path / subject
+            print(f"Subject: {subject}")
+            print(f"Subject Path: {subject_path}")
             for phase in subject_path.iterdir():
                 if training_phase is not None and training_phase not in phase.name:
                     continue
@@ -82,7 +84,10 @@ class DatasetFactory:
                 input_path = phase / input_folder_name
                 label_path = phase / "labels_gaussian"
                 if not input_path.exists() or not label_path.exists():
+                    print(f"Input Path: {input_path} or Label path: {label_path} does not exist")
                     continue
+                print(f"Input Path: {input_path}")
+                print(f"Label Path: {label_path}")
                 input_files = sorted(input_path.glob("*.npy"))
                 label_files = sorted(label_path.glob("*.npy"))
                 label_filenames = set([label_file.name for label_file in label_files])
