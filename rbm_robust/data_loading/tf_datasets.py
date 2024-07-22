@@ -74,8 +74,6 @@ class DatasetFactory:
         input_folder_name = "inputs" if not time_power else "filtered_radar"
         for subject in subject_list:
             subject_path = base_path / subject
-            print(f"Subject: {subject}")
-            print(f"Subject Path: {subject_path}")
             for phase in subject_path.iterdir():
                 if training_phase is not None and training_phase not in phase.name:
                     continue

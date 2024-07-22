@@ -91,8 +91,6 @@ class MagPipeline(OptimizablePipeline):
             subjects=validation_subjects,
             batch_size=batch_size,
         )
-        print(f"Training steps: {self.training_steps}")
-        print(f"Validation steps: {self.validation_steps}")
         self.ecg_labels = ecg_labels
         self.log_transform = log_transform
         self.breathing_type = breathing_type
