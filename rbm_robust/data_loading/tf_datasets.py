@@ -404,9 +404,12 @@ class DatasetFactory:
             input_data, label_data = tf.numpy_function(
                 self.read_file, [input_path, label_path], [tf.float64, tf.float64]
             )
+            print("In process path")
+            print(input_data.shape)
+            print(label_data.shape)
             # Set the shape of the tensors explicitly
-            input_data = tf.ensure_shape(input_data, (1000, 5))  # Example shape for input
-            label_data = tf.ensure_shape(label_data, (1000,))  # Example shape for labels
+            input_data = tf.ensure_shape(input_data, (1000, 5))
+            label_data = tf.ensure_shape(label_data, (1000,))
             return input_data, label_data
 
         dataset = tf.data.Dataset.from_tensor_slices((input_paths, label_paths))
