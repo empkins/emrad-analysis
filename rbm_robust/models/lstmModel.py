@@ -103,7 +103,8 @@ class LSTM(Algorithm):
         self._model.add(tf.keras.layers.LSTM(self.mono_lstm_units))
         self._model.add(tf.keras.layers.Dropout(self.second_dropout_rate))
         self._model.add(tf.keras.layers.Dense(1000))
-        self._model.compile(optimizer=keras.optimizers.Adam(self.learning_rate), loss="mse")
+        loss_func = keras.losses.BinaryCrossentropy(from_logits=False, reduction="sum_over_batch_size")
+        self._model.compile(optimizer=keras.optimizers.Adam(self.learning_rate), loss=loss_func)
         return self
 
     def save_model(self):
