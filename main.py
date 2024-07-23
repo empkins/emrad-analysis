@@ -481,8 +481,8 @@ def check_for_empty_arrays():
 
 def remove_training_data():
     paths = [
-        # (os.getenv("WORK") + "/DataD02", os.getenv("WORK") + "/TestDataD02Mag"),
-        (os.getenv("WORK") + "/DataRadarcadiaMag", os.getenv("WORK") + "/TestDataRadarcadiaMag"),
+        (os.getenv("WORK") + "/DataD02", os.getenv("WORK") + "/TestDataD02Mag"),
+        # (os.getenv("WORK") + "/DataRadarcadiaMag", os.getenv("WORK") + "/TestDataRadarcadiaMag"),
     ]
     for path_tuple in paths:
         source_path = path_tuple[0]
