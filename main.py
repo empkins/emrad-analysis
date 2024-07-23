@@ -325,6 +325,47 @@ def pretrained(base_path: str):
         )
 
 
+def fix_and_normalize_filtered():
+    base_paths = [os.getenv("WORK") + "/DataD02", os.getenv("WORK") + "/TestDataD02Mag"]
+    for base in base_paths:
+        base_path = pathlib.Path(base)
+        for subject_path in base_path.iterdir():
+            for phase_path in subject_path.iterdir():
+                if not phase_path.is_dir():
+                    continue
+                for input_folder in phase_path.iterdir():
+                    if "filtered_radar" not in input_folder.name:
+                        continue
+                    for input_file in input_folder.iterdir():
+                        if not input_file.is_file():
+                            continue
+                        if "png" in input_file.name:
+                            continue
+                        try:
+                            input_data = np.load(input_file)
+                            if input_data.shape == (1000, 5):
+                                input_data = input_data.transpose()
+                            if input_data.shape != (5, 1000):
+                                print(f"Shape is {input_data.shape} for file {input_file}")
+                                return
+                            if np.all((input_data >= 0) & (input_data <= 1)):
+                                continue
+                            # Normalize row wise
+                            for i in range(input_data.shape[0]):
+                                if input_data[0].max() <= 1:
+                                    continue
+                                numerator = input_data[i] - np.min(input_data[i])
+                                denominator = np.max(input_data[i]) - np.min(input_data[i])
+                                if denominator == 0:
+                                    input_data[i] = np.zeros(1000)
+                                else:
+                                    input_data[i] = numerator / denominator
+                            np.save(input_file, input_data)
+                        except Exception as e:
+                            print(f"Error in file {input_file} with error {e}")
+                            continue
+
+
 def fix_and_normalize_diff():
     base_paths = [os.getenv("WORK") + "/DataD02", os.getenv("WORK") + "/TestDataD02"]
     for base in base_paths:
