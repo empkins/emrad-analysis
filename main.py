@@ -479,6 +479,47 @@ def check_for_empty_arrays():
                     print(f"Empty array in {label_file} at {label_path}")
 
 
+def remove_training_data():
+    paths = [
+        # (os.getenv("WORK") + "/DataD02", os.getenv("WORK") + "/TestDataD02Mag"),
+        (os.getenv("WORK") + "/DataRadarcadiaMag", os.getenv("WORK") + "/TestDataRadarcadiaMag"),
+    ]
+    for path_tuple in paths:
+        source_path = path_tuple[0]
+        # source_path = os.getenv("WORK") + "/DataD02"
+        # target_path = os.getenv("WORK") + "/TestDataD02Mag"
+        subjects = [
+            "130",
+            "268",
+            "338",
+            "173",
+            "242",
+            "273",
+            "008",
+            "241",
+            "198",
+            "439",
+            "272",
+            "143",
+            "199",
+            "249",
+            "140",
+            "230",
+            "111",
+            "155",
+            "213",
+            "203",
+            "310",
+            "300",
+        ]
+        if "Radarcadia" in source_path:
+            subjects = ["VP_01", "VP_15", "VP_11", "VP_03", "VP_18"]
+        for subject in subjects:
+            source_subject_path = Path(source_path) / subject
+            shutil.rmtree(source_subject_path)
+            # shutil.move(source_subject_path, target_subject_path)
+
+
 def move_training_data():
     paths = [
         # (os.getenv("WORK") + "/DataD02", os.getenv("WORK") + "/TestDataD02Mag"),
@@ -762,11 +803,12 @@ def collect_and_score_arrays_radarcadia():
 if __name__ == "__main__":
     # collect_and_score_arrays_d02()
     # collect_and_score_arrays_radarcadia()
-    main()
+    # main()
     # scoring()
     # pretrained(os.getenv("HOME") + "/emrad-analysis/Models")
     # pretrained(os.getenv("HOME") + "/altPreprocessing/emrad-analysis/Models")
     # preprocessing_magnitude(dataset="d02")
+    remove_training_data()
     # move_training_data()
     # fix_and_normalize_filtered()
     # preprocessing()

@@ -144,8 +144,6 @@ class RadarcadiaPipeline(OptimizablePipeline):
         time = datetime.now().strftime("%Y%m%d_%H%M%S")
         self.prediction_folder_name = f"predictions_{model_name}_{time}"
 
-        # self.prediction_folder_name = "predictions_radarcadia_morl_all_30_0_0001_bce_20240622_130343"
-
         # Initialize the model
         self.wavelet_model = UNetWaveletTF(
             learning_rate=learning_rate,
