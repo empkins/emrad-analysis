@@ -330,6 +330,7 @@ def fix_and_normalize_filtered():
     for base in base_paths:
         base_path = pathlib.Path(base)
         for subject_path in base_path.iterdir():
+            print(f"Subject path is {subject_path}")
             for phase_path in subject_path.iterdir():
                 if not phase_path.is_dir():
                     continue
