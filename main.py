@@ -346,6 +346,7 @@ def fix_and_normalize_filtered():
                             input_data = np.load(input_file)
                             if input_data.shape == (1000, 5):
                                 input_data = input_data.transpose()
+                                np.save(input_file, input_data)
                             if input_data.shape != (5, 1000):
                                 print(f"Shape is {input_data.shape} for file {input_file}")
                                 return
@@ -806,13 +807,13 @@ def collect_and_score_arrays_radarcadia():
 if __name__ == "__main__":
     # collect_and_score_arrays_d02()
     # collect_and_score_arrays_radarcadia()
-    main()
+    # main()
     # scoring()
     # pretrained(os.getenv("HOME") + "/emrad-analysis/Models")
     # pretrained(os.getenv("HOME") + "/altPreprocessing/emrad-analysis/Models")
     # preprocessing_magnitude(dataset="d02")
     # remove_training_data()
     # move_training_data()
-    # fix_and_normalize_filtered()
+    fix_and_normalize_filtered()
     # preprocessing()
     # preprocessing_radarcadia()
