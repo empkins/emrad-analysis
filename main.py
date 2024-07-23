@@ -516,6 +516,9 @@ def remove_training_data():
             subjects = ["VP_01", "VP_15", "VP_11", "VP_03", "VP_18"]
         for subject in subjects:
             source_subject_path = Path(source_path) / subject
+            if not source_subject_path.exists():
+                print(f"Source path {source_subject_path} does not exist")
+                continue
             shutil.rmtree(source_subject_path)
             # shutil.move(source_subject_path, target_subject_path)
 
