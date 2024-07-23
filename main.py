@@ -326,7 +326,8 @@ def pretrained(base_path: str):
 
 
 def fix_and_normalize_filtered():
-    base_paths = [os.getenv("WORK") + "/DataD02", os.getenv("WORK") + "/TestDataD02Mag"]
+    base_paths = [os.getenv("TMPDIR") + "/Data/DataD02"]
+    #  os.getenv("WORK") + "/TestDataD02Mag"
     for base in base_paths:
         base_path = pathlib.Path(base)
         for subject_path in base_path.iterdir():
