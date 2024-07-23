@@ -134,7 +134,7 @@ class PreProcessor(Algorithm):
         rad_power = np.sqrt(np.square(radar_I) + np.square(radar_Q))
 
         # Extract heart sound band and compute the hilbert envelope
-        heart_sound_radar = bandpass_filter_clone.filter(rad_power, 1000).filtered_signal_
+        heart_sound_radar = bandpass_filter_clone.filter(rad_power, 200).filtered_signal_
         heart_sound_radar_envelope = envelope_algo_clone.compute(heart_sound_radar).envelope_signal_
 
         # Get collected Array

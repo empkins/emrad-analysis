@@ -42,8 +42,8 @@ class LSTM(Algorithm):
         model_path: str = None,
     ):
         self.second_dropout_rate = 0.6
-        self.mono_lstm_units = 128
-        self.bi_lstm_units = 64
+        self.mono_lstm_units = 256
+        self.bi_lstm_units = 256
         self.first_dropout_rate = 0.6
         self.learning_rate = learning_rate
         self.training_ds = training_ds
