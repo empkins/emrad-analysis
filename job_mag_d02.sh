@@ -16,3 +16,6 @@ rsync -r $HPCVAULT/DataD02 $TMPDIR/Data
 cd "$HOME"/altPreprocessing/emrad-analysis || exit
 poetry run python main.py --epochs 40 --learning_rate 0.0001 --image_based False --datasource d02 --breathing_type all --label_type gaussian --dual_channel False --log False --loss bce --mag True
 poetry run python main.py --epochs 40 --learning_rate 0.001 --image_based False --datasource d02 --breathing_type all --label_type gaussian --dual_channel False --log False --loss bce --mag True
+
+
+poetry run python main.py --epochs 40 --learning_rate 0.001 --image_based False --datasource radarcadia --breathing_type all --label_type gaussian --dual_channel False --log False --loss bce --mag True
