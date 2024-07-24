@@ -166,8 +166,8 @@ class PreProcessor(Algorithm):
         return (array - np.mean(array)) / np.std(array)
 
     def safe_range_normalize(self, data):
-        data_min = np.min(data, axis=1, keepdims=True)
-        data_max = np.max(data, axis=1, keepdims=True)
+        data_min = np.min(data, axis=0, keepdims=True)
+        data_max = np.max(data, axis=0, keepdims=True)
         range_ = data_max - data_min
         range_[range_ == 0] = 1
         range_normalized = (data - data_min) / range_
