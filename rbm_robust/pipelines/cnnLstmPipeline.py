@@ -156,7 +156,7 @@ class PreProcessor(Algorithm):
         return np.array([I_norm, Q_norm, angle_norm, power_norm, envelope_norm])
 
     def safe_transform_and_normalize(self, array):
-        array = self.normalize_safely(array)
+        # array = self.normalize_safely(array)
         return self.safe_range_normalize(array)
 
     def normalize_safely(self, array):
