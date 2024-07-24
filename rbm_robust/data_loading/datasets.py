@@ -141,6 +141,10 @@ class D02Dataset(Dataset):
         """
         participant_ids = [item.name for item in Path(self.data_path).iterdir() if item.is_dir()]
         participant_ids = [pid for pid in participant_ids if pid not in self.EXCLUDE_SUBJECTS]
+
+        PROC = ["007", "316", "338"]
+        participant_ids = [pid for pid in participant_ids if pid not in PROC]
+
         df = pd.DataFrame({"participant": participant_ids})
         if df.empty:
             raise ValueError(
