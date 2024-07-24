@@ -148,15 +148,15 @@ class PreProcessor(Algorithm):
         return self
 
     def collect_and_standardize_array(self, I, Q, angle, power, envelope):
-        I_norm = self.safe_transform_and_normalize(I)
-        Q_norm = self.safe_transform_and_normalize(Q)
-        angle_norm = self.safe_transform_and_normalize(angle)
-        power_norm = self.safe_transform_and_normalize(power)
-        envelope_norm = self.safe_transform_and_normalize(envelope)
+        I_norm = self.normalize_safely(I)
+        Q_norm = self.normalize_safely(Q)
+        angle_norm = self.normalize_safely(angle)
+        power_norm = self.normalize_safely(power)
+        envelope_norm = self.normalize_safely(envelope)
         return np.array([I_norm, Q_norm, angle_norm, power_norm, envelope_norm])
 
     def safe_transform_and_normalize(self, array):
-        # array = self.normalize_safely(array)
+        array = self.normalize_safely(array)
         return self.safe_range_normalize(array)
 
     def normalize_safely(self, array):
