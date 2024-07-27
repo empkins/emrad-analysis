@@ -290,10 +290,10 @@ def preprocessing():
 
 
 def preprocessing_radarcadia():
-    # base_path = Path("/home/vault/empkins/tpD/D03/Data/MA_Simon_Meske/2023_radarcardia_study")
-    # target_path = os.getenv("WORK") + "/DataRadarcadiaOverlap"
-    base_path = Path("/Users/simonmeske/Desktop/Masterarbeit/Radarcadia")
-    target_path = "/Users/simonmeske/Desktop/Masterarbeit/Radarcadia/Processed_Files"
+    base_path = Path("/home/vault/empkins/tpD/D03/Data/MA_Simon_Meske/2023_radarcardia_study")
+    target_path = os.getenv("WORK") + "/DataRadarcadiaEMD"
+    # base_path = Path("/Users/simonmeske/Desktop/Masterarbeit/Radarcadia")
+    # target_path = "/Users/simonmeske/Desktop/Masterarbeit/Radarcadia/Processed_Files"
     run_radarcadia(base_path, target_path)
 
 
@@ -808,7 +808,7 @@ def collect_and_score_arrays_radarcadia():
 if __name__ == "__main__":
     # collect_and_score_arrays_d02()
     # collect_and_score_arrays_radarcadia()
-    main()
+    # main()
     # scoring()
     # pretrained(os.getenv("HOME") + "/emrad-analysis/Models")
     # pretrained(os.getenv("HOME") + "/altPreprocessing/emrad-analysis/Models")
@@ -817,4 +817,4 @@ if __name__ == "__main__":
     # move_training_data()
     # fix_and_normalize_filtered()
     # preprocessing()
-    # preprocessing_radarcadia()
+    preprocessing_radarcadia()

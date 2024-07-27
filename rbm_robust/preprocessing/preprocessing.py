@@ -123,11 +123,21 @@ class EmpiricalModeDecomposer(Algorithm):
         # Hier kann manchmal ein leeres array zurückgegeben werden
         emd = EMD()
         self.imfs_ = emd.emd(signal, numpy.arange(len(signal)) / self.sampling_rate, max_imf=self.n_imfs)
-        if len(self.imfs_) != 5:
-            filled_array = numpy.zeros((5, 1000))
-            filled_array[: self.imfs_.shape[0], : self.imfs_.shape[1]] = self.imfs_
-            self.imfs_ = filled_array
+        self.imfs_ = self.process_array(self.imfs_)
+        # if len(self.imfs_) != 5:
+        #     filled_array = numpy.zeros((5, 1000))
+        #     filled_array[: self.imfs_.shape[0], : self.imfs_.shape[1]] = self.imfs_
+        #     self.imfs_ = filled_array
         return self
+
+    def process_array(self, input_array):
+        output_array = np.zeros((5, 1000))
+        if input_array.size > 0:
+            n = input_array.shape[0]
+            for i in range(n - 1):
+                output_array[i, :] = input_array[i, :]
+            output_array[4, :] = input_array[n - 1, :]
+        return output_array
 
 
 class Segmentation(Algorithm):
@@ -344,24 +354,32 @@ class WaveletTransformer(Algorithm):
             imf = signal[i]
             scales = np.geomspace(self.wavelet_coefficients[0], self.wavelet_coefficients[1], num=256)
             coefficients, frequencies = pywt.cwt(imf, scales, self.wavelet_type, sampling_period=1 / self.sampling_rate)
+            if self.normalize:
+                coefficients = self._normalize_and_fix_shape(coefficients)
             if img_based:
                 self._save_image(coefficients, frequencies, len(imf), segment, i, path)
             else:
                 transformed_signals.append(coefficients)
-        if self.normalize:
-            transformed_signals = [self._normalize(x) for x in transformed_signals]
         if not img_based:
+            path = path + f"_morl"
             save_path = os.path.join(path, f"{segment}.npy")
             transformed_signals = np.stack(transformed_signals, axis=2)
             numpy.save(save_path, transformed_signals)
         self.transformed_signal_ = []
         return self
 
+    def _normalize_and_fix_shape(self, coefficients):
+        normalizer_clone = self.normalizer.clone()
+        if np.iscomplexobj(coefficients):
+            coefficients = np.abs(coefficients)
+        coefficients_normalized = normalizer_clone.normalize(coefficients).normalized_signal_
+        return coefficients_normalized
+
     def _calculate_single_signal(self, signal, segment, base_path, subject_id, phase, img_based, identity):
         wavelet_types = [
-            # "morl",
+            "morl",
             # "gaus1",
-            "mexh",
+            # "mexh",
             # "shan1-1",
         ]
         for wavelet_type in wavelet_types:

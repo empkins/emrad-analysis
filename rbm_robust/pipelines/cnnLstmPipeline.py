@@ -205,6 +205,8 @@ class PreProcessor(Algorithm):
             i_diff = np.diff(raw_radar["I"])
             q_diff = np.diff(raw_radar["Q"])
             radar_mag = RadarPreprocessor().calculate_power(i=raw_radar["I"], q=raw_radar["Q"])
+        elif isinstance(raw_radar, pd.DataFrame) and "I" in raw_radar.columns and "Q" in raw_radar.columns:
+            radar_mag = RadarPreprocessor().calculate_power(i=raw_radar["I"], q=raw_radar["Q"])
         else:
             radar_mag = raw_radar
         # Bandpass Filter
@@ -216,11 +218,11 @@ class PreProcessor(Algorithm):
         ).downsampled_signal_
 
         # Empirical Mode Decomposition
-        # self.preprocessed_signal_ = emd_clone.decompose(self.preprocessed_signal_).imfs_
+        self.preprocessed_signal_ = emd_clone.decompose(self.preprocessed_signal_).imfs_
 
         # Wavelet Transform
         self.preprocessed_signal_ = wavelet_transform_clone.transform(
-            self.preprocessed_signal_, subject_id, phase, segment, base_path, image_based, single_signal=True
+            self.preprocessed_signal_, subject_id, phase, segment, base_path, image_based, single_signal=False
         ).transformed_signal_
 
         return self
@@ -620,7 +622,8 @@ class InputAndLabelGenerator(Algorithm):
                         breathing=breath,
                     )
                     try:
-                        radar_data = subject.load_data_from_location("emrad_data_preprocessed")["hs_Will_2018"]
+                        # radar_data = subject.load_data_from_location("emrad_data_preprocessed")["hs_Will_2018"]
+                        radar_data, radar_sampling_rate = subject.emrad_data
                         ecg_data = subject.load_data_from_location("biopac_data_preprocessed")["ecg"]
                     except Exception as e:
                         print(f"Exclude Subject {subject} due to error {e}")
