@@ -639,7 +639,7 @@ class InputAndLabelGenerator(Algorithm):
                         pre_processor_clone.preprocess(
                             segments_radar[j],
                             sampling_rate,
-                            subjects[0],
+                            subjects[i],
                             location + "_" + breath,
                             j,
                             base_path,
