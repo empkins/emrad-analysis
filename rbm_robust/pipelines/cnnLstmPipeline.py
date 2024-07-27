@@ -577,7 +577,7 @@ class InputAndLabelGenerator(Algorithm):
                         pre_processor_clone.preprocess_mag(
                             segments_radar[j],
                             radar_sampling_rate,
-                            subjects[0],
+                            subjects[i],
                             location + "_" + breath,
                             j,
                             base_path,
@@ -586,7 +586,7 @@ class InputAndLabelGenerator(Algorithm):
                         label_processor_clone.label_generation(
                             segments_ecg[j],
                             sampling_rate,
-                            subjects[0],
+                            subjects[i],
                             location + "_" + breath,
                             j,
                             self.downsampled_hz,
@@ -648,7 +648,7 @@ class InputAndLabelGenerator(Algorithm):
                         label_processor_clone.label_generation(
                             segments_ecg[j],
                             sampling_rate,
-                            subjects[0],
+                            subjects[i],
                             location + "_" + breath,
                             j,
                             self.downsampled_hz,
