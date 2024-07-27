@@ -366,6 +366,8 @@ class WaveletTransformer(Algorithm):
             if not os.path.exists(path):
                 print(f"Creating path {path}")
                 Path(path).mkdir(parents=True)
+            else:
+                print(f"Path {path} already exists")
             save_path = os.path.join(path, f"{segment}.npy")
             transformed_signals = np.stack(transformed_signals, axis=2)
             numpy.save(save_path, transformed_signals)
