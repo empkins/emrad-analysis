@@ -362,6 +362,8 @@ class WaveletTransformer(Algorithm):
                 transformed_signals.append(coefficients)
         if not img_based:
             path = path + f"_morl"
+            if not os.path.exists(path):
+                os.makedirs(path)
             save_path = os.path.join(path, f"{segment}.npy")
             transformed_signals = np.stack(transformed_signals, axis=2)
             numpy.save(save_path, transformed_signals)
