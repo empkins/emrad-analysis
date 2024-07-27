@@ -105,7 +105,7 @@ class UNetWaveletTF(Algorithm):
                 freeze_backbone=False,
                 freeze_batch_norm=False,
                 output_activation=None,
-                n_labels=channel_number,
+                n_labels=1,
                 weights=None,
             )
         )
@@ -121,7 +121,7 @@ class UNetWaveletTF(Algorithm):
         elif self.dual_channel and self.image_based:
             return 6
         elif not self.dual_channel and not self.image_based:
-            return 1
+            return 5
         elif not self.dual_channel and self.image_based:
             return 3
         else:

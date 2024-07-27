@@ -234,8 +234,8 @@ def ml_radarcadia(
     # path = "/Users/simonmeske/Desktop/TestOrdner/data_per_subject"
     # path = "/Users/simonmeske/Desktop/Masterarbeit/Radarcadia/Processed_Files"
     # testing_path = "/Users/simonmeske/Desktop/Masterarbeit/RadarcadiaTestData"
-    path = os.getenv("TMPDIR") + "/Data/DataRadarcadia"
-    testing_path = os.getenv("HPCVAULT") + "/TestDataRadarcadia"
+    path = os.getenv("TMPDIR") + "/Data/DataRadarcadiaEMD"
+    testing_path = os.getenv("HPCVAULT") + "/TestDataRadarcadiaEMD"
     # Get Training and Testing Subjects
     data_path = Path(path)
     testing_path = Path(testing_path)
@@ -808,13 +808,13 @@ def collect_and_score_arrays_radarcadia():
 if __name__ == "__main__":
     # collect_and_score_arrays_d02()
     # collect_and_score_arrays_radarcadia()
-    # main()
+    main()
     # scoring()
     # pretrained(os.getenv("HOME") + "/emrad-analysis/Models")
     # pretrained(os.getenv("HOME") + "/altPreprocessing/emrad-analysis/Models")
     # preprocessing_magnitude(dataset="d02")
     # remove_training_data()
-    move_training_data()
+    # move_training_data()
     # fix_and_normalize_filtered()
     # preprocessing()
     # preprocessing_radarcadia()
