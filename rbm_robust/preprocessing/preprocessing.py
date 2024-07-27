@@ -1,4 +1,5 @@
 import os.path
+from pathlib import Path
 from typing import Tuple, List
 
 import emrad_toolbox
@@ -363,7 +364,8 @@ class WaveletTransformer(Algorithm):
         if not img_based:
             path = path + f"_morl"
             if not os.path.exists(path):
-                os.makedirs(path)
+                print(f"Creating path {path}")
+                Path(path).mkdir(parents=True)
             save_path = os.path.join(path, f"{segment}.npy")
             transformed_signals = np.stack(transformed_signals, axis=2)
             numpy.save(save_path, transformed_signals)
