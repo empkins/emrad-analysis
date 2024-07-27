@@ -235,7 +235,7 @@ def ml_radarcadia(
     # path = "/Users/simonmeske/Desktop/Masterarbeit/Radarcadia/Processed_Files"
     # testing_path = "/Users/simonmeske/Desktop/Masterarbeit/RadarcadiaTestData"
     path = os.getenv("TMPDIR") + "/Data/DataRadarcadiaEMD"
-    testing_path = os.getenv("HPCVAULT") + "/TestDataRadarcadiaEMD"
+    testing_path = os.getenv("WORK") + "/TestDataRadarcadiaEMD"
     # Get Training and Testing Subjects
     data_path = Path(path)
     testing_path = Path(testing_path)
