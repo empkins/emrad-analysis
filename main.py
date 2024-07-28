@@ -187,8 +187,8 @@ def ml_d02(
 ):
     # path = "/Users/simonmeske/Desktop/Masterarbeit/DataD02"
     # testing_path = "/Users/simonmeske/Desktop/Masterarbeit/TestDataD02"
-    path = os.getenv("TMPDIR") + "/DataD02"
-    testing_path = os.getenv("WORK") + "/TestDataD02"
+    path = os.getenv("TMPDIR") + "Data/DataD02EMD"
+    testing_path = os.getenv("HPCVAULT") + "/TestDataD02EMD"
     # Get Training and Testing Subjects
     data_path = Path(path)
     testing_path = Path(testing_path)
@@ -283,7 +283,7 @@ def preprocessing_magnitude(dataset: str = "d02"):
 
 def preprocessing():
     base_path = Path("/home/vault/empkins/tpD/D03/Data/MA_Simon_Meske/Data_D02/data_per_subject")
-    target_path = os.getenv("HPCVAULT") + "/TestDataD02EMD"
+    target_path = os.getenv("WORK") + "/DataD02EMD"
     # base_path = Path("/Users/simonmeske/Desktop/Masterarbeit/ArrayLengthTest")
     # target_path = "/Users/simonmeske/Desktop/TestOrdner/data_per_subject"
     run_d02(base_path, target_path, process_inputs=True, process_labels=True, process_images=False)
