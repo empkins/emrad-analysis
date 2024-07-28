@@ -19,7 +19,7 @@ def run_d02(
     subjects = list(subjects_dataset.subjects)
     subsets = [subjects_dataset.get_subset(participant=subject) for subject in subjects]
     # process_d02_subset(subjects_dataset, target_path, process_labels, process_inputs, process_images)
-    num_processes = 3
+    num_processes = 4
     print(num_processes)
     with Pool(num_processes) as p:
         p.starmap(
