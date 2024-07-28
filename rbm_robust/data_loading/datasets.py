@@ -147,8 +147,6 @@ class D02Dataset(Dataset):
         # PROC = ["007", "316", "338"]
         # participant_ids = [pid for pid in participant_ids if pid not in PROC]
         participant_ids = [pid for pid in participant_ids if pid not in ALR]
-        AGAIN = ["144", "245", "249", "198", "156"]
-        participant_ids = participant_ids + AGAIN
 
         TEST = [
             "130",
@@ -175,7 +173,6 @@ class D02Dataset(Dataset):
             "300",
         ]
         participant_ids = [pid for pid in participant_ids if pid not in TEST]
-
 
         df = pd.DataFrame({"participant": participant_ids})
         if df.empty:
