@@ -150,6 +150,33 @@ class D02Dataset(Dataset):
         AGAIN = ["144", "245", "249", "198", "156"]
         participant_ids = participant_ids + AGAIN
 
+        TEST = [
+            "130",
+            "268",
+            "338",
+            "173",
+            "242",
+            "273",
+            "008",
+            "241",
+            "198",
+            "439",
+            "272",
+            "143",
+            "199",
+            "249",
+            "140",
+            "230",
+            "111",
+            "155",
+            "213",
+            "203",
+            "310",
+            "300",
+        ]
+        participant_ids = [pid for pid in participant_ids if pid not in TEST]
+
+
         df = pd.DataFrame({"participant": participant_ids})
         if df.empty:
             raise ValueError(
