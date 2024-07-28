@@ -177,7 +177,7 @@ def ml_d02(
     epochs: int = 50,
     image_based: bool = False,
     breathing_type: str = "all",
-    label_type: str = "guassian",
+    label_type: str = "gaussian",
     log: bool = False,
     dual_channel: bool = False,
     wavelet: str = "morl",
@@ -187,7 +187,7 @@ def ml_d02(
 ):
     # path = "/Users/simonmeske/Desktop/Masterarbeit/DataD02"
     # testing_path = "/Users/simonmeske/Desktop/Masterarbeit/TestDataD02"
-    path = os.getenv("TMPDIR") + "Data/DataD02EMD"
+    path = os.getenv("TMPDIR") + "/Data/DataD02EMD"
     testing_path = os.getenv("HPCVAULT") + "/TestDataD02EMD"
     # Get Training and Testing Subjects
     data_path = Path(path)
