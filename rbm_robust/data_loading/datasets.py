@@ -166,7 +166,7 @@ class D02Dataset(Dataset):
             "310",
             "300",
         ]
-
+        participant_ids = [pid for pid in participant_ids if pid in TEST]
         # ALR = [item.name for item in Path("/home/woody/iwso/iwso116h/DataD02").iterdir() if item.is_dir()]
 
         # PROC = ["007", "316", "338"]
