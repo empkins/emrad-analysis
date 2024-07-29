@@ -13,5 +13,5 @@ export PATH="/home/hpc/iwso/iwso116h/.local/bin:$PATH"
 module add tensorrt/8.6.1.6-cuda12.0-cudnn8.9
 tar -xf $WORK/DataD02EMD.tar $TMPDIR/Data
 
-cd "$HOME"/altPreprocessing/emrad-analysis || exit
+cd "$HOME"/emrad-analysis || exit
 poetry run python main.py --epochs 40 --learning_rate 0.001 --image_based False --datasource d02 --log False --label_type gaussian --dual_channel False --wavelet morl
