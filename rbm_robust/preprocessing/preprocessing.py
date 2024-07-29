@@ -239,7 +239,7 @@ class Normalizer(Algorithm):
         mean = np.mean(data)
         std = np.std(data)
         if std == 0:
-            return data  # or np.zeros_like(data) if you want to normalize to 0
+            return data
         else:
             return (data - mean) / std
 

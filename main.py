@@ -840,7 +840,7 @@ def _count_files_in_base_path(path):
 if __name__ == "__main__":
     # collect_and_score_arrays_d02()
     # collect_and_score_arrays_radarcadia()
-    # main()
+    main()
     # scoring()
     # pretrained(os.getenv("HOME") + "/emrad-analysis/Models")
     # pretrained(os.getenv("HOME") + "/altPreprocessing/emrad-analysis/Models")
@@ -850,4 +850,3 @@ if __name__ == "__main__":
     # fix_and_normalize_filtered()
     # preprocessing()
     # preprocessing_radarcadia()
-    count_segments()
