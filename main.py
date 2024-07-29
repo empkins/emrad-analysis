@@ -805,10 +805,42 @@ def collect_and_score_arrays_radarcadia():
     _collect_and_score(prediction_base_path, label_base_path, label_folder_name, "radarcadia")
 
 
+def count_segments():
+    radarcadia_path = os.getenv("WORK") + "/DataRadarcadiaEMD"
+    radarcadia_test_path = os.getenv("WORK") + "/TestDataRadarcadiaEMD"
+    d02_path = os.getenv("WORK") + "/DataD02"
+    d02_test_path = os.getenv("WORK") + "/TestDataD02"
+    segment_count_radarcadia = _count_files_in_base_path(radarcadia_path)
+    segment_count_test_radarcadia = _count_files_in_base_path(radarcadia_test_path)
+    segment_count_d02 = _count_files_in_base_path(d02_path)
+    segment_count_test_d02 = _count_files_in_base_path(d02_test_path)
+    print(f"Radarcadia: {segment_count_radarcadia} Test: {segment_count_test_radarcadia}")
+    print(f"D02: {segment_count_d02} Test: {segment_count_test_d02}")
+
+
+def _count_files_in_base_path(path):
+    base_path = Path(path)
+    segment_count = 0
+    for subject_path in base_path.iterdir():
+        if not subject_path.is_dir():
+            continue
+        for phase_path in subject_path.iterdir():
+            if not phase_path.is_dir():
+                continue
+            for input_folder in phase_path.iterdir():
+                if "labels_gaussian" not in input_folder.name:
+                    continue
+                for input_file in input_folder.iterdir():
+                    if not input_file.is_file():
+                        continue
+                    segment_count += 1
+    return segment_count
+
+
 if __name__ == "__main__":
     # collect_and_score_arrays_d02()
     # collect_and_score_arrays_radarcadia()
-    main()
+    # main()
     # scoring()
     # pretrained(os.getenv("HOME") + "/emrad-analysis/Models")
     # pretrained(os.getenv("HOME") + "/altPreprocessing/emrad-analysis/Models")
@@ -818,3 +850,4 @@ if __name__ == "__main__":
     # fix_and_normalize_filtered()
     # preprocessing()
     # preprocessing_radarcadia()
+    count_segments()

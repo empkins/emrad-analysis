@@ -248,10 +248,6 @@ class D02Dataset(Dataset):
         if not (self.is_single(None) or (self.is_single(["participant"]))):
             raise ValueError("Data can only be accessed, when there is just a single participant in the dataset.")
         subject_id = self.subjects[0]
-        try:
-            synced_data = self._load_synced_data_windowed(subject_id).copy()
-        except Exception as _:
-            synced_data = self._load_synced_data(subject_id).copy()
         ecg_signal = self.synced_data[["ecg"]]
         ecg_signal["ecg"] = nk.ecg_clean(
             ecg_signal=ecg_signal["ecg"], sampling_rate=int(self.SAMPLING_RATE_ACQ), method="neurokit"
@@ -547,10 +543,10 @@ class D02Dataset(Dataset):
 
     @lru_cache(maxsize=1)
     def _load_synced_radar(self, subject_id):
-        try:
-            synced_data = self._load_synced_data_windowed(subject_id).copy()
-        except Exception as _:
-            synced_data = self._load_synced_data(subject_id).copy()
+        # try:
+        #     synced_data = self._load_synced_data_windowed(subject_id).copy()
+        # except Exception as _:
+        synced_data = self._load_synced_data(subject_id).copy()
         df = synced_data.filter(regex="^radar").copy()
         df.columns = [col.replace("radar_", "") for col in df.columns]
         if "Sync_Out" in df.columns:
@@ -560,10 +556,10 @@ class D02Dataset(Dataset):
         return df
 
     def _load_synced_ecg(self, subject_id):
-        try:
-            synced_data = self._load_synced_data_windowed(subject_id).copy()
-        except Exception as _:
-            synced_data = self._load_synced_data(subject_id).copy()
+        # try:
+        #     synced_data = self._load_synced_data_windowed(subject_id).copy()
+        # except Exception as _:
+        synced_data = self._load_synced_data(subject_id).copy()
         df = synced_data.filter(regex="^ecg")
         df.drop(columns=["ecg_Sync_Out"], inplace=True)
         return df
