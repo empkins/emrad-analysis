@@ -3,7 +3,7 @@
 #SBATCH --job-name=emd_d02_morl_001
 #SBATCH --nodes=1
 #SBATCH --time=19:30:00
-#SBATCH --gres=gpu:1
+#SBATCH --gres=gpu:rtx3080:1
 
 module unload python
 module load python/3.10-anaconda
