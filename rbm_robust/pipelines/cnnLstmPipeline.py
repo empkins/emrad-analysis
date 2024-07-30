@@ -218,11 +218,11 @@ class PreProcessor(Algorithm):
         ).downsampled_signal_
 
         # Empirical Mode Decomposition
-        self.preprocessed_signal_ = emd_clone.decompose(self.preprocessed_signal_).imfs_
+        # self.preprocessed_signal_ = emd_clone.decompose(self.preprocessed_signal_).imfs_
 
         # Wavelet Transform
         self.preprocessed_signal_ = wavelet_transform_clone.transform(
-            self.preprocessed_signal_, subject_id, phase, segment, base_path, image_based, single_signal=False
+            self.preprocessed_signal_, subject_id, phase, segment, base_path, image_based, single_signal=True
         ).transformed_signal_
 
         return self
