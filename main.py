@@ -187,8 +187,8 @@ def ml_d02(
 ):
     # path = "/Users/simonmeske/Desktop/Masterarbeit/DataD02"
     # testing_path = "/Users/simonmeske/Desktop/Masterarbeit/TestDataD02"
-    path = os.getenv("TMPDIR") + "/Data/DataD02EMD"
-    testing_path = os.getenv("HPCVAULT") + "/TestDataD02EMD"
+    path = os.getenv("TMPDIR") + "/DataD02"
+    testing_path = os.getenv("HPCVAULT") + "/TestDataD02"
     # Get Training and Testing Subjects
     data_path = Path(path)
     testing_path = Path(testing_path)
@@ -527,8 +527,8 @@ def remove_training_data():
 
 def move_training_data():
     paths = [
-        # (os.getenv("WORK") + "/DataD02", os.getenv("WORK") + "/TestDataD02Mag"),
-        (os.getenv("WORK") + "/DataRadarcadiaEMD", os.getenv("WORK") + "/TestDataRadarcadiaEMD"),
+        (os.getenv("WORK") + "/DataD02", os.getenv("WORK") + "/TestDataD02"),
+        # (os.getenv("WORK") + "/DataRadarcadiaEMD", os.getenv("WORK") + "/TestDataRadarcadiaEMD"),
     ]
     for path_tuple in paths:
         source_path = path_tuple[0]
@@ -846,7 +846,7 @@ if __name__ == "__main__":
     # pretrained(os.getenv("HOME") + "/altPreprocessing/emrad-analysis/Models")
     # preprocessing_magnitude(dataset="d02")
     # remove_training_data()
-    # move_training_data()
+    move_training_data()
     # fix_and_normalize_filtered()
-    preprocessing()
+    # preprocessing()
     # preprocessing_radarcadia()
