@@ -145,9 +145,10 @@ class D02Dataset(Dataset):
         ALR = [item.name for item in Path("/home/woody/iwso/iwso116h/DataD02").iterdir() if item.is_dir()]
         PROC = ["007", "316", "338"]
         participant_ids = [pid for pid in participant_ids if pid not in PROC]
+        participant_ids = [pid for pid in participant_ids if pid not in ALR]
+
         AGAIN = ["308", "120", "287", "143"]
         participant_ids = participant_ids + AGAIN
-        # participant_ids = [pid for pid in participant_ids if pid not in ALR]
         df = pd.DataFrame({"participant": participant_ids})
         if df.empty:
             raise ValueError(
