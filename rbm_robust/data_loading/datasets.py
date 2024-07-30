@@ -142,38 +142,10 @@ class D02Dataset(Dataset):
         participant_ids = [item.name for item in Path(self.data_path).iterdir() if item.is_dir()]
         participant_ids = [pid for pid in participant_ids if pid not in self.EXCLUDE_SUBJECTS]
 
-        ALR = [item.name for item in Path("/home/woody/iwso/iwso116h/DataD02EMD").iterdir() if item.is_dir()]
-
+        # ALR = [item.name for item in Path("/home/woody/iwso/iwso116h/DataD02EMD").iterdir() if item.is_dir()]
         # PROC = ["007", "316", "338"]
         # participant_ids = [pid for pid in participant_ids if pid not in PROC]
-        participant_ids = [pid for pid in participant_ids if pid not in ALR]
-
-        TEST = [
-            "130",
-            "268",
-            "338",
-            "173",
-            "242",
-            "273",
-            "008",
-            "241",
-            "198",
-            "439",
-            "272",
-            "143",
-            "199",
-            "249",
-            "140",
-            "230",
-            "111",
-            "155",
-            "213",
-            "203",
-            "310",
-            "300",
-        ]
-        participant_ids = [pid for pid in participant_ids if pid not in TEST]
-
+        # participant_ids = [pid for pid in participant_ids if pid not in ALR]
         df = pd.DataFrame({"participant": participant_ids})
         if df.empty:
             raise ValueError(
