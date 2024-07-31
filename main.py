@@ -188,7 +188,7 @@ def ml_d02(
     # path = "/Users/simonmeske/Desktop/Masterarbeit/DataD02"
     # testing_path = "/Users/simonmeske/Desktop/Masterarbeit/TestDataD02"
     path = os.getenv("TMPDIR") + "/DataD02"
-    testing_path = os.getenv("HPCVAULT") + "/TestDataD02"
+    testing_path = os.getenv("WORK") + "/TestDataD02"
     # Get Training and Testing Subjects
     data_path = Path(path)
     testing_path = Path(testing_path)
