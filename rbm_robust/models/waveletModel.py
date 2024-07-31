@@ -121,7 +121,7 @@ class UNetWaveletTF(Algorithm):
         elif self.dual_channel and self.image_based:
             return 6
         elif not self.dual_channel and not self.image_based:
-            return 5
+            return 1
         elif not self.dual_channel and self.image_based:
             return 3
         else:
