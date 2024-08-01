@@ -142,13 +142,13 @@ class D02Dataset(Dataset):
         participant_ids = [item.name for item in Path(self.data_path).iterdir() if item.is_dir()]
         participant_ids = [pid for pid in participant_ids if pid not in self.EXCLUDE_SUBJECTS]
 
-        ALR = [item.name for item in Path("/home/woody/iwso/iwso116h/DataD02").iterdir() if item.is_dir()]
+        # ALR = [item.name for item in Path("/home/woody/iwso/iwso116h/DataD02").iterdir() if item.is_dir()]
         # PROC = ["007", "316", "338"]
         # participant_ids = [pid for pid in participant_ids if pid not in PROC]
         participant_ids = [pid for pid in participant_ids if pid not in ALR]
 
-        AGAIN = ["444"]
-        participant_ids = participant_ids + AGAIN
+        # AGAIN = ["444"]
+        # participant_ids = participant_ids + AGAIN
         df = pd.DataFrame({"participant": participant_ids})
         if df.empty:
             raise ValueError(
@@ -518,10 +518,10 @@ class D02Dataset(Dataset):
 
     @lru_cache(maxsize=1)
     def _load_synced_radar(self, subject_id):
-        # try:
-        #     synced_data = self._load_synced_data_windowed(subject_id).copy()
-        # except Exception as _:
-        synced_data = self._load_synced_data(subject_id).copy()
+        try:
+            synced_data = self._load_synced_data_windowed(subject_id).copy()
+        except Exception as _:
+            synced_data = self._load_synced_data(subject_id).copy()
         df = synced_data.filter(regex="^radar").copy()
         df.columns = [col.replace("radar_", "") for col in df.columns]
         if "Sync_Out" in df.columns:
@@ -531,10 +531,10 @@ class D02Dataset(Dataset):
         return df
 
     def _load_synced_ecg(self, subject_id):
-        # try:
-        #     synced_data = self._load_synced_data_windowed(subject_id).copy()
-        # except Exception as _:
-        synced_data = self._load_synced_data(subject_id).copy()
+        try:
+            synced_data = self._load_synced_data_windowed(subject_id).copy()
+        except Exception as _:
+            synced_data = self._load_synced_data(subject_id).copy()
         df = synced_data.filter(regex="^ecg")
         df.drop(columns=["ecg_Sync_Out"], inplace=True)
         return df

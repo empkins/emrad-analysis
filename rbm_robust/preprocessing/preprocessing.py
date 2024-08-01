@@ -384,7 +384,7 @@ class WaveletTransformer(Algorithm):
     def _calculate_single_signal(self, signal, segment, base_path, subject_id, phase, img_based, identity):
         wavelet_types = [
             "morl",
-            # "gaus1",
+            "gaus1",
             # "mexh",
             # "shan1-1",
         ]
@@ -422,7 +422,7 @@ class WaveletTransformer(Algorithm):
             log_transformed_coefficients = log_transformed_coefficients.reshape(
                 log_transformed_coefficients.shape[0], log_transformed_coefficients.shape[1], 1
             )
-            np.save(os.path.join(log_path, f"{segment}.npy"), log_transformed_coefficients)
+            # np.save(os.path.join(log_path, f"{segment}.npy"), log_transformed_coefficients)
 
     def _normalize(self, coefficients):
         normalizer_clone = self.normalizer.clone()
