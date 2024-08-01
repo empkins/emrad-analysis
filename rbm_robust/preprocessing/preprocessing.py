@@ -412,6 +412,8 @@ class WaveletTransformer(Algorithm):
                 coefficients_normalized.shape[0], coefficients_normalized.shape[1], 1
             )
             np.save(os.path.join(path, f"{segment}.npy"), coefficients_reshaped)
+            image_path = path + "_image"
+            self._save_image(coefficients, frequencies, -1, segment, 0, image_path)
             coefficients_fit_for_log = np.abs(coefficients)
             constant_value = coefficients_fit_for_log.min() / 2
             coefficients_fit_for_log += constant_value
