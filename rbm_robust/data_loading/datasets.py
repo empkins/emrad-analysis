@@ -145,7 +145,7 @@ class D02Dataset(Dataset):
         ALR = [item.name for item in Path(os.getenv("WORK") + "/DataD02Mag").iterdir() if item.is_dir()]
         # PROC = ["144", "245", "249", "221", "198"]
         # participant_ids = [pid for pid in participant_ids if pid not in PROC]
-        # participant_ids = [pid for pid in participant_ids if pid not in ALR]
+        participant_ids = [pid for pid in participant_ids if pid not in ALR]
 
         AGAIN = ["308", "120", "156", "287"]
         participant_ids = participant_ids + AGAIN
