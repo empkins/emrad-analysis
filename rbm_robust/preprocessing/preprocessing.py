@@ -383,10 +383,10 @@ class WaveletTransformer(Algorithm):
 
     def _calculate_single_signal(self, signal, segment, base_path, subject_id, phase, img_based, identity):
         wavelet_types = [
-            "morl",
-            "gaus1",
-            # "mexh",
-            # "shan1-1",
+            # "morl",
+            # "gaus1",
+            "mexh",
+            "shan1-1",
         ]
         for wavelet_type in wavelet_types:
             normalizer_clone = self.normalizer.clone()

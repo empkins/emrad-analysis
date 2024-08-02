@@ -283,7 +283,7 @@ def preprocessing_magnitude(dataset: str = "d02"):
 
 def preprocessing():
     base_path = Path("/home/vault/empkins/tpD/D03/Data/MA_Simon_Meske/Data_D02/data_per_subject")
-    target_path = os.getenv("WORK") + "/CombinedData"
+    target_path = os.getenv("HPCVAULT") + "/CombinedData"
     # base_path = Path("/Users/simonmeske/Desktop/Masterarbeit/ArrayLengthTest")
     # target_path = "/Users/simonmeske/Desktop/TestOrdner/data_per_subject"
     run_d02(base_path, target_path, process_inputs=True, process_labels=True, process_images=False)
@@ -291,7 +291,7 @@ def preprocessing():
 
 def preprocessing_radarcadia():
     base_path = Path("/home/vault/empkins/tpD/D03/Data/MA_Simon_Meske/2023_radarcardia_study")
-    target_path = os.getenv("WORK") + "/CombinedData"
+    target_path = os.getenv("HPCVAULT") + "/CombinedData"
     # base_path = Path("/Users/simonmeske/Desktop/Masterarbeit/Radarcadia")
     # target_path = "/Users/simonmeske/Desktop/Masterarbeit/Radarcadia/Processed_Files"
     run_radarcadia(base_path, target_path)
@@ -848,7 +848,7 @@ if __name__ == "__main__":
     # pretrained(os.getenv("HOME") + "/altPreprocessing/emrad-analysis/Models")
     # preprocessing_magnitude(dataset="d02")
     # remove_training_data()
-    move_training_data()
+    # move_training_data()
     # fix_and_normalize_filtered()
-    # preprocessing()
-    # preprocessing_radarcadia()
+    preprocessing()
+    preprocessing_radarcadia()
