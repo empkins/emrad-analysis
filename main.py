@@ -269,7 +269,7 @@ def ml_radarcadia(
 def preprocessing_magnitude(dataset: str = "d02"):
     if dataset == "d02":
         base_path = Path("/home/vault/empkins/tpD/D03/Data/MA_Simon_Meske/Data_D02/data_per_subject")
-        target_path = os.getenv("WORK") + "/DataD02"
+        target_path = os.getenv("WORK") + "/DataD02Mag"
         # base_path = Path("/Users/simonmeske/Desktop/Masterarbeit/ArrayLengthTest")
         # target_path = "/Users/simonmeske/Desktop/TestOrdner/data_per_subject"
         run_d02_Mag(base_path, target_path, process_inputs=True, process_labels=True, process_images=False)
@@ -846,9 +846,9 @@ if __name__ == "__main__":
     # scoring()
     # pretrained(os.getenv("HOME") + "/emrad-analysis/Models")
     # pretrained(os.getenv("HOME") + "/altPreprocessing/emrad-analysis/Models")
-    # preprocessing_magnitude(dataset="d02")
+    preprocessing_magnitude(dataset="d02")
     # remove_training_data()
     # move_training_data()
     # fix_and_normalize_filtered()
-    preprocessing()
+    # preprocessing()
     # preprocessing_radarcadia()
