@@ -527,7 +527,7 @@ def remove_training_data():
 
 def move_training_data():
     paths = [
-        (os.getenv("WORK") + "/DataD02", os.getenv("WORK") + "/TestDataD02"),
+        (os.getenv("WORK") + "/CombinedData", os.getenv("WORK") + "/CombinedTestData"),
         # (os.getenv("WORK") + "/DataRadarcadiaEMD", os.getenv("WORK") + "/TestDataRadarcadiaEMD"),
     ]
     for path_tuple in paths:
@@ -561,6 +561,8 @@ def move_training_data():
         ]
         if "Radarcadia" in source_path:
             subjects = ["VP_01", "VP_15", "VP_11", "VP_03", "VP_18"]
+        if "Combined" in source_path:
+            subjects = subjects + ["VP_01", "VP_15", "VP_11", "VP_03", "VP_18"]
         for subject in subjects:
             source_subject_path = Path(source_path) / subject
             target_subject_path = Path(target_path)
@@ -846,7 +848,7 @@ if __name__ == "__main__":
     # pretrained(os.getenv("HOME") + "/altPreprocessing/emrad-analysis/Models")
     # preprocessing_magnitude(dataset="d02")
     # remove_training_data()
-    # move_training_data()
+    move_training_data()
     # fix_and_normalize_filtered()
-    preprocessing()
-    preprocessing_radarcadia()
+    # preprocessing()
+    # preprocessing_radarcadia()
