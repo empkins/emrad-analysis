@@ -846,7 +846,7 @@ if __name__ == "__main__":
     # scoring()
     # pretrained(os.getenv("HOME") + "/emrad-analysis/Models")
     # pretrained(os.getenv("HOME") + "/altPreprocessing/emrad-analysis/Models")
-    preprocessing_magnitude(dataset="d02")
+    preprocessing_magnitude(dataset="radarcadia")
     # remove_training_data()
     # move_training_data()
     # fix_and_normalize_filtered()
