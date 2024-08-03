@@ -66,7 +66,9 @@ class LSTM(Algorithm):
         else:
             log_dir = os.getenv("HPCVAULT") + f"/Runs/logs/fit/{self.model_name}"
 
-        log_dir_path = Path(log_dir)
+        dt = datetime.now().strftime("%Y%m%d-%H%M%S")
+        log_dir += dt
+
         if not os.path.exists(log_dir):
             Path(log_dir).mkdir(parents=True, exist_ok=True)
 
@@ -90,7 +92,7 @@ class LSTM(Algorithm):
             history_path = os.getenv("HPCVAULT") + "/Runs/History/"
         if not os.path.exists(history_path):
             Path(history_path).mkdir(parents=True, exist_ok=True)
-        history_path += self.model_name + "_history.pkl"
+        history_path += self.model_name + dt + "_history.pkl"
         pickle.dump(history.history, open(history_path, "wb"))
         self.save_model()
         return self

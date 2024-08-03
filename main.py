@@ -37,6 +37,7 @@ from rbm_robust.validation.scoring_pipeline import (
 @click.option("--loss", default="bce", help="The used loss function. Valid values are bce and mse")
 @click.option("--diff", default=False, help="Whether to use the first derivative of the radar signal")
 @click.option("--mag", default=False, help="Whether to use the magnitude of the radar signal")
+@click.option("--combined", default=False, help="Whether to use the magnitude of the radar signal")
 def main(
     model_path,
     epochs,
@@ -52,6 +53,7 @@ def main(
     loss,
     diff,
     mag,
+    combined,
 ):
     if mag:
         ml_time_power(
@@ -62,6 +64,7 @@ def main(
             wavelet=wavelet,
             loss=loss,
             dataset_type=datasource,
+            combined=combined,
         )
     elif model_path is not None and os.path.exists(model_path):
         ml_already_trained(
@@ -73,7 +76,7 @@ def main(
             wavelet=wavelet,
             dual_channel=dual_channel,
         )
-    elif datasource == "radarcadia":
+    elif datasource == "radarcadia" or combined:
         ml_radarcadia(
             epochs=epochs,
             learning_rate=learning_rate,
@@ -85,6 +88,7 @@ def main(
             wavelet=wavelet,
             identity=identity,
             loss=loss,
+            combined=combined,
         )
     elif datasource == "d02":
         ml_d02(
@@ -99,6 +103,7 @@ def main(
             identity=identity,
             loss=loss,
             diff=diff,
+            combined=combined,
         )
     else:
         raise ValueError("Datasource not found")
@@ -112,6 +117,7 @@ def ml_time_power(
     wavelet: str = "morl",
     loss: str = "bce",
     dataset_type: str = "d02",
+    combined: bool = False,
 ):
     # path = "/Users/simonmeske/Desktop/TestOrdner/Time_power"
     # testing_path = "/Users/simonmeske/Desktop/TestOrdner/Time_power"
@@ -120,6 +126,9 @@ def ml_time_power(
     if dataset_type == "radarcadia":
         path = os.getenv("TMPDIR") + "/Data/DataRadarcadiaMag"
         testing_path = os.getenv("WORK") + "/TestDataRadarcadiaMag"
+    if combined:
+        path = os.getenv("TMPDIR") + "/CombinedDataMag"
+        testing_path = os.getenv("WORK") + "/CombinedTestDataMag"
     # Get Training and Testing Subjects
     data_path = Path(path)
     testing_path = Path(testing_path)
@@ -184,6 +193,7 @@ def ml_d02(
     identity: bool = False,
     loss: str = "bce",
     diff: bool = False,
+    combined: bool = False,
 ):
     # path = "/Users/simonmeske/Desktop/Masterarbeit/DataD02"
     # testing_path = "/Users/simonmeske/Desktop/Masterarbeit/TestDataD02"
@@ -229,6 +239,7 @@ def ml_radarcadia(
     wavelet: str = "morl",
     identity: bool = False,
     loss: str = "bce",
+    combined: bool = False,
 ):
     print("Starting")
     # path = "/Users/simonmeske/Desktop/TestOrdner/data_per_subject"
@@ -236,6 +247,9 @@ def ml_radarcadia(
     # testing_path = "/Users/simonmeske/Desktop/Masterarbeit/RadarcadiaTestData"
     path = os.getenv("TMPDIR") + "/Data/DataRadarcadiaEMD"
     testing_path = os.getenv("WORK") + "/TestDataRadarcadiaEMD"
+    if combined:
+        path = os.getenv("TMPDIR") + "/CombinedData"
+        testing_path = os.getenv("WORK") + "/CombinedTestData"
     # Get Training and Testing Subjects
     data_path = Path(path)
     testing_path = Path(testing_path)
@@ -844,13 +858,13 @@ def _count_files_in_base_path(path):
 if __name__ == "__main__":
     # collect_and_score_arrays_d02()
     # collect_and_score_arrays_radarcadia()
-    # main()
+    main()
     # scoring()
     # pretrained(os.getenv("HOME") + "/emrad-analysis/Models")
     # pretrained(os.getenv("HOME") + "/altPreprocessing/emrad-analysis/Models")
     # preprocessing_magnitude(dataset="radarcadia")
     # remove_training_data()
-    move_training_data()
+    # move_training_data()
     # fix_and_normalize_filtered()
     # preprocessing()
     # preprocessing_radarcadia()
