@@ -527,8 +527,8 @@ def remove_training_data():
 
 def move_training_data():
     paths = [
-        (os.getenv("WORK") + "/DataD02Mag", os.getenv("WORK") + "/CombinedTestDataMag"),
-        (os.getenv("WORK") + "/DataRadarcadiaMag", os.getenv("WORK") + "/CombinedTestDataMag"),
+        (os.getenv("WORK") + "/DataD02Mag", os.getenv("WORK") + "/CombinedDataMag"),
+        (os.getenv("WORK") + "/DataRadarcadiaMag", os.getenv("WORK") + "/CombinedDataMag"),
     ]
     for path_tuple in paths:
         source_path = path_tuple[0]
@@ -563,6 +563,8 @@ def move_training_data():
             subjects = ["VP_01", "VP_15", "VP_11", "VP_03", "VP_18"]
         # if "Combined" in source_path:
         #     subjects = subjects + ["VP_01", "VP_15", "VP_11", "VP_03", "VP_18"]
+        subjects = Path(source_path).iterdir()
+        subjects = [subject.name for subject in subjects if subject.is_dir()]
         for subject in subjects:
             source_subject_path = Path(source_path) / subject
             target_subject_path = Path(target_path)
