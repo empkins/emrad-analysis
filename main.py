@@ -561,8 +561,8 @@ def move_training_data():
         ]
         if "Radarcadia" in source_path:
             subjects = ["VP_01", "VP_15", "VP_11", "VP_03", "VP_18"]
-        if "Combined" in source_path:
-            subjects = subjects + ["VP_01", "VP_15", "VP_11", "VP_03", "VP_18"]
+        # if "Combined" in source_path:
+        #     subjects = subjects + ["VP_01", "VP_15", "VP_11", "VP_03", "VP_18"]
         for subject in subjects:
             source_subject_path = Path(source_path) / subject
             target_subject_path = Path(target_path)
