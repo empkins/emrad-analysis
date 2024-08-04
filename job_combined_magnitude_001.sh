@@ -2,7 +2,7 @@
 #
 #SBATCH --job-name=magnitude_combined_40_100_300_Epochs001
 #SBATCH --nodes=1
-#SBATCH --time=20:30:00
+#SBATCH --time=17:30:00
 #SBATCH --gres=gpu:1
 
 
