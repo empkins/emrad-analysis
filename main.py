@@ -197,13 +197,16 @@ def ml_d02(
 ):
     # path = "/Users/simonmeske/Desktop/Masterarbeit/DataD02"
     # testing_path = "/Users/simonmeske/Desktop/Masterarbeit/TestDataD02"
-    path = os.getenv("TMPDIR") + "/DataD02"
-    testing_path = os.getenv("WORK") + "/TestDataD02"
+    path = os.getenv("TMPDIR") + "/CombinedData"
+    testing_path = os.getenv("WORK") + "/CombinedTestData"
     # Get Training and Testing Subjects
     data_path = Path(path)
     testing_path = Path(testing_path)
     possible_subjects = [path.name for path in data_path.iterdir() if path.is_dir()]
     testing_subjects = [path.name for path in Path(testing_path).iterdir() if path.is_dir()]
+
+    possible_subjects = [subject for subject in possible_subjects if "VP" not in subject]
+    testing_subjects = [subject for subject in testing_subjects if "VP" not in subject]
 
     use_ecg_labels = label_type == "ecg"
 
