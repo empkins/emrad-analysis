@@ -2,7 +2,7 @@
 #
 #SBATCH --job-name=magnitude_combined_40_100_300_Epochs001
 #SBATCH --nodes=1
-#SBATCH --time=23:30:00
+#SBATCH --time=20:30:00
 #SBATCH --gres=gpu:1
 
 
@@ -16,5 +16,4 @@ tar -xf $WORK/CombinedDataMag.tar -C $TMPDIR/
 
 cd "$HOME"/altPreprocessing/emrad-analysis || exit
 poetry run python main.py --epochs 40 --learning_rate 0.001 --image_based False --log False --label_type gaussian --dual_channel False --mag True --combined True
-poetry run python main.py --epochs 100 --learning_rate 0.001 --image_based False --log False --label_type gaussian --dual_channel False --mag True --combined True
 poetry run python main.py --epochs 300 --learning_rate 0.001 --image_based False --log False --label_type gaussian --dual_channel False --mag True --combined True
