@@ -15,5 +15,4 @@ module add tensorrt/8.6.1.6-cuda12.0-cudnn8.9
 tar -xf $WORK/CombinedData.tar -C $TMPDIR/
 
 cd "$HOME"/altPreprocessing/emrad-analysis || exit
-
 poetry run python main.py --epochs 40 --learning_rate 0.0001 --image_based False --datasource d02 --log False --label_type gaussian --dual_channel False --wavelet morl
