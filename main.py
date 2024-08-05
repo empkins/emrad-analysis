@@ -300,7 +300,7 @@ def preprocessing_magnitude(dataset: str = "d02"):
 
 def preprocessing():
     base_path = Path("/home/vault/empkins/tpD/D03/Data/MA_Simon_Meske/Data_D02/data_per_subject")
-    target_path = os.getenv("HPCVAULT") + "/CombinedData"
+    target_path = os.getenv("WORK") + "/CombinedData"
     # base_path = Path("/Users/simonmeske/Desktop/Masterarbeit/ArrayLengthTest")
     # target_path = "/Users/simonmeske/Desktop/TestOrdner/data_per_subject"
     run_d02(base_path, target_path, process_inputs=True, process_labels=True, process_images=False)
@@ -861,7 +861,7 @@ def _count_files_in_base_path(path):
 if __name__ == "__main__":
     # collect_and_score_arrays_d02()
     # collect_and_score_arrays_radarcadia()
-    main()
+    # main()
     # scoring()
     # pretrained(os.getenv("HOME") + "/emrad-analysis/Models")
     # pretrained(os.getenv("HOME") + "/altPreprocessing/emrad-analysis/Models")
@@ -869,5 +869,5 @@ if __name__ == "__main__":
     # remove_training_data()
     # move_training_data()
     # fix_and_normalize_filtered()
-    # preprocessing()
+    preprocessing()
     # preprocessing_radarcadia()

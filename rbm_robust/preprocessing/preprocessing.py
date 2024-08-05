@@ -412,18 +412,18 @@ class WaveletTransformer(Algorithm):
                 coefficients_normalized.shape[0], coefficients_normalized.shape[1], 1
             )
             np.save(os.path.join(path, f"{segment}.npy"), coefficients_reshaped)
-            image_path = path + "_image"
-            self._save_image(coefficients, frequencies, -1, segment, 0, image_path)
-            coefficients_fit_for_log = np.abs(coefficients)
-            constant_value = coefficients_fit_for_log.min() / 2
-            coefficients_fit_for_log += constant_value
-            log_transformed_coefficients = FunctionTransformer(np.log1p, validate=True).fit_transform(
-                coefficients_fit_for_log
-            )
-            log_transformed_coefficients = normalizer_clone.normalize(log_transformed_coefficients).normalized_signal_
-            log_transformed_coefficients = log_transformed_coefficients.reshape(
-                log_transformed_coefficients.shape[0], log_transformed_coefficients.shape[1], 1
-            )
+            # image_path = path + "_image"
+            # self._save_image(coefficients, frequencies, -1, segment, 0, image_path)
+            # coefficients_fit_for_log = np.abs(coefficients)
+            # constant_value = coefficients_fit_for_log.min() / 2
+            # coefficients_fit_for_log += constant_value
+            # log_transformed_coefficients = FunctionTransformer(np.log1p, validate=True).fit_transform(
+            #     coefficients_fit_for_log
+            # )
+            # log_transformed_coefficients = normalizer_clone.normalize(log_transformed_coefficients).normalized_signal_
+            # log_transformed_coefficients = log_transformed_coefficients.reshape(
+            #     log_transformed_coefficients.shape[0], log_transformed_coefficients.shape[1], 1
+            # )
             # np.save(os.path.join(log_path, f"{segment}.npy"), log_transformed_coefficients)
 
     def _normalize(self, coefficients):
