@@ -869,5 +869,5 @@ if __name__ == "__main__":
     # remove_training_data()
     # move_training_data()
     # fix_and_normalize_filtered()
-    preprocessing()
-    # preprocessing_radarcadia()
+    # preprocessing()
+    preprocessing_radarcadia()
