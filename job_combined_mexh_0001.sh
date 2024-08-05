@@ -1,6 +1,6 @@
 #!/bin/bash -l
 #
-#SBATCH --job-name=uNetCombinedMexh_40Epochs001
+#SBATCH --job-name=uNetCombinedMexh_40Epochs0001
 #SBATCH --nodes=1
 #SBATCH --time=13:30:00
 #SBATCH --gres=gpu:rtx3080:1
@@ -15,7 +15,7 @@ module add tensorrt/8.6.1.6-cuda12.0-cudnn8.9
 tar -xf $WORK/CombinedDataMexhShan.tar -C $TMPDIR/
 
 cd "$HOME"/altPreprocessing/emrad-analysis || exit
-poetry run python main.py --epochs 40 --learning_rate 0.001 --image_based False --log False --label_type gaussian --dual_channel False --wavelet mexh --combined True
+poetry run python main.py --epochs 40 --learning_rate 0.0001 --image_based False --log False --label_type gaussian --dual_channel False --wavelet mexh --combined True
 
 
 
