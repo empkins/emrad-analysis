@@ -198,7 +198,7 @@ def ml_d02(
     # path = "/Users/simonmeske/Desktop/Masterarbeit/DataD02"
     # testing_path = "/Users/simonmeske/Desktop/Masterarbeit/TestDataD02"
     path = os.getenv("TMPDIR") + "/CombinedData"
-    if wavelet != "mexh" or wavelet != "shan1-1":
+    if wavelet != "mexh" and wavelet != "shan1-1":
         testing_path = os.getenv("WORK") + "/CombinedTestData"
     else:
         testing_path = os.getenv("WORK") + "/TestCombinedDataMexhShan"
@@ -256,6 +256,10 @@ def ml_radarcadia(
     if combined:
         path = os.getenv("TMPDIR") + "/CombinedData"
         testing_path = os.getenv("WORK") + "/CombinedTestData"
+    if combined and wavelet == "mexh":
+        testing_path = os.getenv("WORK") + "/TestCombinedDataMexhShan"
+    if combined and wavelet == "shan1-1":
+        testing_path = os.getenv("WORK") + "/TestCombinedDataMexhShan"
     # Get Training and Testing Subjects
     data_path = Path(path)
     testing_path = Path(testing_path)
