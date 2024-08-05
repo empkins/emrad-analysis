@@ -142,7 +142,7 @@ class D02Dataset(Dataset):
         participant_ids = [item.name for item in Path(self.data_path).iterdir() if item.is_dir()]
         participant_ids = [pid for pid in participant_ids if pid not in self.EXCLUDE_SUBJECTS]
 
-        participant_ids = [pid for pid in participant_ids if int(pid) % 2 == 0]
+        participant_ids = [pid for pid in participant_ids if int(pid) % 2 == 1]
 
         # ALR = [item.name for item in Path(os.getenv("WORK") + "/DataD02Mag").iterdir() if item.is_dir()]
         # PROC = ["144", "245", "249", "221", "198"]
