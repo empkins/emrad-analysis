@@ -198,7 +198,10 @@ def ml_d02(
     # path = "/Users/simonmeske/Desktop/Masterarbeit/DataD02"
     # testing_path = "/Users/simonmeske/Desktop/Masterarbeit/TestDataD02"
     path = os.getenv("TMPDIR") + "/CombinedData"
-    testing_path = os.getenv("WORK") + "/CombinedTestData"
+    if wavelet != "mexh" or wavelet != "shan1-1":
+        testing_path = os.getenv("WORK") + "/CombinedTestData"
+    else:
+        testing_path = os.getenv("WORK") + "/TestCombinedDataMexhShan"
     # Get Training and Testing Subjects
     data_path = Path(path)
     testing_path = Path(testing_path)
@@ -861,13 +864,13 @@ def _count_files_in_base_path(path):
 if __name__ == "__main__":
     # collect_and_score_arrays_d02()
     # collect_and_score_arrays_radarcadia()
-    # main()
+    main()
     # scoring()
     # pretrained(os.getenv("HOME") + "/emrad-analysis/Models")
     # pretrained(os.getenv("HOME") + "/altPreprocessing/emrad-analysis/Models")
     # preprocessing_magnitude(dataset="radarcadia")
     # remove_training_data()
-    move_training_data()
+    # move_training_data()
     # fix_and_normalize_filtered()
     # preprocessing()
     # preprocessing_radarcadia()
