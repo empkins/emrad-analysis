@@ -2,8 +2,8 @@
 #
 #SBATCH --job-name=uNetCombinedMexh_40Epochs0001
 #SBATCH --nodes=1
-#SBATCH --time=13:30:00
-#SBATCH --gres=gpu:rtx3080:1
+#SBATCH --time=23:30:00
+#SBATCH --gres=gpu:1
 
 
 module unload python
