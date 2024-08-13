@@ -9,13 +9,11 @@ from keras import Sequential, layers
 from keras_unet_collection import models
 from tpcp import Algorithm, OptimizableParameter
 from itertools import groupby
-import tensorflow as tf
 from rbm_robust.data_loading.tf_datasets import DatasetFactory
 
 
 class CNN(Algorithm):
     _action_methods = "predict"
-
     # Input Parameters
     kernel_size: int
     strides: Tuple[int]
@@ -180,8 +178,6 @@ class CNN(Algorithm):
             os.makedirs(log_dir)
 
         tensorboard_callback = keras.callbacks.TensorBoard(log_dir=log_dir, write_graph=False, update_freq="epoch")
-
-        print("Before Generators")
         dataset_factory = DatasetFactory()
         training_dataset, training_steps = dataset_factory.get_dataset_for_subjects(
             base_path, training_subjects, batch_size=self.batch_size
@@ -189,8 +185,6 @@ class CNN(Algorithm):
         validation_dataset, validation_steps = dataset_factory.get_dataset_for_subjects(
             base_path, validation_subjects, batch_size=self.batch_size
         )
-
-        print("Fitting")
         if model_path is None:
             history = self._model.fit(
                 training_dataset,
@@ -256,21 +250,17 @@ class CNN(Algorithm):
         self._model = Sequential()
         self._model.add(
             models.unet_2d(
-                (1000, 256, 5),
+                (256, 1000, 1),
                 filter_num=[16, 32, 64],
                 weights=None,
                 freeze_backbone=False,
                 freeze_batch_norm=False,
                 output_activation=None,
-                n_labels=5,
+                n_labels=1,
             )
         )
-        # self._model.add(layers.TimeDistributed(layers.Flatten()))
-        # self._model.add(layers.TimeDistributed(layers.Dense(units=1)))
         self._model.add(layers.Conv2D(filters=1, kernel_size=(1, 256), activation="linear"))
-        # loss_func = keras.losses.BinaryCrossentropy(from_logits=False, reduction="none")
-        # self._model.compile(optimizer=keras.optimizers.Adam(learning_rate=self.learning_rate), loss=loss_func)
-        loss_func_mse = keras.losses.MeanSquaredError(reduction="sum_over_batch_size")
+        loss_func_mse = keras.losses.BinaryCrossentropy(reduction="sum_over_batch_size")
         self._model.compile(optimizer=keras.optimizers.Adam(learning_rate=self.learning_rate), loss=loss_func_mse)
         return self
 

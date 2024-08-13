@@ -22,7 +22,7 @@ from typing import Sequence
 from tpcp import Algorithm, OptimizableParameter, OptimizablePipeline, cf, make_action_safe
 
 # from empkins_micro.emrad.models.biLSTM import *
-# from empkins_micro.emrad.preprocessing.pre_processing_algorithms import *
+# from empkins_micro.emrad.preprocessing_d02.pre_processing_algorithms import *
 # from empkins_micro.emrad.feature_extraction.feature_generation_algorithms import *
 # from empkins_micro.emrad.label_generation.label_generation_algorithms import *
 
@@ -39,7 +39,7 @@ from emrad_analysis.preprocessing.pre_processing_algorithms import (
 
 
 class PreProcessor(Algorithm):
-    """Class preprocessing the radar to arrive at the heart sound envelope
+    """Class preprocessing_d02 the radar to arrive at the heart sound envelope
 
     Result: self.radar_envelope_
     """
@@ -188,7 +188,7 @@ class InputAndLabelGenerator(Algorithm):
             rad_q_signals = []
             rad_angels = []
 
-            # preprocess the radar data
+            # preprocess_d02 the radar data
             for i in range(len(self.used_radar_antennae)):
                 filename = "rad" + str(self.used_radar_antennae[i]) + "_aligned__resampled_"
                 processed_signal = pre_processor_clone.pre_process(data_dict[filename])

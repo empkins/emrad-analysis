@@ -1,7 +1,6 @@
 import numpy as np
 from rbm_robust.validation.validationBase import ValidationBase
 from pathlib import Path
-import pathlib
 from scipy.signal import find_peaks
 
 

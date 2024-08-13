@@ -25,23 +25,26 @@ from empkins_io.datasets.d03.micro_gapvii import MicroBaseDataset
 from tpcp import Dataset, Algorithm, OptimizableParameter, OptimizablePipeline, cf, make_action_safe
 
 # from empkins_micro.emrad.models.biLSTM import *
-# from empkins_micro.emrad.preprocessing.pre_processing_algorithms import *
+# from empkins_micro.emrad.preprocessing_d02.pre_processing_algorithms import *
 # from empkins_micro.emrad.feature_extraction.feature_generation_algorithms import *
 # from empkins_micro.emrad.label_generation.label_generation_algorithms import *
 
 from emrad_analysis.feature_extraction.feature_generation_algorithms import ComputeEnvelopeSignal
 from emrad_analysis.label_generation.label_generation_algorithms import ComputeEcgPeakGaussians
 from emrad_analysis.models.biLSTM import BiLSTM
-from emrad_analysis.preprocessing.pre_processing_algorithms import ButterHighpassFilter, ComputeDecimateSignal, \
-    ButterBandpassFilter
+from emrad_analysis.preprocessing.pre_processing_algorithms import (
+    ButterHighpassFilter,
+    ComputeDecimateSignal,
+    ButterBandpassFilter,
+)
 
 
 class PreProcessor(Algorithm):
-    """Class preprocessing the radar to arrive at the heart sound envelope
+    """Class preprocessing_d02 the radar to arrive at the heart sound envelope
 
     Result: self.radar_envelope_
     """
-    
+
     _action_methods = "pre_process"
 
     # Input Parameters
@@ -61,7 +64,7 @@ class PreProcessor(Algorithm):
         highpass_filter: ButterHighpassFilter = cf(ButterHighpassFilter()),
         bandpass_filter: ButterBandpassFilter = cf(ButterBandpassFilter()),
         envelope_algo: ComputeEnvelopeSignal = cf(ComputeEnvelopeSignal()),
-        decimation_algo: ComputeDecimateSignal = cf(ComputeDecimateSignal(downsampling_factor=10))
+        decimation_algo: ComputeDecimateSignal = cf(ComputeDecimateSignal(downsampling_factor=10)),
     ):
         self.highpass_filter = highpass_filter
         self.bandpass_filter = bandpass_filter
@@ -74,7 +77,7 @@ class PreProcessor(Algorithm):
 
         Args:
             raw_radar (pd.DataFrame): synced and sr aligned radar of one antenna
-        
+
         Returns:
             self
         """
@@ -85,24 +88,28 @@ class PreProcessor(Algorithm):
         decimation_algo_clone = self.decimation_algo.clone()
 
         # Get rid of the freq=0 offset
-        highpassed_radi = highpass_filter_clone.filter(raw_radar['I'], sample_frequency_hz=1000)
-        highpassed_radq = highpass_filter_clone.filter(raw_radar['Q'], sample_frequency_hz=1000)
+        highpassed_radi = highpass_filter_clone.filter(raw_radar["I"], sample_frequency_hz=1000)
+        highpassed_radq = highpass_filter_clone.filter(raw_radar["Q"], sample_frequency_hz=1000)
 
         self.radar_i_ = decimation_algo_clone.compute(highpassed_radi.filtered_signal_).downsampled_signal_
         self.radar_q_ = decimation_algo_clone.compute(highpassed_radq.filtered_signal_).downsampled_signal_
 
-        angle = np.diff(np.unwrap(np.arctan2(highpassed_radi.filtered_signal_,highpassed_radq.filtered_signal_)),axis=0)
+        angle = np.diff(
+            np.unwrap(np.arctan2(highpassed_radi.filtered_signal_, highpassed_radq.filtered_signal_)), axis=0
+        )
         self.radar_angle_ = decimation_algo_clone.compute(angle).downsampled_signal_
 
         # Compute the radar power from I and Q
-        rad_power = np.sqrt(np.square(highpassed_radi.filtered_signal_)+np.square(highpassed_radq.filtered_signal_))
+        rad_power = np.sqrt(np.square(highpassed_radi.filtered_signal_) + np.square(highpassed_radq.filtered_signal_))
 
         # Extract heart sound band and compute the hilbert envelope
         heart_sound_radar = bandpass_filter_clone.filter(rad_power, 1000)
         heart_sound_radar_envelope = envelope_algo_clone.compute(heart_sound_radar.filtered_signal_)
 
         # Downsample to 100 Hz
-        heart_sound_radar_envelope = decimation_algo_clone.compute(heart_sound_radar_envelope.envelope_signal_).downsampled_signal_
+        heart_sound_radar_envelope = decimation_algo_clone.compute(
+            heart_sound_radar_envelope.envelope_signal_
+        ).downsampled_signal_
 
         self.radar_envelope_ = heart_sound_radar_envelope
 
@@ -112,16 +119,16 @@ class PreProcessor(Algorithm):
         # self.radar_envelope_ = (heart_sound_radar_envelope - mean) / std
 
         return self
-    
-    
+
+
 class InputAndLabelGeneratorCleanData(Algorithm):
     """Class generating the Input and Label matrices for the BiLSTM model.
 
-    Results: 
+    Results:
         self.input_data
         self.input_labels
     """
-    
+
     _action_methods = ("generate_training_input_sitting_clean_data", "generate_training_labels_sitting_clean_data")
 
     # Tell the label generator from which antennae to generate input
@@ -137,7 +144,7 @@ class InputAndLabelGeneratorCleanData(Algorithm):
     # Input & Label parameters
     timesteps: int
     step_size: int
-    
+
     # Results
     input_data_: np.ndarray
     input_labels_: np.ndarray
@@ -150,7 +157,7 @@ class InputAndLabelGeneratorCleanData(Algorithm):
         label_decimation_algo: ComputeDecimateSignal = cf(ComputeDecimateSignal(downsampling_factor=10)),
         peak_gaussian_algo: ComputeEcgPeakGaussians = cf(ComputeEcgPeakGaussians()),
         timesteps: int = 400,
-        step_size: int = 20
+        step_size: int = 20,
     ):
         self.used_radar_antennae = used_radar_antennae
         self.pre_processor = pre_processor
@@ -176,11 +183,10 @@ class InputAndLabelGeneratorCleanData(Algorithm):
 
         # loop over dataset
         for group in dataset:
-
             subject = str(group.index["subject"][0])
             condition = str(group.index["condition"][0])
             subcon = subject + condition
-            
+
             # fetch the radar data
             data_dict = group.emrad_biopac_synced_and_sr_aligned
 
@@ -189,9 +195,9 @@ class InputAndLabelGeneratorCleanData(Algorithm):
             rad_q_signals = []
             rad_angels = []
 
-            # preprocess the radar data
+            # preprocess_d02 the radar data
             for i in range(len(self.used_radar_antennae)):
-                filename = 'rad' + str(self.used_radar_antennae[i]) + '_aligned__resampled_'
+                filename = "rad" + str(self.used_radar_antennae[i]) + "_aligned__resampled_"
                 processed_signal = pre_processor_clone.pre_process(data_dict[filename])
                 envelope_signals.append(processed_signal.radar_envelope_)
                 rad_i_signals.append(processed_signal.radar_i_)
@@ -199,7 +205,7 @@ class InputAndLabelGeneratorCleanData(Algorithm):
                 rad_angels.append(processed_signal.radar_angle_)
             # heart_sound_band_envelope_rad1 = pre_processor_clone.pre_process(data_dict['rad1_aligned__resampled_']).radar_envelope_
             # heart_sound_band_envelope_rad2 = pre_processor_clone.pre_process(data_dict['rad2_aligned__resampled_']).radar_envelope_
-            
+
             excluded_indices = []
             # generate input samples
             for i in range(0, len(envelope_signals[0]) - self.timesteps, self.step_size):
@@ -209,13 +215,13 @@ class InputAndLabelGeneratorCleanData(Algorithm):
                     if i in excluded_indices:
                         continue
                     # get windoww
-                    rad_envelope = envelope_signals[j][i:(i + self.timesteps)]
-                    if ((rad_envelope > 500).any()):
+                    rad_envelope = envelope_signals[j][i : (i + self.timesteps)]
+                    if (rad_envelope > 500).any():
                         excluded_indices.append(i)
                         continue
-                    radar_i = rad_i_signals[j][i:(i + self.timesteps)]
-                    radar_q = rad_q_signals[j][i:(i + self.timesteps)]
-                    angle = rad_angels[j][i:(i + self.timesteps)]
+                    radar_i = rad_i_signals[j][i : (i + self.timesteps)]
+                    radar_q = rad_q_signals[j][i : (i + self.timesteps)]
+                    angle = rad_angels[j][i : (i + self.timesteps)]
 
                     # normalize the current window and append to feature array
                     rad_envelope = (rad_envelope - np.min(rad_envelope)) / (np.max(rad_envelope) - np.min(rad_envelope))
@@ -226,7 +232,9 @@ class InputAndLabelGeneratorCleanData(Algorithm):
                     radar_q = np.expand_dims(radar_q, axis=(1))
                     angle = (angle - np.min(angle)) / (np.max(angle) - np.min(angle))
                     angle = np.expand_dims(angle, axis=(1))
-                    combined_rad = rad_envelope if len(combined_rad)==0 else np.concatenate((combined_rad, rad_envelope), axis=1)
+                    combined_rad = (
+                        rad_envelope if len(combined_rad) == 0 else np.concatenate((combined_rad, rad_envelope), axis=1)
+                    )
                     combined_rad = np.concatenate((combined_rad, radar_i), axis=1)
                     combined_rad = np.concatenate((combined_rad, radar_q), axis=1)
                     combined_rad = np.concatenate((combined_rad, angle), axis=1)
@@ -237,7 +245,7 @@ class InputAndLabelGeneratorCleanData(Algorithm):
         # safe input samples
         self.input_data_ = np.array(res)
         return self
-            
+
     @make_action_safe
     def generate_training_labels_sitting_clean_data(self, dataset: MicroBaseDataset):
         """Method for generating the labels for the BiLSTM training phase
@@ -255,7 +263,6 @@ class InputAndLabelGeneratorCleanData(Algorithm):
 
         # loop over dataset
         for group in dataset:
-
             subject = str(group.index["subject"][0])
             condition = str(group.index["condition"][0])
             subcon = subject + condition
@@ -264,11 +271,15 @@ class InputAndLabelGeneratorCleanData(Algorithm):
             data_dict = group.emrad_biopac_synced_and_sr_aligned
 
             # downsample the ecg data
-            downsampled_ecg = label_decimation_algo_clone.compute(data_dict['Biopac_aligned__resampled_']['ecg']).downsampled_signal_
+            downsampled_ecg = label_decimation_algo_clone.compute(
+                data_dict["Biopac_aligned__resampled_"]["ecg"]
+            ).downsampled_signal_
 
             # compute the peak gaussians which will be labels
-            peak_gaussian_signal = peak_gaussian_algo_clone.compute(downsampled_ecg, 1000 / self.label_decimation_algo.downsampling_factor).peak_gaussians_
-           
+            peak_gaussian_signal = peak_gaussian_algo_clone.compute(
+                downsampled_ecg, 1000 / self.label_decimation_algo.downsampling_factor
+            ).peak_gaussians_
+
             # normalize the label data
             mean = np.mean(peak_gaussian_signal)
             std = np.std(peak_gaussian_signal)
@@ -276,9 +287,9 @@ class InputAndLabelGeneratorCleanData(Algorithm):
 
             # generate labels
             for i in range(0, len(peak_gaussian_signal) - self.timesteps, self.step_size):
-                if (i in self.excluded_indices_[subcon]):
+                if i in self.excluded_indices_[subcon]:
                     continue
-                next_sample = peak_gaussian_signal[i:(i + self.timesteps)]
+                next_sample = peak_gaussian_signal[i : (i + self.timesteps)]
                 res.append(next_sample)
 
         # safe labels
@@ -287,7 +298,6 @@ class InputAndLabelGeneratorCleanData(Algorithm):
 
 
 class BiLstmPipelineCleanData(OptimizablePipeline):
-
     feature_extractor: InputAndLabelGeneratorCleanData
     lstm: BiLSTM
     lstm___model: OptimizableParameter
@@ -296,8 +306,10 @@ class BiLstmPipelineCleanData(OptimizablePipeline):
 
     def __init__(
         self,
-        feature_extractor: InputAndLabelGeneratorCleanData = cf(InputAndLabelGeneratorCleanData(used_radar_antennae=[1])),
-        lstm: BiLSTM = cf(BiLSTM())
+        feature_extractor: InputAndLabelGeneratorCleanData = cf(
+            InputAndLabelGeneratorCleanData(used_radar_antennae=[1])
+        ),
+        lstm: BiLSTM = cf(BiLSTM()),
     ):
         self.feature_extractor = feature_extractor
         self.lstm = lstm
@@ -312,7 +324,7 @@ class BiLstmPipelineCleanData(OptimizablePipeline):
         self.lstm = self.lstm.clone()
         self.lstm.self_optimize(input_data, input_labels)
         return self
-        
+
     def run(self, datapoint: MicroBaseDataset):
         # Get data from dataset
         input_data = self.feature_extractor.generate_training_input_sitting_clean_data(datapoint).input_data_
@@ -323,10 +335,3 @@ class BiLstmPipelineCleanData(OptimizablePipeline):
         self.result_ = lstm_copy.predictions_
 
         return self
-
-
-
-
-
-
-    

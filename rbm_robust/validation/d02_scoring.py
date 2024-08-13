@@ -5,11 +5,10 @@ import pickle
 from sklearn.model_selection import train_test_split
 from pathlib import Path
 
-from rbm_robust.pipelines.cnnLstmPipeline import D02PipelineImproved
+from rbm_robust.pipelines.cnnLstmPipeline import D02Pipeline
 from rbm_robust.validation.RPeakF1Score import RPeakF1Score
 from rbm_robust.data_loading.datasets import D02Dataset
-from rbm_robust.models.waveletModel import UNetWavelet
-from rbm_robust.pipelines.waveletPipeline import WaveletPipeline
+from rbm_robust.models.waveletModel import UNetWaveletTF
 
 
 class D02Scoring:
@@ -22,7 +21,7 @@ class D02Scoring:
     mean_instantaneous_abs_hr_diff: float
     mean_relative_error_hr: float
     mean_absolute_error: float
-    wavelet_model: UNetWavelet
+    wavelet_model: UNetWaveletTF
     time_stamps: dict
 
     def __init__(
@@ -34,7 +33,7 @@ class D02Scoring:
         mean_absolute_error: float,
         abs_hr_error: float,
         mean_instantaneous_abs_hr_diff: float,
-        wavelet_model: UNetWavelet,
+        wavelet_model: UNetWaveletTF,
         time_stamps: dict,
     ):
         self.heart_rate_prediction = heart_rate_prediction
@@ -64,7 +63,7 @@ class D02Scoring:
 
 
 def d02PipelineScoring(
-    pipeline: D02PipelineImproved,
+    pipeline: D02Pipeline,
     dataset: D02Dataset,
     training_and_validation_path: str = "/home/woody/iwso/iwso116h/Data",
     testing_path: str = "/home/woody/iwso/iwso116h/TestData",

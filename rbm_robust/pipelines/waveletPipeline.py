@@ -6,17 +6,17 @@ from typing_extensions import Self
 import numpy as np
 from tpcp import cf, OptimizablePipeline
 from rbm_robust.data_loading.datasets import D02Dataset
-from rbm_robust.models.waveletModel import UNetWavelet
+from rbm_robust.models.waveletModel import UNetWaveletTF
 
 
 class WaveletPipeline(OptimizablePipeline):
-    wavelet_model: UNetWavelet
+    wavelet_model: UNetWaveletTF
 
     result_ = np.ndarray
 
     def __init__(
         self,
-        wavelet_model: UNetWavelet = cf(UNetWavelet()),
+        wavelet_model: UNetWaveletTF = cf(UNetWaveletTF()),
     ):
         self.wavelet_model = wavelet_model
 
@@ -26,8 +26,6 @@ class WaveletPipeline(OptimizablePipeline):
         validation: D02Dataset,
         path: str = "/home/woody/iwso/iwso116h/Data",
         model_path: str = None,
-        remaining_epochs: int = 0,
-        start_epoch: int = 0,
     ) -> Self:
         self.wavelet_model = self.wavelet_model.clone()
         print("Optimizing Wavelet Model")
@@ -37,9 +35,6 @@ class WaveletPipeline(OptimizablePipeline):
             base_path=path,
             training_subjects=training_subjects,
             validation_subjects=validation_subjects,
-            model_path=model_path,
-            remaining_epochs=remaining_epochs,
-            start_epoch=start_epoch,
         )
         return self
 

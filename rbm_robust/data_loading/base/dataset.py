@@ -337,7 +337,7 @@ class BaseDataset(Dataset):
     def save_data_to_location(self, data: pd.DataFrame, file_name: str, sub_dir: Optional[str] = None):
         """
         Save a dataframe as file to "data_per_location" sub-folder for the respective participant. In this folder,
-        all intermediate data can be stored, e.g. the results of the preprocessing steps.
+        all intermediate data can be stored, e.g. the results of the preprocessing_d02 steps.
         Args:
             data: pd.DataFrame (data frame containing the data to be saved)
             file_name: str (name of the file to be saved)
